@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useMemo } from "react"
 import { DayEditor } from "./DayEditor"
-import type { GeneratedPlan, ItineraryDay, TimelineEntry } from "@/types/plan"
+import { getAccommodationForDay } from "@/lib/accommodation/utils"
+import type { GeneratedPlan, ItineraryDay, TimelineEntry, AccommodationSuggestion } from "@/types/plan"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface ItineraryEditorProps {
@@ -17,6 +18,8 @@ interface ItineraryEditorProps {
   onAddActivityClick?: (dayNumber: number) => void
   registerDayRef?: (dayNumber: number, ref: HTMLDivElement | null) => void
   onRegenerateDay?: (dayNumber: number) => Promise<void>
+  // Accommodation integration
+  onAccommodationClick?: (accommodation: AccommodationSuggestion) => void
 }
 
 export function ItineraryEditor({
@@ -29,7 +32,13 @@ export function ItineraryEditor({
   onAddActivityClick,
   registerDayRef,
   onRegenerateDay,
+  onAccommodationClick,
 }: ItineraryEditorProps) {
+  // Get accommodation suggestions from plan
+  const accommodationSuggestions = useMemo(() => {
+    return plan.accommodation?.suggestions || []
+  }, [plan.accommodation?.suggestions])
+
   // Update a single day
   const updateDay = (dayNumber: number, updatedDay: ItineraryDay) => {
     const updatedItinerary = plan.itinerary.map((day) =>
@@ -52,6 +61,13 @@ export function ItineraryEditor({
         const streamingTimeline = getDayTimeline?.(day.day) || []
         const isGenerating = dayStatus === 'generating'
 
+        // Get the accommodation for this day (where user stayed the night before)
+        const dayAccommodation = getAccommodationForDay(
+          day.date,
+          day.day,
+          accommodationSuggestions
+        )
+
         return (
           <DayEditor
             key={day.day}
@@ -64,6 +80,8 @@ export function ItineraryEditor({
             onAddActivityClick={onAddActivityClick ? () => onAddActivityClick(day.day) : undefined}
             registerRef={registerDayRef ? (ref) => registerDayRef(day.day, ref) : undefined}
             onRegenerate={onRegenerateDay ? () => onRegenerateDay(day.day) : undefined}
+            accommodation={dayAccommodation}
+            onAccommodationClick={onAccommodationClick}
           />
         )
       })}

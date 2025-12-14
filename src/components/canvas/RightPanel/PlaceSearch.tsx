@@ -5,7 +5,6 @@ import Image from "next/image"
 import { MapPin, GripVertical } from "lucide-react"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { Button } from "@/components/ui/button"
 import { ImageCarousel } from "@/components/ui/ImageCarousel"
 import { useCanvasContext } from "../CanvasContext"
 import { usePlaces, useDestinationSearch } from "@/lib/explore/hooks"
@@ -70,6 +69,12 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   bars: "Bares",
   museums: "Museos",
   nature: "Naturaleza",
+  landmarks: "Puntos de Interés",
+  beaches: "Playas",
+  religious: "Sitios Religiosos",
+  markets: "Mercados",
+  viewpoints: "Miradores",
+  wellness: "Bienestar",
 }
 
 const AVAILABLE_CATEGORIES: PlaceCategory[] = ["attractions", "restaurants", "cafes", "bars", "nature"]
@@ -144,7 +149,7 @@ function placeToPlaceData(place: Place): PlaceData {
       lng: place.location.lng,
     },
     address: place.location.address,
-    images: place.images?.slice(0, 5),
+    images: place.images?.slice(0, 10),
     googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/place/?q=place_id:${place.id}`,
     phone: place.phone,
     website: place.website,
@@ -161,6 +166,12 @@ function getIconForCategory(category: PlaceCategory): string {
     cafes: "☕",
     bars: "🍺",
     museums: "🎭",
+    landmarks: "🗿",
+    beaches: "🏖️",
+    religious: "⛪",
+    markets: "🛒",
+    viewpoints: "🏔️",
+    wellness: "🧘",
   }
   return icons[category] || "🎯"
 }

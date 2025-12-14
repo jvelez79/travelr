@@ -63,7 +63,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
   return (
     <div
       ref={containerRef}
-      className={`relative group flex items-center gap-3 p-3 rounded-lg border bg-card transition-all cursor-pointer ${
+      className={`relative group/activity flex items-center gap-3 p-3 rounded-lg border bg-card transition-all cursor-pointer ${
         isSelected
           ? "border-primary bg-primary/5 ring-1 ring-primary/20"
           : hasPlaceLink
@@ -147,7 +147,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
 
       {/* Actions */}
       {!disabled && (
-        <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
               e.stopPropagation()

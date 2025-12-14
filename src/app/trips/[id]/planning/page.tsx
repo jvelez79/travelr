@@ -60,6 +60,7 @@ export default function PlanningPage() {
     isAnyDayGenerating,
     allDaysComplete,
     regenerateDay,
+    canRegenerate,
     hydrateFromSavedState,
   } = useDayGeneration({
     tripId,
@@ -110,15 +111,12 @@ export default function PlanningPage() {
       const loadedPlan = JSON.parse(savedPlanData) as GeneratedPlan
       setLocalPlan(loadedPlan)
 
-      // Check if there's a generation in progress that needs recovery
-      if (savedGenerationState && (
-        savedGenerationState.status === 'generating' ||
-        savedGenerationState.status === 'ready_to_generate' ||
-        savedGenerationState.status === 'paused' ||
-        savedGenerationState.pendingDays.length > 0
-      )) {
+      // Always hydrate from saved generation state if it exists
+      // This ensures the hook's plan state is set for regenerateDay to work
+      if (savedGenerationState) {
         console.log('[planning] Found saved generation state, hydrating...')
         console.log('[planning] Loaded plan has', loadedPlan.itinerary.length, 'days')
+        console.log('[planning] Generation status:', savedGenerationState.status)
 
         // Restore preferences if saved
         if (savedGenerationState.preferences) {
@@ -126,8 +124,11 @@ export default function PlanningPage() {
         }
 
         // Hydrate the hook with saved state AND the existing plan
+        // This sets the hook's plan state which is needed for regenerateDay
         const shouldContinue = hydrateFromSavedState(savedGenerationState, loadedPlan)
         console.log('[planning] Hydration complete, shouldContinue:', shouldContinue)
+      } else {
+        console.log('[planning] No generation state found, plan is fully manual')
       }
 
       setStep("viewing")
@@ -327,7 +328,7 @@ export default function PlanningPage() {
         dayGenerationStates={dayStates}
         getDayStatus={getDayStatus}
         getDayTimeline={getDayTimeline}
-        onRegenerateDay={regenerateDay}
+        onRegenerateDay={canRegenerate ? regenerateDay : undefined}
       />
     )
   }

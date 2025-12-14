@@ -214,10 +214,14 @@ Genera JSON con esta estructura:
 REGLAS CRÍTICAS PARA LUGARES:
 1. SIEMPRE usa lugares de la lista cuando sea posible
 2. Prioriza lugares con rating >= 4.0
-3. Si usas un lugar de la lista, INCLUYE su "id" como "suggestedPlaceId"
-4. Usa el nombre EXACTO del lugar como aparece en la lista
-5. Si no hay un lugar adecuado en la lista, NO incluyas suggestedPlaceId
-6. Es MEJOR omitir suggestedPlaceId que incluir uno incorrecto
+3. Si usas un lugar de la lista, COPIA su "id" EXACTAMENTE como "suggestedPlaceId"
+   - Ejemplo CORRECTO: "suggestedPlaceId": "ChIJ8YWMWnZuLxMRRCmjWzs-aZA"
+   - INCORRECTO: "suggestedPlaceId": "fontana-di-trevi" (ID inventado)
+   - INCORRECTO: "suggestedPlaceId": "Fontana di Trevi" (usaste el nombre, no el ID)
+4. Los IDs válidos de Google empiezan con "ChIJ" seguido de caracteres alfanuméricos
+5. NUNCA inventes un ID - solo usa IDs que aparecen LITERALMENTE en la lista de lugares
+6. Si no hay un lugar adecuado en la lista, NO incluyas suggestedPlaceId
+7. Es MEJOR omitir suggestedPlaceId que incluir uno incorrecto o inventado
 
 CATEGORÍAS de lugares:
 - restaurants: para desayunos, almuerzos, cenas
@@ -226,6 +230,10 @@ CATEGORÍAS de lugares:
 - bars: para vida nocturna
 - museums: para museos y galerías
 - nature: para parques, cascadas, reservas naturales
+- landmarks: para plazas, monumentos, puntos de interés históricos
+- beaches: para playas
+- religious: para iglesias, catedrales, templos
+- markets: para mercados y ferias
 
 CATEGORÍAS para importantNotes: time, transport, weather, activity, food, lodging, budget, gear, warning, tip
 

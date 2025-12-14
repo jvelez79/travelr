@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, MapPin, CalendarPlus } from "lucide-react"
 import type { Place } from "@/types/explore"
+import { AccessibilityBadges } from "@/components/places/AccessibilityBadges"
+import { ServingBadges } from "@/components/places/ServingBadges"
 
 interface PlaceDetailPanelProps {
   place: Place | null
@@ -22,6 +24,7 @@ interface PlaceDetailPanelProps {
   isPlaceSaved?: boolean
   inline?: boolean
   placeIndex?: number
+  mode?: 'add' | 'replace'
 }
 
 // Google logo SVG component
@@ -68,7 +71,8 @@ export function PlaceDetailPanel({
   onSavePlace,
   isPlaceSaved = false,
   inline = false,
-  placeIndex
+  placeIndex,
+  mode = 'add'
 }: PlaceDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<"about" | "reviews" | "photos">("about")
 
@@ -173,37 +177,50 @@ export function PlaceDetailPanel({
                 )}
 
                 {/* Add to trip button */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      className="mt-3 bg-primary hover:bg-primary/90"
-                    >
-                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                      </svg>
-                      Add to trip
-                      <ChevronDown className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    <DropdownMenuItem
-                      onClick={() => onSavePlace?.(place)}
-                      disabled={isPlaceSaved}
-                      className="flex items-center gap-2"
-                    >
-                      <MapPin className="w-4 h-4" />
-                      <span>{isPlaceSaved ? "Ya guardado" : "Lugares por visitar"}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onAddToTrip(place)}
-                      className="flex items-center gap-2"
-                    >
-                      <CalendarPlus className="w-4 h-4" />
-                      <span>Añadir al itinerario</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {mode === 'replace' ? (
+                  <Button
+                    size="sm"
+                    className="mt-3 bg-primary hover:bg-primary/90"
+                    onClick={() => onAddToTrip(place)}
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Seleccionar
+                  </Button>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="mt-3 bg-primary hover:bg-primary/90"
+                      >
+                        <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                        Add to trip
+                        <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-48">
+                      <DropdownMenuItem
+                        onClick={() => onSavePlace?.(place)}
+                        disabled={isPlaceSaved}
+                        className="flex items-center gap-2"
+                      >
+                        <MapPin className="w-4 h-4" />
+                        <span>{isPlaceSaved ? "Ya guardado" : "Lugares por visitar"}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onAddToTrip(place)}
+                        className="flex items-center gap-2"
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        <span>Añadir al itinerario</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
                 {/* Category tags */}
                 <div className="flex flex-wrap gap-1.5 mt-3">
@@ -276,6 +293,20 @@ export function PlaceDetailPanel({
                     <a href={place.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">
                       {place.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                     </a>
+                  </div>
+                )}
+
+                {/* Serving options (menu) */}
+                {place.servingOptions && (
+                  <div className="mt-3">
+                    <ServingBadges servingOptions={place.servingOptions} />
+                  </div>
+                )}
+
+                {/* Accessibility */}
+                {place.accessibility && (
+                  <div className="mt-3">
+                    <AccessibilityBadges accessibility={place.accessibility} />
                   </div>
                 )}
 
@@ -561,10 +592,21 @@ export function PlaceDetailPanel({
             className="w-full mt-4"
             onClick={() => onAddToTrip(place)}
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Añadir a viaje
+            {mode === 'replace' ? (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Seleccionar
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Añadir a viaje
+              </>
+            )}
           </Button>
 
           <Separator className="my-4" />
@@ -627,6 +669,16 @@ export function PlaceDetailPanel({
                   {place.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                 </a>
               </div>
+            )}
+
+            {/* Serving options (menu) */}
+            {place.servingOptions && (
+              <ServingBadges servingOptions={place.servingOptions} />
+            )}
+
+            {/* Accessibility */}
+            {place.accessibility && (
+              <AccessibilityBadges accessibility={place.accessibility} />
             )}
           </div>
 

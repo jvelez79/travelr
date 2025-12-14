@@ -6,11 +6,13 @@ import { ActivityListItem } from "./ActivityListItem"
 import { ActivityEditor } from "./ActivityEditor"
 import { DayTimelineModal } from "./DayTimelineModal"
 import { TransportBlock } from "./TransportBlock"
+import { AccommodationBlock } from "./AccommodationBlock"
 import { Skeleton } from "@/components/ui/skeleton"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
+import { useAccommodationTransport } from "@/hooks/useAccommodationTransport"
 import { cn } from "@/lib/utils"
-import type { ItineraryDay, TimelineEntry } from "@/types/plan"
+import type { ItineraryDay, TimelineEntry, AccommodationSuggestion } from "@/types/plan"
 import type { DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface DayEditorProps {
@@ -25,6 +27,9 @@ interface DayEditorProps {
   onAddActivityClick?: () => void
   registerRef?: (ref: HTMLDivElement | null) => void
   onRegenerate?: () => Promise<void>
+  // Accommodation integration
+  accommodation?: AccommodationSuggestion | null
+  onAccommodationClick?: (accommodation: AccommodationSuggestion) => void
 }
 
 export function DayEditor({
@@ -37,6 +42,8 @@ export function DayEditor({
   onAddActivityClick,
   registerRef,
   onRegenerate,
+  accommodation,
+  onAccommodationClick,
 }: DayEditorProps) {
   const [expanded, setExpanded] = useState(true)
   const [editingActivity, setEditingActivity] = useState<TimelineEntry | null>(null)
@@ -45,6 +52,14 @@ export function DayEditor({
   const [isTimelineOpen, setIsTimelineOpen] = useState(false)
   const [isCalculatingTransport, setIsCalculatingTransport] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+
+  // Use streaming timeline if generating, otherwise use day's timeline
+  const displayTimeline = isGenerating ? streamingTimeline : day.timeline
+  const firstActivity = displayTimeline.length > 0 ? displayTimeline[0] : null
+
+  // Calculate transport from accommodation to first activity
+  const { travelInfo: accommodationTransport, isLoading: isLoadingAccommodationTransport } =
+    useAccommodationTransport(accommodation ?? null, firstActivity)
 
   // Droppable for receiving places from PlaceSearch
   const { isOver, setNodeRef: setDropRef } = useDroppable({
@@ -55,8 +70,6 @@ export function DayEditor({
     },
   })
 
-  // Use streaming timeline if generating, otherwise use day's timeline
-  const displayTimeline = isGenerating ? streamingTimeline : day.timeline
   const isPending = generationStatus === 'pending'
   const hasError = generationStatus === 'error'
 
@@ -157,7 +170,7 @@ export function DayEditor({
     <div
       ref={handleRef}
       className={cn(
-        "group rounded-2xl bg-card border-2 shadow-sm hover:shadow-md transition-all duration-300",
+        "group/day rounded-2xl bg-card border-2 shadow-sm hover:shadow-md transition-all duration-300",
         // Normal state
         !isOver && "border-border/60",
         // Drop target state - highlight when dragging over
@@ -178,7 +191,7 @@ export function DayEditor({
           "relative flex-shrink-0 w-16 h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300",
           isGenerating
             ? "bg-gradient-to-br from-primary/30 to-primary/10"
-            : "bg-gradient-to-br from-primary/15 to-primary/5 group-hover:from-primary/20 group-hover:to-primary/10"
+            : "bg-gradient-to-br from-primary/15 to-primary/5 group-hover/day:from-primary/20 group-hover/day:to-primary/10"
         )}>
           {isGenerating ? (
             <svg className="w-7 h-7 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
@@ -268,21 +281,51 @@ export function DayEditor({
             </span>
           )}
 
+          {/* Regenerate Day Button - Always visible on hover (subtle) */}
+          {onRegenerate && !isGenerating && !isPending && !hasError && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation()
+                if (isRegenerating) return
+                setIsRegenerating(true)
+                try {
+                  await onRegenerate()
+                } finally {
+                  setIsRegenerating(false)
+                }
+              }}
+              disabled={isRegenerating}
+              title="Regenerar este día"
+              className="opacity-0 group-hover/day:opacity-100 transition-opacity duration-200 inline-flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-50"
+            >
+              {isRegenerating ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
+            </button>
+          )}
+
           {/* Activity Count - Elegant Pill */}
-          <span className={cn(
+          {/* <span className={cn(
             "flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
             displayTimeline.length > 0
               ? "bg-primary/10 text-primary"
               : "bg-muted text-muted-foreground"
           )}>
             {displayTimeline.length} {displayTimeline.length === 1 ? 'actividad' : 'actividades'}
-          </span>
+          </span> */}
         </div>
 
         {/* Expand Chevron - Animated */}
         <div className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-          "bg-muted/50 group-hover:bg-muted"
+          "bg-muted/50 group-hover/day:bg-muted"
         )}>
           <svg
             className={cn(
@@ -333,6 +376,43 @@ export function DayEditor({
                   </div>
                 ))}
               </div>
+            )}
+
+            {/* Accommodation Block - Starting point of the day */}
+            {!isPending && !isGenerating && accommodation && (
+              <>
+                <AccommodationBlock
+                  accommodation={accommodation}
+                  onClick={() => onAccommodationClick?.(accommodation)}
+                />
+                {/* Transport from accommodation to first activity */}
+                {accommodationTransport && firstActivity && (
+                  <TransportBlock
+                    travelInfo={accommodationTransport}
+                    fromLocation={{
+                      name: accommodation.name,
+                      coordinates: accommodation.location
+                    }}
+                    toLocation={{
+                      name: firstActivity.location,
+                      placeId: firstActivity.placeId,
+                      coordinates: firstActivity.placeData?.coordinates
+                    }}
+                  />
+                )}
+                {/* Loading indicator for accommodation transport */}
+                {isLoadingAccommodationTransport && firstActivity && (
+                  <div className="flex items-center justify-center py-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Calculando ruta...
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {!isPending && displayTimeline.map((activity, index) => {
@@ -468,29 +548,6 @@ export function DayEditor({
             </div>
           )}
 
-          {/* Meals Quick View - Refined */}
-          {!isGenerating && !isPending && day.meals && (Object.keys(day.meals).length > 0) && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {day.meals.breakfast && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-xs text-amber-700 dark:text-amber-400">
-                  <span>🍳</span>
-                  {typeof day.meals.breakfast === 'string' ? day.meals.breakfast : day.meals.breakfast.suggestion}
-                </span>
-              )}
-              {day.meals.lunch && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500/10 text-xs text-orange-700 dark:text-orange-400">
-                  <span>🍽️</span>
-                  {typeof day.meals.lunch === 'string' ? day.meals.lunch : day.meals.lunch.suggestion}
-                </span>
-              )}
-              {day.meals.dinner && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-xs text-indigo-700 dark:text-indigo-400">
-                  <span>🌙</span>
-                  {typeof day.meals.dinner === 'string' ? day.meals.dinner : day.meals.dinner.suggestion}
-                </span>
-              )}
-            </div>
-          )}
         </div>
       )}
 

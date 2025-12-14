@@ -29,7 +29,7 @@ function placeToPlaceData(place: Place): PlaceData {
       lng: place.location.lng,
     },
     address: place.location.address,
-    images: place.images?.slice(0, 2),
+    images: place.images?.slice(0, 10),
     googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.id}`,
     phone: undefined,
     website: undefined,

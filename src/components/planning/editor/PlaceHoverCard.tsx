@@ -5,6 +5,8 @@ import { createPortal } from "react-dom"
 import { Star, MapPin, Phone, Globe, Clock, ExternalLink, Image as ImageIcon } from "lucide-react"
 import type { PlaceData, SavedPlace } from "@/types/plan"
 import { getGoogleMapsUrl } from "@/lib/places"
+import { AccessibilityBadges } from "@/components/places/AccessibilityBadges"
+import { ServingBadges } from "@/components/places/ServingBadges"
 
 interface MousePosition {
   x: number
@@ -68,6 +70,8 @@ export function PlaceHoverCard({ placeData, savedPlace, className = "", mousePos
   const phone = data.phone
   const website = data.website
   const openingHours = data.openingHours
+  const accessibility = placeData?.accessibility ?? savedPlace?.accessibility
+  const servingOptions = placeData?.servingOptions ?? savedPlace?.servingOptions
 
   // Handle address differences between PlaceData and SavedPlace
   const address = placeData?.address ?? savedPlace?.location?.address ?? (savedPlace?.location?.city ? `${savedPlace.location.city}${savedPlace.location.country ? `, ${savedPlace.location.country}` : ''}` : undefined)
@@ -282,6 +286,16 @@ export function PlaceHoverCard({ placeData, savedPlace, className = "", mousePos
               </div>
             )}
 
+            {/* Serving options - compact */}
+            {servingOptions && (
+              <ServingBadges servingOptions={servingOptions} compact />
+            )}
+
+            {/* Accessibility - compact */}
+            {accessibility && (
+              <AccessibilityBadges accessibility={accessibility} compact />
+            )}
+
             {/* External links */}
             <div className="pt-2 border-t border-border/50">
               <span className="text-[10px] text-muted-foreground">Abrir en:</span>
@@ -314,10 +328,10 @@ export function PlaceHoverCard({ placeData, savedPlace, className = "", mousePos
             </div>
 
             {/* Google verification badge */}
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            {/* <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
               <GoogleLogo className="w-3 h-3" />
               <span>Verificado en Google</span>
-            </div>
+            </div> */}
           </div>
         )}
 

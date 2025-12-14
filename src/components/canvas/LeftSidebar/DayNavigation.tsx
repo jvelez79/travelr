@@ -66,11 +66,11 @@ export function DayNavigation({ plan }: DayNavigationProps) {
               </div>
 
               {/* Activity Count Badge */}
-              {hasActivities && (
+              {/* {hasActivities && (
                 <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center">
                   <span className="text-[10px] font-medium text-primary">{activityCount}</span>
                 </div>
-              )}
+              )} */}
             </button>
           )
         })}

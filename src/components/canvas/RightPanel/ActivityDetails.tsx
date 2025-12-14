@@ -4,8 +4,27 @@ import { useState } from "react"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCanvasContext } from "../CanvasContext"
+import { AccessibilityBadges } from "@/components/places/AccessibilityBadges"
+import { ServingBadges } from "@/components/places/ServingBadges"
 import type { TimelineEntry, GeneratedPlan } from "@/types/plan"
 import type { PlaceCategory } from "@/types/explore"
+
+/**
+ * Extract city name from a location string like "7av. Norte 18B, Antigua Guatemala"
+ * Returns the last meaningful part (city) or the original string if parsing fails
+ */
+function extractCityFromLocation(location: string): string {
+  if (!location) return location
+
+  // Split by comma and get the last part
+  const parts = location.split(',').map(p => p.trim())
+
+  // If only one part, return as-is
+  if (parts.length === 1) return location
+
+  // Return the last part which is usually the city name
+  return parts[parts.length - 1]
+}
 
 // Iconos que tienen una categoría de búsqueda asociada
 const SEARCHABLE_ICONS: Record<string, PlaceCategory> = {
@@ -21,6 +40,12 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   bars: "bares",
   museums: "museos",
   nature: "naturaleza",
+  landmarks: "puntos de interés",
+  beaches: "playas",
+  religious: "sitios religiosos",
+  markets: "mercados",
+  viewpoints: "miradores",
+  wellness: "bienestar",
 }
 
 interface ActivityDetailsProps {
@@ -31,7 +56,7 @@ interface ActivityDetailsProps {
 }
 
 export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: ActivityDetailsProps) {
-  const { clearRightPanel, openSearchToReplace } = useCanvasContext()
+  const { clearRightPanel, openExploreModal } = useCanvasContext()
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Verificar si este item puede buscar opciones
@@ -204,6 +229,16 @@ export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: Act
               )}
             </div>
 
+            {/* Serving options (menu) */}
+            {placeData.servingOptions && (
+              <ServingBadges servingOptions={placeData.servingOptions} />
+            )}
+
+            {/* Accessibility */}
+            {placeData.accessibility && (
+              <AccessibilityBadges accessibility={placeData.accessibility} />
+            )}
+
             {/* Images */}
             {placeData.images && placeData.images.length > 0 && (
               <div>
@@ -244,7 +279,16 @@ export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: Act
             variant="outline"
             size="sm"
             className="w-full"
-            onClick={() => openSearchToReplace(dayNumber, activity.id, searchableCategory!)}
+            onClick={() => openExploreModal(
+              dayNumber,
+              extractCityFromLocation(activity.location) || plan.trip.destination,
+              'replace',
+              {
+                replaceActivityId: activity.id,
+                preselectedCategory: searchableCategory,
+                activityName: activity.activity,
+              }
+            )}
           >
             <Search className="w-4 h-4 mr-2" />
             Buscar {CATEGORY_LABELS[searchableCategory!]}

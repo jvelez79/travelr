@@ -212,7 +212,12 @@ INFORMACIÓN YA CONOCIDA DEL VIAJE (NO preguntes sobre esto):
 - Origen: {origin}
 - Fechas: {startDate} al {endDate} ({days} días)
 - Viajeros: {travelers} personas
-- El estilo de presupuesto (budget/comfort/luxury) se pregunta por separado
+
+PREGUNTAS QUE YA SE HACEN POR SEPARADO (NO generes preguntas similares):
+- Estilo de presupuesto (económico/comfort/premium)
+- Tipo de hospedaje preferido (hotel/airbnb/hostel/mixto)
+- Ritmo de viaje (relajado/moderado/activo)
+- Prioridad del viaje (aventura/relax/cultura/mixto)
 
 Las preguntas deben:
 1. Ser específicas del destino {destination}
@@ -223,12 +228,16 @@ Las preguntas deben:
    - Presupuesto o rango de precios (se pregunta por separado)
    - Fechas de viaje (ya las tenemos)
    - Número de viajeros (ya lo sabemos: {travelers})
+   - Tipo de hospedaje o alojamiento preferido
+   - Ritmo o intensidad del viaje (relajado vs activo)
+   - Prioridades generales (aventura, relax, cultura)
+   - Nivel de actividad física preferido
 
-Ejemplos de BUENAS preguntas para {destination}:
-- "¿Qué tipo de experiencias te interesan más?" (naturaleza, cultura, aventura, gastronomía)
-- "¿Prefieres un itinerario activo o más relajado?"
-- "¿Hay alguna zona o región específica que quieras priorizar?"
-- "¿Qué nivel de actividad física prefieres?" (ligero, moderado, intenso)
+Ejemplos de BUENAS preguntas específicas para {destination}:
+- "¿Hay alguna zona o región de {destination} que quieras priorizar?"
+- "¿Tienes interés en experiencias gastronómicas locales específicas?"
+- "¿Prefieres lugares populares o descubrir sitios menos turísticos?"
+- "¿Hay alguna actividad o lugar imprescindible que quieras incluir?"
 
 Responde en JSON:
 {

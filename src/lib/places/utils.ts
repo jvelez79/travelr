@@ -29,12 +29,16 @@ export function createSavedPlaceFromPlace(place: Place): SavedPlace {
 
     // Content
     description: place.description,
-    images: place.images?.slice(0, 5), // Limit to 5 images
+    images: place.images?.slice(0, 10), // Limit to 10 images
 
     // Contact
     phone: place.phone,
     website: place.website,
     openingHours: place.openingHours,
+
+    // Extended Google Places data
+    accessibility: place.accessibility,
+    servingOptions: place.servingOptions,
 
     // Source metadata
     sourceInfo: {

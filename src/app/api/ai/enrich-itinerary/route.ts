@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import type { ItineraryDay, TimelineEntry, Activity, PlaceData } from "@/types/plan"
 import type { Place, PlaceCategory } from "@/types/explore"
 import type { PrefetchedPlaces } from "../prefetch-places/route"
+import {
+  findPlaceWithFallback,
+  extractPlaceNameFromActivity,
+  isValidGooglePlaceId,
+} from "@/lib/places/matching"
+import {
+  createEmptyMetrics,
+  logLinkingMetrics,
+  type LinkingMetrics,
+} from "@/lib/places/metrics"
 
 interface EnrichRequest {
   itinerary: ItineraryDay[]
@@ -41,24 +51,82 @@ export async function POST(request: NextRequest) {
     // Create lookup map from all places
     const placesMap = buildPlacesMap(fullPlaces)
 
-    let totalItems = 0
-    let linkedItems = 0
+    // Create flat array of all places for fallback matching
+    const allPlaces = Array.from(placesMap.values())
+
+    // DEBUG: Log available places for matching
+    console.log('[LINKEO DEBUG] Enrich - Mapa de lugares disponibles:', {
+      totalInMap: placesMap.size,
+      sampleIds: Array.from(placesMap.keys()).slice(0, 10)
+    })
+
+    // Initialize metrics tracking
+    const startTime = Date.now()
+    const metrics = createEmptyMetrics()
 
     // Enrich each day
     const enrichedItinerary = itinerary.map((day) => {
       // Enrich timeline entries
       const enrichedTimeline = day.timeline.map((entry) => {
-        totalItems++
-        const enriched = enrichTimelineEntry(entry, placesMap)
-        if (enriched.placeId) linkedItems++
+        metrics.totalTimeline++
+        const entryWithId = entry as TimelineEntry & { suggestedPlaceId?: string }
+
+        // Track invalid IDs
+        if (entryWithId.suggestedPlaceId) {
+          if (!isValidGooglePlaceId(entryWithId.suggestedPlaceId)) {
+            metrics.invalidIdsDetected++
+            // Check if it looks like a name
+            if (entryWithId.suggestedPlaceId.length > 10 && !entryWithId.suggestedPlaceId.startsWith("ChIJ")) {
+              metrics.idsUsedAsNames++
+            }
+          }
+          metrics.fallbacksAttempted++
+        }
+
+        const enriched = enrichTimelineEntry(entry, placesMap, allPlaces)
+
+        // Track match results
+        switch (enriched.matchConfidence) {
+          case "exact":
+            metrics.linkedExact++
+            if (entryWithId.suggestedPlaceId && !placesMap.has(entryWithId.suggestedPlaceId)) {
+              metrics.fallbacksSuccessful++
+            }
+            break
+          case "high":
+            metrics.linkedHigh++
+            metrics.fallbacksSuccessful++
+            break
+          case "low":
+            metrics.linkedLow++
+            metrics.fallbacksSuccessful++
+            break
+          default:
+            metrics.unlinked++
+        }
+
         return enriched
       })
 
       // Enrich activities (if present - optional field)
       const enrichedActivities = day.activities?.map((activity) => {
-        totalItems++
-        const enriched = enrichActivity(activity, placesMap)
-        if (enriched.placeId) linkedItems++
+        metrics.totalActivities++
+        const enriched = enrichActivity(activity, placesMap, allPlaces)
+
+        switch (enriched.matchConfidence) {
+          case "exact":
+            metrics.linkedExact++
+            break
+          case "high":
+            metrics.linkedHigh++
+            break
+          case "low":
+            metrics.linkedLow++
+            break
+          default:
+            metrics.unlinked++
+        }
+
         return enriched
       })
 
@@ -69,13 +137,45 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Calculate processing time
+    metrics.processingTimeMs = Date.now() - startTime
+
+    const totalItems = metrics.totalTimeline + metrics.totalActivities
+    const linkedItems = metrics.linkedExact + metrics.linkedHigh + metrics.linkedLow
+
     const response: EnrichResponse = {
       itinerary: enrichedItinerary,
       stats: {
         totalItems,
         linkedItems,
-        unlinkedItems: totalItems - linkedItems,
+        unlinkedItems: metrics.unlinked,
       },
+    }
+
+    // Log comprehensive metrics
+    logLinkingMetrics(metrics)
+
+    // DEBUG: Detailed logging of unlinked items to identify patterns
+    const unlinkedDetails = enrichedItinerary.flatMap(day =>
+      day.timeline
+        .filter(t => !t.placeId)
+        .map(t => {
+          const entryWithId = t as typeof t & { suggestedPlaceId?: string }
+          return {
+            dayNumber: day.day,
+            activityName: t.activity,
+            location: t.location || '',
+            suggestedId: entryWithId.suggestedPlaceId || null,
+          }
+        })
+    )
+
+    if (unlinkedDetails.length > 0) {
+      console.log('[LINKEO] Actividades sin linkear:', {
+        total: unlinkedDetails.length,
+        details: unlinkedDetails.slice(0, 15),  // Show up to 15 for debugging
+        hasMore: unlinkedDetails.length > 15,
+      })
     }
 
     return NextResponse.json(response)
@@ -101,6 +201,11 @@ function buildPlacesMap(fullPlaces: PrefetchedPlaces): Map<string, Place> {
     "bars",
     "museums",
     "nature",
+    "landmarks",
+    "beaches",
+    "religious",
+    "markets",
+    "viewpoints",
   ]
 
   for (const category of categories) {
@@ -138,25 +243,33 @@ function placeToPlaceData(place: Place): PlaceData {
 
 /**
  * Enrich a timeline entry with place data
+ * Uses fallback matching if exact ID match fails
  */
 function enrichTimelineEntry(
   entry: TimelineEntry & { suggestedPlaceId?: string },
-  placesMap: Map<string, Place>
+  placesMap: Map<string, Place>,
+  allPlaces: Place[]
 ): TimelineEntry {
-  // Check if AI suggested a place ID
   const suggestedId = entry.suggestedPlaceId
-  if (!suggestedId) {
-    return {
-      ...entry,
-      matchConfidence: "none",
-    }
-  }
+  const activityName = extractPlaceNameFromActivity(entry.activity)
 
-  // Look up the place
-  const place = placesMap.get(suggestedId)
-  if (!place) {
-    // AI suggested an ID that doesn't exist - could be hallucinated
-    console.warn(`[enrich] Place not found: ${suggestedId}`)
+  // Try to find a place using the fallback system
+  const match = findPlaceWithFallback(
+    suggestedId,
+    activityName,
+    placesMap,
+    allPlaces
+  )
+
+  if (!match) {
+    // No match found even with fallback
+    if (suggestedId) {
+      console.log('[LINKEO DEBUG] Lugar NO encontrado (con fallback):', {
+        suggestedId,
+        activityName: entry.activity,
+        location: entry.location,
+      })
+    }
     return {
       ...entry,
       matchConfidence: "none",
@@ -167,33 +280,33 @@ function enrichTimelineEntry(
   const { suggestedPlaceId: _, ...cleanEntry } = entry
   return {
     ...cleanEntry,
-    placeId: place.id,
-    placeData: placeToPlaceData(place),
-    matchConfidence: "exact",
+    placeId: match.place.id,
+    placeData: placeToPlaceData(match.place),
+    matchConfidence: match.confidence,
   }
 }
 
 /**
  * Enrich an activity with place data
+ * Uses fallback matching if exact ID match fails
  */
 function enrichActivity(
   activity: Activity & { suggestedPlaceId?: string },
-  placesMap: Map<string, Place>
+  placesMap: Map<string, Place>,
+  allPlaces: Place[]
 ): Activity {
-  // Check if AI suggested a place ID
   const suggestedId = activity.suggestedPlaceId
-  if (!suggestedId) {
-    return {
-      ...activity,
-      matchConfidence: "none",
-    }
-  }
+  const activityName = extractPlaceNameFromActivity(activity.name)
 
-  // Look up the place
-  const place = placesMap.get(suggestedId)
-  if (!place) {
-    // AI suggested an ID that doesn't exist
-    console.warn(`[enrich] Place not found: ${suggestedId}`)
+  // Try to find a place using the fallback system
+  const match = findPlaceWithFallback(
+    suggestedId,
+    activityName,
+    placesMap,
+    allPlaces
+  )
+
+  if (!match) {
     return {
       ...activity,
       matchConfidence: "none",
@@ -204,9 +317,9 @@ function enrichActivity(
   const { suggestedPlaceId: _, ...cleanActivity } = activity
   return {
     ...cleanActivity,
-    placeId: place.id,
-    placeCategory: place.category as PlaceCategory,
-    placeData: placeToPlaceData(place),
-    matchConfidence: "exact",
+    placeId: match.place.id,
+    placeCategory: match.place.category as PlaceCategory,
+    placeData: placeToPlaceData(match.place),
+    matchConfidence: match.confidence,
   }
 }

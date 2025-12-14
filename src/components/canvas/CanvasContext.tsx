@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react"
-import type { TimelineEntry, GeneratedPlan } from "@/types/plan"
+import type { TimelineEntry, GeneratedPlan, AccommodationSuggestion } from "@/types/plan"
 import type { PlaceCategory } from "@/types/explore"
 
 // Right panel state types
@@ -11,6 +11,18 @@ export type RightPanelState =
   | { type: 'search'; dayNumber: number; timeSlot?: string; replaceActivityId?: string; preselectedCategory?: PlaceCategory }
   | { type: 'ai'; dayNumber: number }
   | { type: 'customActivity'; dayNumber: number; timeSlot?: string }
+  | { type: 'accommodation'; accommodation: AccommodationSuggestion }
+
+// Explore modal state type
+export interface ExploreModalState {
+  isOpen: boolean
+  dayNumber: number
+  dayLocation: string
+  mode: 'add' | 'replace'
+  replaceActivityId?: string
+  preselectedCategory?: PlaceCategory
+  activityName?: string // For showing "Buscar para: [nombre]" in header
+}
 
 interface CanvasContextType {
   // Right panel state
@@ -25,12 +37,27 @@ interface CanvasContextType {
   isRightPanelOpen: boolean
   setRightPanelOpen: (open: boolean) => void
 
+  // Explore modal state
+  exploreModalState: ExploreModalState | null
+  openExploreModal: (
+    dayNumber: number,
+    dayLocation: string,
+    mode: 'add' | 'replace',
+    options?: {
+      replaceActivityId?: string
+      preselectedCategory?: PlaceCategory
+      activityName?: string
+    }
+  ) => void
+  closeExploreModal: () => void
+
   // Day refs for scrolling
   registerDayRef: (dayNumber: number, ref: HTMLDivElement | null) => void
   scrollToDay: (dayNumber: number) => void
 
   // Quick actions
   selectActivity: (activity: TimelineEntry, dayNumber: number) => void
+  selectAccommodation: (accommodation: AccommodationSuggestion) => void
   openSearch: (dayNumber: number, timeSlot?: string) => void
   openSearchToReplace: (dayNumber: number, activityId: string, category: PlaceCategory) => void
   openAISuggestions: (dayNumber: number) => void
@@ -52,6 +79,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
   const [isRightPanelOpen, setRightPanelOpen] = useState(false)
 
+  // Explore modal state
+  const [exploreModalState, setExploreModalState] = useState<ExploreModalState | null>(null)
+
   // Day refs for scrolling
   const dayRefs = useRef<Record<number, HTMLDivElement | null>>({})
 
@@ -71,6 +101,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   // Action handlers
   const selectActivity = useCallback((activity: TimelineEntry, dayNumber: number) => {
     setRightPanelState({ type: 'activity', activity, dayNumber })
+    setRightPanelOpen(true) // Open panel on mobile
+  }, [])
+
+  const selectAccommodation = useCallback((accommodation: AccommodationSuggestion) => {
+    setRightPanelState({ type: 'accommodation', accommodation })
     setRightPanelOpen(true) // Open panel on mobile
   }, [])
 
@@ -99,6 +134,32 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     setRightPanelOpen(false)
   }, [])
 
+  // Explore modal actions
+  const openExploreModal = useCallback((
+    dayNumber: number,
+    dayLocation: string,
+    mode: 'add' | 'replace',
+    options?: {
+      replaceActivityId?: string
+      preselectedCategory?: PlaceCategory
+      activityName?: string
+    }
+  ) => {
+    setExploreModalState({
+      isOpen: true,
+      dayNumber,
+      dayLocation,
+      mode,
+      replaceActivityId: options?.replaceActivityId,
+      preselectedCategory: options?.preselectedCategory,
+      activityName: options?.activityName,
+    })
+  }, [])
+
+  const closeExploreModal = useCallback(() => {
+    setExploreModalState(null)
+  }, [])
+
   return (
     <CanvasContext.Provider
       value={{
@@ -108,9 +169,13 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         setSidebarOpen,
         isRightPanelOpen,
         setRightPanelOpen,
+        exploreModalState,
+        openExploreModal,
+        closeExploreModal,
         registerDayRef,
         scrollToDay,
         selectActivity,
+        selectAccommodation,
         openSearch,
         openSearchToReplace,
         openAISuggestions,

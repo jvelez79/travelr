@@ -7,19 +7,91 @@
  * - Place Photos: Get photo URLs
  */
 
-import type { Place, PlaceCategory, Coordinates } from "@/types/explore"
+import type { Place, PlaceCategory, Coordinates, AccessibilityOptions, ServingOptions } from "@/types/explore"
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || ""
 const API_BASE = "https://places.googleapis.com/v1"
 
-// Map our categories to Google Places types
+// Map our categories to Google Places types (expanded based on Google Places Table A)
 const CATEGORY_TO_GOOGLE_TYPES: Record<PlaceCategory, string[]> = {
-  restaurants: ["restaurant", "meal_takeaway", "meal_delivery"],
+  // Expanded: 38 restaurant types for better subcategory inference
+  restaurants: [
+    "restaurant",
+    "meal_takeaway",
+    "meal_delivery",
+    // By cuisine type
+    "american_restaurant",
+    "asian_restaurant",
+    "brazilian_restaurant",
+    "chinese_restaurant",
+    "french_restaurant",
+    "greek_restaurant",
+    "indian_restaurant",
+    "indonesian_restaurant",
+    "italian_restaurant",
+    "japanese_restaurant",
+    "korean_restaurant",
+    "lebanese_restaurant",
+    "mediterranean_restaurant",
+    "mexican_restaurant",
+    "middle_eastern_restaurant",
+    "seafood_restaurant",
+    "spanish_restaurant",
+    "thai_restaurant",
+    "turkish_restaurant",
+    "vietnamese_restaurant",
+    // By style
+    "fine_dining_restaurant",
+    "fast_food_restaurant",
+    "buffet_restaurant",
+    "breakfast_restaurant",
+    "brunch_restaurant",
+    // Specialized
+    "barbecue_restaurant",
+    "hamburger_restaurant",
+    "pizza_restaurant",
+    "ramen_restaurant",
+    "sushi_restaurant",
+    "steak_house",
+    "sandwich_shop",
+    // Dietary
+    "vegan_restaurant",
+    "vegetarian_restaurant",
+  ],
   attractions: ["tourist_attraction", "amusement_park", "zoo", "aquarium"],
   cafes: ["cafe", "bakery", "coffee_shop"],
   bars: ["bar", "night_club", "wine_bar"],
   museums: ["museum", "art_gallery"],
-  nature: ["park", "natural_feature", "campground", "hiking_area"],
+  // Expanded: 9 nature types
+  nature: [
+    "park",
+    "natural_feature",
+    "campground",
+    "hiking_area",
+    "botanical_garden",
+    "national_park",
+    "state_park",
+    "wildlife_park",
+    "wildlife_refuge",
+    "garden",
+    "picnic_ground",
+    "dog_park",
+  ],
+  landmarks: ["point_of_interest", "town_square", "historical_landmark"],
+  beaches: ["beach", "natural_feature"],
+  religious: ["church", "mosque", "synagogue", "hindu_temple", "place_of_worship"],
+  markets: ["market", "shopping_mall", "supermarket"],
+  viewpoints: ["observation_deck", "scenic_spot", "viewpoint"],
+  // New: wellness category
+  wellness: [
+    "spa",
+    "sauna",
+    "wellness_center",
+    "yoga_studio",
+    "massage",
+    "skin_care_clinic",
+    "tanning_studio",
+  ],
 }
 
 // Map Google price levels to our format
@@ -58,6 +130,28 @@ interface GooglePlace {
     types: string[]
   }>
   editorialSummary?: { text: string }
+  // Opening hours and contact
+  regularOpeningHours?: {
+    weekdayDescriptions?: string[]
+    openNow?: boolean
+  }
+  websiteUri?: string
+  internationalPhoneNumber?: string
+  nationalPhoneNumber?: string
+  // Accessibility options
+  accessibilityOptions?: {
+    wheelchairAccessibleParking?: boolean
+    wheelchairAccessibleEntrance?: boolean
+    wheelchairAccessibleRestroom?: boolean
+    wheelchairAccessibleSeating?: boolean
+  }
+  // Serving options (for restaurants, cafes, bars)
+  servesBeer?: boolean
+  servesWine?: boolean
+  servesCocktails?: boolean
+  servesCoffee?: boolean
+  servesDessert?: boolean
+  servesVegetarianFood?: boolean
 }
 
 interface TextSearchResponse {
@@ -67,6 +161,37 @@ interface TextSearchResponse {
 
 interface PlaceDetailsResponse extends GooglePlace {}
 
+// Result type that includes pagination info
+export interface PlacesSearchResult {
+  places: Place[]
+  nextPageToken?: string
+}
+
+// Common field mask for place searches
+const PLACES_FIELD_MASK = [
+  "places.id",
+  "places.displayName",
+  "places.primaryType",
+  "places.primaryTypeDisplayName",
+  "places.formattedAddress",
+  "places.shortFormattedAddress",
+  "places.location",
+  "places.rating",
+  "places.userRatingCount",
+  "places.priceLevel",
+  "places.photos",
+  "places.addressComponents",
+  "places.editorialSummary",
+  "places.accessibilityOptions",
+  "places.servesBeer",
+  "places.servesWine",
+  "places.servesCocktails",
+  "places.servesCoffee",
+  "places.servesDessert",
+  "places.servesVegetarianFood",
+  "nextPageToken",
+].join(",")
+
 /**
  * Search for places by category in a destination
  */
@@ -74,14 +199,115 @@ export async function searchPlaces(
   query: string,
   category: PlaceCategory,
   location: Coordinates,
-  radiusMeters: number = 10000
-): Promise<Place[]> {
+  radiusMeters: number = 10000,
+  pageToken?: string
+): Promise<PlacesSearchResult> {
   if (!GOOGLE_PLACES_API_KEY) {
     console.warn("Google Places API key not configured")
-    return []
+    return { places: [] }
   }
 
   const includedTypes = CATEGORY_TO_GOOGLE_TYPES[category]
+
+  try {
+    const requestBody: Record<string, unknown> = {
+      textQuery: query,
+      includedType: includedTypes[0],
+      locationBias: {
+        circle: {
+          center: {
+            latitude: location.lat,
+            longitude: location.lng,
+          },
+          radius: radiusMeters,
+        },
+      },
+      languageCode: "es",
+      maxResultCount: 20,
+    }
+
+    if (pageToken) {
+      requestBody.pageToken = pageToken
+    }
+
+    const response = await fetch(`${API_BASE}/places:searchText`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": PLACES_FIELD_MASK,
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("Google Places API error:", error)
+      return { places: [] }
+    }
+
+    const data: TextSearchResponse = await response.json()
+
+    if (!data.places) {
+      return { places: [], nextPageToken: data.nextPageToken }
+    }
+
+    return {
+      places: data.places.map((place) => transformGooglePlace(place, category)),
+      nextPageToken: data.nextPageToken,
+    }
+  } catch (error) {
+    console.error("Error searching places:", error)
+    return { places: [] }
+  }
+}
+
+/**
+ * Search places by category only (simpler query)
+ */
+export async function searchPlacesByCategory(
+  destination: string,
+  category: PlaceCategory,
+  location: Coordinates,
+  radiusMeters: number = 15000,
+  pageToken?: string
+): Promise<PlacesSearchResult> {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn("Google Places API key not configured")
+    return { places: [] }
+  }
+
+  const categoryQueries: Record<PlaceCategory, string> = {
+    restaurants: `mejores restaurantes en ${destination}`,
+    attractions: `atracciones turísticas en ${destination}`,
+    cafes: `cafeterías en ${destination}`,
+    bars: `bares en ${destination}`,
+    museums: `museos en ${destination}`,
+    nature: `parques naturales cerca de ${destination}`,
+    landmarks: `plazas y monumentos históricos en ${destination}`,
+    beaches: `playas en ${destination}`,
+    religious: `iglesias catedrales y templos en ${destination}`,
+    markets: `mercados en ${destination}`,
+    viewpoints: `miradores y vistas panorámicas en ${destination}`,
+    wellness: `spas y centros de bienestar en ${destination}`,
+  }
+
+  return searchPlaces(categoryQueries[category], category, location, radiusMeters, pageToken)
+}
+
+/**
+ * Search places by text query (for search bar)
+ */
+export async function searchPlacesByText(
+  query: string,
+  destination: string,
+  location: Coordinates,
+  radiusMeters: number = 15000
+): Promise<PlacesSearchResult> {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn("Google Places API key not configured")
+    return { places: [] }
+  }
 
   try {
     const response = await fetch(`${API_BASE}/places:searchText`, {
@@ -89,25 +315,10 @@ export async function searchPlaces(
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask": [
-          "places.id",
-          "places.displayName",
-          "places.primaryType",
-          "places.primaryTypeDisplayName",
-          "places.formattedAddress",
-          "places.shortFormattedAddress",
-          "places.location",
-          "places.rating",
-          "places.userRatingCount",
-          "places.priceLevel",
-          "places.photos",
-          "places.addressComponents",
-          "places.editorialSummary",
-        ].join(","),
+        "X-Goog-FieldMask": PLACES_FIELD_MASK,
       },
       body: JSON.stringify({
-        textQuery: query,
-        includedType: includedTypes[0], // Use primary type
+        textQuery: `${query} en ${destination}`,
         locationBias: {
           circle: {
             center: {
@@ -125,46 +336,26 @@ export async function searchPlaces(
     if (!response.ok) {
       const error = await response.text()
       console.error("Google Places API error:", error)
-      return []
+      return { places: [] }
     }
 
     const data: TextSearchResponse = await response.json()
 
     if (!data.places) {
-      return []
+      return { places: [] }
     }
 
-    return data.places.map((place) => transformGooglePlace(place, category))
+    // Infer category for each place
+    return {
+      places: data.places.map((place) => {
+        const category = inferCategory(place.primaryType)
+        return transformGooglePlace(place, category)
+      }),
+    }
   } catch (error) {
-    console.error("Error searching places:", error)
-    return []
+    console.error("Error searching places by text:", error)
+    return { places: [] }
   }
-}
-
-/**
- * Search places by category only (simpler query)
- */
-export async function searchPlacesByCategory(
-  destination: string,
-  category: PlaceCategory,
-  location: Coordinates,
-  radiusMeters: number = 15000
-): Promise<Place[]> {
-  if (!GOOGLE_PLACES_API_KEY) {
-    console.warn("Google Places API key not configured")
-    return []
-  }
-
-  const categoryQueries: Record<PlaceCategory, string> = {
-    restaurants: `mejores restaurantes en ${destination}`,
-    attractions: `atracciones turísticas en ${destination}`,
-    cafes: `cafeterías en ${destination}`,
-    bars: `bares en ${destination}`,
-    museums: `museos en ${destination}`,
-    nature: `parques naturales cerca de ${destination}`,
-  }
-
-  return searchPlaces(categoryQueries[category], category, location, radiusMeters)
 }
 
 /**
@@ -196,7 +387,17 @@ export async function getPlaceDetails(placeId: string): Promise<Place | null> {
           "regularOpeningHours",
           "websiteUri",
           "internationalPhoneNumber",
+          "nationalPhoneNumber",
           "editorialSummary",
+          // Accessibility
+          "accessibilityOptions",
+          // Serving options
+          "servesBeer",
+          "servesWine",
+          "servesCocktails",
+          "servesCoffee",
+          "servesDessert",
+          "servesVegetarianFood",
         ].join(","),
       },
     })
@@ -397,6 +598,31 @@ function transformGooglePlace(place: GooglePlace, category: PlaceCategory): Plac
     (c) => c.types?.includes("country")
   )?.longText || ""
 
+  // Build accessibility options if any exist
+  const accessibility: AccessibilityOptions | undefined = place.accessibilityOptions ? {
+    wheelchairAccessibleParking: place.accessibilityOptions.wheelchairAccessibleParking,
+    wheelchairAccessibleEntrance: place.accessibilityOptions.wheelchairAccessibleEntrance,
+    wheelchairAccessibleRestroom: place.accessibilityOptions.wheelchairAccessibleRestroom,
+    wheelchairAccessibleSeating: place.accessibilityOptions.wheelchairAccessibleSeating,
+  } : undefined
+
+  // Build serving options if any exist
+  const hasServingOptions = place.servesBeer !== undefined ||
+    place.servesWine !== undefined ||
+    place.servesCocktails !== undefined ||
+    place.servesCoffee !== undefined ||
+    place.servesDessert !== undefined ||
+    place.servesVegetarianFood !== undefined
+
+  const servingOptions: ServingOptions | undefined = hasServingOptions ? {
+    servesBeer: place.servesBeer,
+    servesWine: place.servesWine,
+    servesCocktails: place.servesCocktails,
+    servesCoffee: place.servesCoffee,
+    servesDessert: place.servesDessert,
+    servesVegetarianFood: place.servesVegetarianFood,
+  } : undefined
+
   return {
     id: place.id,
     name: place.displayName?.text || "",
@@ -413,8 +639,13 @@ function transformGooglePlace(place: GooglePlace, category: PlaceCategory): Plac
     rating: place.rating,
     reviewCount: place.userRatingCount,
     priceLevel: mapPriceLevel(place.priceLevel),
-    images: (place.photos || []).slice(0, 5).map((photo) => getPhotoUrl(photo.name)),
-    openingHours: undefined,
+    images: (place.photos || []).slice(0, 10).map((photo) => getPhotoUrl(photo.name)),
+    openingHours: place.regularOpeningHours?.weekdayDescriptions,
+    openNow: place.regularOpeningHours?.openNow,
+    phone: place.internationalPhoneNumber,
+    website: place.websiteUri,
+    accessibility,
+    servingOptions,
     source: "google",
     sourceId: place.id,
   }

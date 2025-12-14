@@ -1,6 +1,6 @@
 // Types for AI-generated travel plans
 
-import type { PlaceCategory } from './explore'
+import type { PlaceCategory, AccessibilityOptions, ServingOptions } from './explore'
 
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
 export type TravelPace = 'relaxed' | 'moderate' | 'active'
@@ -63,6 +63,10 @@ export interface SavedPlace {
   phone?: string
   website?: string
   openingHours?: string[]
+
+  // Extended Google Places data
+  accessibility?: AccessibilityOptions
+  servingOptions?: ServingOptions
 
   // Source metadata (extensible)
   sourceInfo?: PlaceSourceInfo
@@ -127,6 +131,9 @@ export interface PlaceData {
   phone?: string
   website?: string
   openingHours?: string[]
+  // Extended Google Places data
+  accessibility?: AccessibilityOptions
+  servingOptions?: ServingOptions
 }
 
 // Timeline entry (table row format like Costa Rica planning)

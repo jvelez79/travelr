@@ -45,6 +45,12 @@ const CATEGORY_COLORS: Record<PlaceCategory, string> = {
   bars: "#7C3AED",         // Purple
   museums: "#1D4ED8",      // Blue
   nature: "#059669",       // Green
+  landmarks: "#9333EA",    // Purple
+  beaches: "#F59E0B",      // Amber
+  religious: "#6366F1",    // Indigo
+  markets: "#EF4444",      // Red
+  viewpoints: "#8B5CF6",   // Violet
+  wellness: "#EC4899",     // Pink
 }
 
 export function PlaceMap({

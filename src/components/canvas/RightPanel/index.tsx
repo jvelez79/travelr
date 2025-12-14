@@ -3,6 +3,7 @@
 import { useCanvasContext } from "../CanvasContext"
 import { EmptyState } from "./EmptyState"
 import { ActivityDetails } from "./ActivityDetails"
+import { AccommodationDetails } from "./AccommodationDetails"
 import { PlaceSearch } from "./PlaceSearch"
 import { ActivityEditorInPanel } from "./ActivityEditorInPanel"
 import type { GeneratedPlan } from "@/types/plan"
@@ -27,6 +28,12 @@ export function RightPanel({ plan, onUpdatePlan }: RightPanelProps) {
           dayNumber={rightPanelState.dayNumber}
           plan={plan}
           onUpdatePlan={onUpdatePlan}
+        />
+      )}
+
+      {rightPanelState.type === 'accommodation' && (
+        <AccommodationDetails
+          accommodation={rightPanelState.accommodation}
         />
       )}
 

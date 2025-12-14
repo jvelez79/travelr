@@ -64,6 +64,18 @@ export async function POST(request: NextRequest) {
     const hasPlacesContext = placesContext && Object.keys(placesContext).length > 0
     console.log('[generate-day-stream] Starting day', dayNumber, ':', dayTitle, hasPlacesContext ? '(with places)' : '(no places)')
 
+    // DEBUG: Log places context being sent to AI
+    if (hasPlacesContext) {
+      const totalPlacesForAI = Object.values(placesContext!).reduce((sum, arr) => sum + arr.length, 0)
+      console.log('[LINKEO DEBUG] Día', dayNumber, '- Contexto enviado al AI:', {
+        totalPlaces: totalPlacesForAI,
+        byCategory: Object.fromEntries(
+          Object.entries(placesContext!).map(([cat, places]) => [cat, places.length])
+        ),
+        attractionNames: (placesContext!.attractions || []).map((p: PlaceForAI) => p.name).slice(0, 10)
+      })
+    }
+
     const ai = getAIProvider()
 
     // Check if provider supports streaming
@@ -275,7 +287,24 @@ function parseCompleteDayJSON(content: string, dayNumber: number) {
   }
 
   try {
-    return JSON.parse(jsonStr)
+    const day = JSON.parse(jsonStr)
+
+    // DEBUG: Log AI response suggestedPlaceIds
+    interface TimelineWithSuggestion {
+      activity?: string
+      suggestedPlaceId?: string
+    }
+    const timelineWithSuggestions = (day.timeline || []).filter((t: TimelineWithSuggestion) => t.suggestedPlaceId)
+    console.log('[LINKEO DEBUG] Día', dayNumber, '- AI devolvió suggestedPlaceIds:', {
+      totalTimeline: day.timeline?.length || 0,
+      withSuggestedId: timelineWithSuggestions.length,
+      suggestions: timelineWithSuggestions.map((t: TimelineWithSuggestion) => ({
+        activity: t.activity,
+        suggestedPlaceId: t.suggestedPlaceId
+      }))
+    })
+
+    return day
   } catch (error) {
     console.error('[generate-day-stream] JSON parse error, attempting repair')
     // Attempt basic repair

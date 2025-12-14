@@ -212,6 +212,12 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   bars: "Bares",
   museums: "Museos",
   nature: "Naturaleza",
+  landmarks: "Puntos de Interés",
+  beaches: "Playas",
+  religious: "Sitios Religiosos",
+  markets: "Mercados",
+  viewpoints: "Miradores",
+  wellness: "Bienestar",
 }
 
 // Convert a Place to PlaceData for activity linking (enables hover cards)
@@ -227,7 +233,7 @@ function placeToPlaceData(place: Place): PlaceData {
       lng: place.location.lng,
     },
     address: place.location.address,
-    images: place.images?.slice(0, 2),
+    images: place.images?.slice(0, 10),
     googleMapsUrl: place.googleMapsUrl || `https://www.google.com/maps/place/?q=place_id:${place.id}`,
     phone: place.phone,
     website: place.website,
@@ -492,6 +498,12 @@ export function ExploreTab({ plan, onUpdatePlan }: ExploreTabProps) {
       cafes: "coffee",
       bars: "glass",
       museums: "building",
+      landmarks: "monument",
+      beaches: "umbrella",
+      religious: "church",
+      markets: "shopping-cart",
+      viewpoints: "mountain",
+      wellness: "spa",
     }
     return icons[category] || "pin"
   }

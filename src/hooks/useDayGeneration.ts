@@ -109,7 +109,27 @@ async function enrichDayWithPlaces(
   day: ItineraryDay,
   fullPlaces: Record<string, unknown> | null
 ): Promise<ItineraryDay> {
-  if (!fullPlaces) return day
+  if (!fullPlaces) {
+    console.log('[LINKEO DEBUG CLIENT] No hay fullPlaces para enrichment')
+    return day
+  }
+
+  // DEBUG: Log before enrich
+  interface TimelineWithSuggestion extends TimelineEntry {
+    suggestedPlaceId?: string
+  }
+  const suggestedIds = (day.timeline as TimelineWithSuggestion[])
+    .filter(t => t.suggestedPlaceId)
+    .map(t => ({
+      activity: t.activity,
+      suggestedPlaceId: t.suggestedPlaceId
+    }))
+
+  console.log('[LINKEO DEBUG CLIENT] Día', day.day, '- Antes de enrich:', {
+    timelineItems: day.timeline.length,
+    withSuggestedId: suggestedIds.length,
+    suggestedIds
+  })
 
   try {
     const response = await fetch('/api/ai/enrich-itinerary', {
@@ -124,7 +144,19 @@ async function enrichDayWithPlaces(
     if (!response.ok) return day
 
     const data = await response.json()
-    return data.itinerary?.[0] || day
+
+    // DEBUG: Log after enrich
+    const enrichedDay = data.itinerary?.[0]
+    if (enrichedDay) {
+      console.log('[LINKEO DEBUG CLIENT] Día', day.day, '- Después de enrich:', {
+        stats: data.stats,
+        linkedActivities: enrichedDay.timeline
+          .filter((t: TimelineEntry) => t.placeId)
+          .map((t: TimelineEntry) => ({ activity: t.activity, placeId: t.placeId }))
+      })
+    }
+
+    return enrichedDay || day
   } catch (error) {
     console.warn('[enrichDayWithPlaces] Failed:', error)
     return day
@@ -588,6 +620,14 @@ export function useDayGeneration(options: UseDayGenerationOptions) {
    * Resets retry count and starts fresh
    */
   const regenerateDay = useCallback(async (dayNumber: number) => {
+    // Check if we have the necessary state to regenerate
+    if (!plan || !summaryResultRef.current) {
+      console.error('[useDayGeneration] Cannot regenerate: missing plan or summary data')
+      console.error('[useDayGeneration] plan:', !!plan, 'summaryResult:', !!summaryResultRef.current)
+      options.onError?.('Cannot regenerate day: missing plan context. Try refreshing the page.')
+      return
+    }
+
     // Remove from failed days and reset retry count
     const newFailedDays = generationStateRef.current.failedDays.filter(
       f => f.dayNumber !== dayNumber
@@ -604,7 +644,7 @@ export function useDayGeneration(options: UseDayGenerationOptions) {
     // Small delay to ensure state update propagates
     await delay(100)
     await startDayGeneration(dayNumber)
-  }, [startDayGeneration, updateGenerationState])
+  }, [plan, startDayGeneration, updateGenerationState, options])
 
   /**
    * Check if we have a saved state that can be resumed
@@ -642,6 +682,7 @@ export function useDayGeneration(options: UseDayGenerationOptions) {
       dayStates[dayNumber]?.timeline || [],
     isAnyDayGenerating: Object.values(dayStates).some(s => s.status === 'generating'),
     allDaysComplete: plan?.itinerary.every(d => dayStates[d.day]?.status === 'completed') ?? false,
+    canRegenerate: !!plan && !!summaryResultRef.current,
     canResume,
     getGenerationState: () => generationStateRef.current,
   }
