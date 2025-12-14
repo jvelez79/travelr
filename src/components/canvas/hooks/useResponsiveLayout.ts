@@ -10,14 +10,34 @@ interface ResponsiveLayout {
   showRightPanel: boolean // Desktop and tablet
 }
 
+// Get initial layout - mobile-first for SSR to prevent flash
+const getInitialLayout = (): ResponsiveLayout => {
+  // SSR: default to mobile to prevent layout flash on mobile devices
+  if (typeof window === 'undefined') {
+    return {
+      isDesktop: false,
+      isTablet: false,
+      isMobile: true,
+      showSidebar: false,
+      showRightPanel: false,
+    }
+  }
+  // Client: detect actual viewport immediately
+  const width = window.innerWidth
+  const isDesktop = width > 1024
+  const isTablet = width >= 768 && width <= 1024
+  const isMobile = width < 768
+  return {
+    isDesktop,
+    isTablet,
+    isMobile,
+    showSidebar: isDesktop,
+    showRightPanel: isDesktop || isTablet,
+  }
+}
+
 export function useResponsiveLayout(): ResponsiveLayout {
-  const [layout, setLayout] = useState<ResponsiveLayout>({
-    isDesktop: true,
-    isTablet: false,
-    isMobile: false,
-    showSidebar: true,
-    showRightPanel: true,
-  })
+  const [layout, setLayout] = useState<ResponsiveLayout>(getInitialLayout)
 
   useEffect(() => {
     const updateLayout = () => {

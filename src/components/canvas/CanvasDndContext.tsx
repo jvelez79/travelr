@@ -5,6 +5,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -61,13 +62,21 @@ export function CanvasDndProvider({
 }: CanvasDndProviderProps) {
   const [activeItem, setActiveItem] = useState<DragData | null>(null)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Slightly higher to avoid accidental drags
-      },
-    })
-  )
+  // Declare sensors separately to maintain consistent hook order
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8, // Slightly higher to avoid accidental drags
+    },
+  })
+
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 200, // Wait 200ms before activating to avoid accidental touch triggers
+      tolerance: 8, // Allow 8px movement during delay
+    },
+  })
+
+  const sensors = useSensors(pointerSensor, touchSensor)
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event

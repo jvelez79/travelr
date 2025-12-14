@@ -519,8 +519,9 @@ export function PlaceDetailPanel({
   return (
     <div
       className={`
-        absolute right-4 top-4 bottom-4 w-96
-        bg-background rounded-xl shadow-xl border border-border
+        absolute inset-0 md:right-4 md:top-4 md:bottom-4 md:left-auto
+        w-full md:w-96 md:max-w-[calc(100vw-2rem)]
+        bg-background md:rounded-xl shadow-xl md:border md:border-border
         overflow-hidden z-10
         transition-all duration-300 ease-out
         ${isOpen ? "translate-x-0 opacity-100" : "translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none"}

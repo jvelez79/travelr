@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
+import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Search, X, Star, Clock, Filter, Loader2 } from "lucide-react"
+import { ChevronDown, Search, X, Star, Clock, Filter, Loader2, Map, List } from "lucide-react"
 import { DiscoveryChips } from "./DiscoveryChips"
 import { PlaceCard, PlaceCardSkeleton } from "./PlaceCard"
 import { ExploreMap } from "./ExploreMap"
@@ -98,6 +99,8 @@ export function ExploreModal({
   const [showDetailPanel, setShowDetailPanel] = useState(false)
   const [minRating, setMinRating] = useState<number | null>(null)
   const [openNowFilter, setOpenNowFilter] = useState(false)
+  // Mobile view toggle: 'list' or 'map'
+  const [mobileViewMode, setMobileViewMode] = useState<'list' | 'map'>('list')
 
   // Geocoding state
   const [locationCoords, setLocationCoords] = useState<Coordinates | null>(null)
@@ -289,24 +292,79 @@ export function ExploreModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="!max-w-[95vw] !w-[95vw] !max-h-[95vh] !h-[95vh] p-0 gap-0 overflow-hidden flex flex-col"
+        className={cn(
+          "p-0 gap-0 overflow-hidden flex flex-col",
+          // Mobile: full screen
+          "w-screen h-[100dvh] max-w-none max-h-none rounded-none",
+          // Tablet+: 95% viewport with rounded corners
+          "md:w-[95vw] md:max-w-[95vw] md:h-[95vh] md:max-h-[95vh] md:rounded-lg"
+        )}
         showCloseButton={false}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
-          {/* Close button */}
+        {/* Header - stacks on mobile */}
+        <div className="flex flex-col gap-2 px-3 py-3 border-b border-border bg-background md:flex-row md:items-center md:justify-between md:px-6 md:py-4">
+          {/* Mobile: Title first (centered) */}
+          <DialogTitle className="text-base font-semibold text-center md:hidden">
+            {mode === 'replace' && activityName ? (
+              <span>
+                Buscar: <span className="text-primary truncate">{activityName}</span>
+              </span>
+            ) : (
+              <span className="truncate">Explorar en {dayLocation || tripDestination}</span>
+            )}
+          </DialogTitle>
+
+          {/* Mobile: Row with close button and day selector */}
+          <div className="flex items-center justify-between md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="gap-1.5"
+            >
+              <X className="w-4 h-4" />
+              <span>Cerrar</span>
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  Día {selectedDay}
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {availableDays.length > 0 ? (
+                  availableDays.map((day) => (
+                    <DropdownMenuItem
+                      key={day.number}
+                      onClick={() => handleDayChange(day.number)}
+                      className={selectedDay === day.number ? "bg-muted" : ""}
+                    >
+                      Día {day.number} - {day.location}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem onClick={() => handleDayChange(dayNumber)}>
+                    Día {dayNumber} - {dayLocation}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Desktop: Original 3-column layout */}
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="gap-2"
+            className="gap-2 hidden md:inline-flex"
           >
             <X className="w-4 h-4" />
             <span>Cerrar</span>
           </Button>
 
-          {/* Title - contextual based on mode */}
-          <DialogTitle className="text-lg font-semibold">
+          <DialogTitle className="text-lg font-semibold hidden md:block">
             {mode === 'replace' && activityName ? (
               <span>
                 Buscar para: <span className="text-primary">{activityName}</span>
@@ -316,10 +374,9 @@ export function ExploreModal({
             )}
           </DialogTitle>
 
-          {/* Day selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 hidden md:inline-flex">
                 Día {selectedDay}
                 <ChevronDown className="w-4 h-4" />
               </Button>
@@ -345,34 +402,34 @@ export function ExploreModal({
         </div>
 
         {/* Search bar and filters */}
-        <div className="px-6 py-4 border-b border-border bg-background space-y-4">
-          {/* Search input */}
-          <div className="flex gap-3">
+        <div className="px-3 py-3 border-b border-border bg-background space-y-3 sm:px-4 sm:space-y-4 md:px-6 md:py-4">
+          {/* Search input - stacks on mobile */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder='Buscar "cascadas", "comida italiana", "tours"...'
+                placeholder='Buscar lugares...'
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="pl-10 h-12 text-base"
+                className="pl-10 h-11 text-sm sm:h-12 sm:text-base"
               />
             </div>
-            <Button onClick={handleSearch} size="lg" className="px-6">
+            <Button onClick={handleSearch} className="h-11 w-full sm:w-auto sm:h-12 sm:px-6">
               Buscar
             </Button>
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Filters - horizontal scroll on mobile */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide md:overflow-visible md:flex-wrap md:pb-0">
             {/* Rating filter */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className={`gap-2 ${minRating ? "border-primary text-primary" : ""}`}
+                  className={`gap-2 shrink-0 ${minRating ? "border-primary text-primary" : ""}`}
                 >
                   <Star className="w-4 h-4" />
                   {minRating ? `${minRating}+` : "Rating"}
@@ -397,10 +454,11 @@ export function ExploreModal({
               variant="outline"
               size="sm"
               onClick={() => setOpenNowFilter(!openNowFilter)}
-              className={`gap-2 ${openNowFilter ? "border-primary text-primary bg-primary/5" : ""}`}
+              className={`gap-2 shrink-0 whitespace-nowrap ${openNowFilter ? "border-primary text-primary bg-primary/5" : ""}`}
             >
               <Clock className="w-4 h-4" />
-              Abierto ahora
+              <span className="hidden sm:inline">Abierto ahora</span>
+              <span className="sm:hidden">Abierto</span>
             </Button>
 
             {/* Clear filters */}
@@ -434,21 +492,27 @@ export function ExploreModal({
             onValueChange={handleCategoryChange}
             className="w-full"
           >
-            <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsList className="w-full justify-start overflow-x-auto scrollbar-hide">
               {categories.map((cat) => (
-                <TabsTrigger key={cat.id} value={cat.id} className="gap-1.5">
-                  {cat.emoji && <span>{cat.emoji}</span>}
-                  <span>{cat.label}</span>
+                <TabsTrigger key={cat.id} value={cat.id} className="gap-1 shrink-0 px-2.5 sm:gap-1.5 sm:px-3">
+                  {cat.emoji && <span className="text-sm">{cat.emoji}</span>}
+                  <span className="text-xs sm:text-sm whitespace-nowrap">{cat.label}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
           </Tabs>
         </div>
 
-        {/* Main content: Split view */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left: Places grid */}
-          <div className="w-[60%] overflow-y-auto p-6 bg-muted/30">
+        {/* Main content: Split view with mobile toggle */}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Left: Places grid - full width on mobile, 60% on desktop */}
+          <div className={cn(
+            "overflow-y-auto bg-muted/30",
+            "p-3 sm:p-4 md:p-6",
+            "w-full md:w-[60%]",
+            // Hide when in map mode on mobile
+            mobileViewMode === 'map' && "hidden md:block"
+          )}>
             {/* Results count and active filter indicator */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
@@ -605,8 +669,15 @@ export function ExploreModal({
             )}
           </div>
 
-          {/* Right: Map or Detail panel */}
-          <div className="w-[40%] relative border-l border-border">
+          {/* Right: Map or Detail panel - full screen overlay on mobile */}
+          <div className={cn(
+            "relative",
+            // Mobile: absolute full screen when in map mode
+            "absolute inset-0 md:relative md:w-[40%]",
+            "md:border-l md:border-border",
+            // Hide when in list mode on mobile
+            mobileViewMode === 'list' && "hidden md:block"
+          )}>
             {showDetailPanel && selectedPlace ? (
               <div className="absolute inset-0 bg-background overflow-y-auto">
                 <PlaceDetailPanel
@@ -629,6 +700,19 @@ export function ExploreModal({
               />
             )}
           </div>
+
+          {/* FAB to toggle list/map view - mobile only */}
+          <Button
+            onClick={() => setMobileViewMode(v => v === 'list' ? 'map' : 'list')}
+            className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-lg md:hidden z-50"
+            size="icon"
+          >
+            {mobileViewMode === 'list' ? (
+              <Map className="w-5 h-5" />
+            ) : (
+              <List className="w-5 h-5" />
+            )}
+          </Button>
         </div>
 
         {/* Footer - subtle link for custom activity */}
