@@ -5,6 +5,7 @@ import { useCanvasContext } from "./CanvasContext"
 import { ViewModeToggle, type ViewMode } from "./ViewModeToggle"
 import { ItineraryEditor } from "@/components/planning/editor"
 import { ItineraryMapView } from "@/components/planning/editor/ItineraryMapView"
+import { AccommodationsView } from "@/components/accommodations"
 import type { GeneratedPlan, TimelineEntry } from "@/types/plan"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 
@@ -64,7 +65,7 @@ export function CentralPanel({
       </div>
 
       {/* Conditional Content */}
-      {viewMode === "timeline" ? (
+      {viewMode === "timeline" && (
         <ItineraryEditor
           plan={plan}
           onUpdatePlan={onUpdatePlan}
@@ -77,8 +78,12 @@ export function CentralPanel({
           onRegenerateDay={onRegenerateDay}
           onAccommodationClick={selectAccommodation}
         />
-      ) : (
+      )}
+      {viewMode === "map" && (
         <ItineraryMapView plan={plan} />
+      )}
+      {viewMode === "reservations" && (
+        <AccommodationsView plan={plan} onUpdatePlan={onUpdatePlan} />
       )}
     </div>
   )

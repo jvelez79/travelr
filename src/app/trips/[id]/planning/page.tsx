@@ -62,6 +62,7 @@ export default function PlanningPage() {
     regenerateDay,
     canRegenerate,
     hydrateFromSavedState,
+    updatePlan,
   } = useDayGeneration({
     tripId,
     onDayComplete: (dayNumber, day) => {
@@ -265,6 +266,8 @@ export default function PlanningPage() {
   const handleUpdatePlan = (updatedPlan: GeneratedPlan) => {
     // Update React state for immediate re-render
     setLocalPlan(updatedPlan)
+    // Also update the hook's internal plan state to keep them in sync
+    updatePlan(updatedPlan)
     // Persist to localStorage
     localStorage.setItem(`plan-${tripId}`, JSON.stringify(updatedPlan))
   }

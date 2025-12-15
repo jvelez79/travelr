@@ -379,3 +379,70 @@ WON'T HAVE (por ahora)
 ### Fase 6
 - next-pwa
 - React Native / Flutter (decisión pendiente)
+
+---
+
+## Features Pendientes de Elaborar
+
+Features identificados para implementar. Se detallarán y asignarán a una fase cuando se trabaje en ellos.
+
+| Feature | Descripción | Fase Sugerida |
+|---------|-------------|---------------|
+| Búsqueda de Vuelos | Sistema para buscar y comparar vuelos. Integración con APIs (Amadeus, Skyscanner, Kiwi) | Fase 3 |
+| Presupuesto (Budget) | Gestión del presupuesto del viaje. Tracking de gastos, límites, distribución por categoría | Fase 3 |
+| Equipaje | Gestión de listas de equipaje. Checklist de qué llevar, sugerencias según destino/clima | Fase 3 |
+| Documentos | Gestión de documentos de viaje (pasaportes, visas, reservaciones, seguros) | Fase 3 |
+
+---
+
+## Feature Implementado: Gestión de Alojamientos
+
+**Estado:** Implementado (2025-12-14)
+
+### Funcionalidades
+
+1. **Tab "Reservaciones"** en el canvas principal
+   - Vista de todas las reservaciones confirmadas
+   - Vista de sugerencias de AI
+   - Acceso desde `[Timeline] [Mapa] [Reservaciones]`
+
+2. **Upload de recibo (PDF/imagen)**
+   - Drag & drop o selección de archivo
+   - Extracción automática con Claude Vision
+   - Confirmación/edición de datos extraídos
+
+3. **Forward de email** (requiere configuración Resend)
+   - Dirección única por viaje: `trip-{id}@inbound.travelr.app`
+   - Webhook para procesar emails entrantes
+   - Extracción automática de confirmaciones
+
+### Datos extraídos
+- Nombre del hotel
+- Tipo (hotel, airbnb, hostel, resort, etc.)
+- Dirección, ciudad, país
+- Fechas check-in/check-out y horarios
+- Precio total y por noche
+- Número de confirmación
+- Plataforma de booking
+- Nombres de los huéspedes
+
+### API Routes
+- `POST /api/accommodations/extract` - Extraer datos de PDF/imagen
+- `POST /api/accommodations/inbound` - Webhook para emails (Resend)
+
+### Componentes
+- `AccommodationsView` - Vista principal
+- `AccommodationCard` - Card de reservación
+- `AddAccommodationModal` - Modal para agregar
+- `ReceiptUploader` - Upload de archivos
+- `ExtractedDataConfirmation` - Confirmar datos
+- `EmailForwardInstructions` - Instrucciones de email
+
+### Configuración requerida (para email forward)
+```env
+RESEND_API_KEY=re_xxxxx
+RESEND_WEBHOOK_SECRET=whsec_xxxxx
+RESEND_INBOUND_DOMAIN=inbound.travelr.app
+```
+
+*Última actualización: 2025-12-14*

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Star, DollarSign, SlidersHorizontal } from "lucide-react"
+import { Star, DollarSign, SlidersHorizontal, Waves } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -12,6 +12,18 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { HotelFilters } from "@/lib/hotels/types"
+
+// Common hotel amenities for filtering
+const HOTEL_AMENITIES = [
+  { id: "pool", label: "Piscina", keywords: ["pool", "piscina"] },
+  { id: "pet_friendly", label: "Pet Friendly", keywords: ["pet", "dog", "mascota"] },
+  { id: "gym", label: "Gimnasio", keywords: ["gym", "fitness", "gimnasio"] },
+  { id: "spa", label: "Spa", keywords: ["spa", "wellness"] },
+  { id: "restaurant", label: "Restaurante", keywords: ["restaurant", "dining", "restaurante"] },
+  { id: "wifi", label: "WiFi Gratis", keywords: ["wifi", "internet", "wi-fi"] },
+  { id: "parking", label: "Estacionamiento", keywords: ["parking", "estacionamiento"] },
+  { id: "breakfast", label: "Desayuno", keywords: ["breakfast", "desayuno"] },
+]
 
 interface HotelFiltersCompactProps {
   filters: HotelFilters
@@ -69,6 +81,18 @@ export function HotelFiltersCompact({
     })
   }
 
+  const toggleAmenity = (amenityKeyword: string) => {
+    const current = filters.amenities || []
+    const updated = current.includes(amenityKeyword)
+      ? current.filter((a) => a !== amenityKeyword)
+      : [...current, amenityKeyword]
+
+    onFiltersChange({
+      ...filters,
+      amenities: updated.length > 0 ? updated : undefined,
+    })
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-MX", {
       style: "currency",
@@ -80,7 +104,8 @@ export function HotelFiltersCompact({
   const hasActiveFilters =
     filters.priceRange ||
     (filters.hotelClass && filters.hotelClass.length > 0) ||
-    filters.rating
+    filters.rating ||
+    (filters.amenities && filters.amenities.length > 0)
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
@@ -187,6 +212,41 @@ export function HotelFiltersCompact({
                 <Star className="w-3 h-3 fill-current mr-2" />
                 {rating}+ estrellas
               </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Amenities Filter */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-9">
+            <Waves className="mr-2 h-4 w-4" />
+            Amenidades
+            {filters.amenities && filters.amenities.length > 0 && (
+              <span className="ml-1 text-xs text-muted-foreground">
+                ({filters.amenities.length})
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64" align="start">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Filtrar por amenidades</Label>
+            {HOTEL_AMENITIES.map((amenity) => (
+              <div key={amenity.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`amenity-${amenity.id}`}
+                  checked={(filters.amenities || []).includes(amenity.keywords[0])}
+                  onCheckedChange={() => toggleAmenity(amenity.keywords[0])}
+                />
+                <label
+                  htmlFor={`amenity-${amenity.id}`}
+                  className="text-sm cursor-pointer"
+                >
+                  {amenity.label}
+                </label>
+              </div>
             ))}
           </div>
         </PopoverContent>

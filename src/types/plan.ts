@@ -1,6 +1,7 @@
 // Types for AI-generated travel plans
 
 import type { PlaceCategory, AccessibilityOptions, ServingOptions } from './explore'
+import type { AccommodationReservation } from './accommodation'
 
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
 export type TravelPace = 'relaxed' | 'moderate' | 'active'
@@ -383,6 +384,9 @@ export interface GeneratedPlan {
   // Overview tab data
   flights?: FlightReservation[]
   savedPlaces?: SavedPlace[]
+
+  // Confirmed accommodation reservations (separate from AI suggestions)
+  accommodationReservations?: AccommodationReservation[]
 
   // AI metadata
   aiGenerated: {

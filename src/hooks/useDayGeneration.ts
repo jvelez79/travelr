@@ -599,6 +599,14 @@ export function useDayGeneration(options: UseDayGenerationOptions) {
   }, [plan, dayStates, options])
 
   /**
+   * Update the plan from external sources (e.g., adding accommodations, manual edits)
+   * This syncs external changes with the hook's internal state
+   */
+  const updatePlan = useCallback((updatedPlan: GeneratedPlan) => {
+    setPlan(updatedPlan)
+  }, [])
+
+  /**
    * Reset all state and clear persistence
    */
   const reset = useCallback(() => {
@@ -674,6 +682,7 @@ export function useDayGeneration(options: UseDayGenerationOptions) {
     reset,
     regenerateDay,
     hydrateFromSavedState,
+    updatePlan,
 
     // Helpers
     getDayStatus: (dayNumber: number): DayGenerationStatus =>
