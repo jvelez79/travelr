@@ -285,7 +285,7 @@ function CanvasLayoutInner({
   return (
     <CanvasDndProvider onDropPlaceOnDay={handleDropPlaceOnDay}>
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <CanvasHeader trip={trip} onStartOver={onStartOver} />
+      <CanvasHeader trip={trip} plan={plan} onStartOver={onStartOver} />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Desktop: visible, Mobile/Tablet: Sheet */}

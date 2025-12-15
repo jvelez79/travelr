@@ -88,6 +88,14 @@ Cuando te pida hacer testing del app, debes usar el Chrome DevTools MCP para hac
 └─────────────┴───────────────────────────────┴───────────────────┘
 ```
 
+## Gestión de Tareas (Linear)
+
+**IMPORTANTE:** Todas las tareas del proyecto se gestionan exclusivamente en **Linear** (equipo: Travelr_ai).
+
+- Usar Linear MCP para crear, actualizar y consultar tareas
+- No usar TodoWrite para tareas del proyecto - solo para planificación interna de sesión
+- Siempre sincronizar el progreso con Linear
+
 ## Notas Importantes
 
 - El AI Provider permite usar Claude Code CLI en desarrollo para aprovechar suscripción Max

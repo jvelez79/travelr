@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
 import { useCanvasContext } from "./CanvasContext"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
-import { HelpCircle, MoreVertical, RefreshCw, Download, X, Menu } from "lucide-react"
+import { HelpCircle, MoreVertical, RefreshCw, X, Menu } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ExportPDFButton } from "@/components/export/ExportPDFButton"
+import type { GeneratedPlan } from "@/types/plan"
 
 interface Trip {
   id: string
@@ -30,10 +32,11 @@ interface Trip {
 
 interface CanvasHeaderProps {
   trip: Trip
+  plan?: GeneratedPlan
   onStartOver: () => void
 }
 
-export function CanvasHeader({ trip, onStartOver }: CanvasHeaderProps) {
+export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
   const { isSidebarOpen, setSidebarOpen } = useCanvasContext()
   const { isMobile, isTablet, isDesktop } = useResponsiveLayout()
 
@@ -102,10 +105,9 @@ export function CanvasHeader({ trip, onStartOver }: CanvasHeaderProps) {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reiniciar planificacion
               </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar itinerario
-              </DropdownMenuItem>
+              {plan && (
+                <ExportPDFButton plan={plan} variant="dropdown-item" />
+              )}
               {!isDesktop && (
                 <>
                   <DropdownMenuSeparator />

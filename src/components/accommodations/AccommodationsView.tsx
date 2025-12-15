@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { AccommodationCard } from "./AccommodationCard"
 import { AddAccommodationModal } from "./AddAccommodationModal"
+import { HotelSearchModal } from "@/components/hotels/HotelSearchModal"
 import type { GeneratedPlan } from "@/types/plan"
 import type { AccommodationReservation } from "@/types/accommodation"
+import { calculateNights } from "@/types/accommodation"
+import type { HotelResult } from "@/lib/hotels/types"
 
 interface AccommodationsViewProps {
   plan: GeneratedPlan
@@ -16,6 +19,7 @@ interface AccommodationsViewProps {
 
 export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewProps) {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showHotelSearch, setShowHotelSearch] = useState(false)
 
   const reservations = plan.accommodationReservations || []
   const suggestions = plan.accommodation?.suggestions || []
@@ -49,8 +53,53 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
   }
 
   const handleOpenHotelSearch = () => {
-    // TODO: Open hotel search modal
-    console.log("Open hotel search")
+    setShowHotelSearch(true)
+  }
+
+  const handleHotelAddToPlan = (hotel: HotelResult) => {
+    const now = new Date().toISOString()
+    const nights = calculateNights(plan.trip.startDate, plan.trip.endDate)
+
+    // Map hotel type to AccommodationReservationType
+    const typeMap: Record<string, AccommodationReservation['type']> = {
+      'Hotel': 'hotel',
+      'Resort': 'resort',
+      'Hostel': 'hostel',
+      'Apartment': 'apartment',
+      'Vacation rental': 'vacation_rental',
+    }
+
+    const reservation: AccommodationReservation = {
+      id: crypto.randomUUID(),
+      tripId: plan.id,
+      name: hotel.name,
+      type: typeMap[hotel.type] || 'hotel',
+      address: hotel.location.address,
+      city: hotel.location.area || plan.trip.destination,
+      country: plan.trip.destination,
+      location: {
+        lat: hotel.location.lat,
+        lng: hotel.location.lng,
+      },
+      checkIn: plan.trip.startDate,
+      checkOut: plan.trip.endDate,
+      checkInTime: hotel.checkInTime,
+      checkOutTime: hotel.checkOutTime,
+      nights,
+      pricePerNight: hotel.price.perNight,
+      totalPrice: hotel.price.total,
+      currency: hotel.price.currency,
+      bookingPlatform: hotel.bookingLinks[0]?.provider,
+      bookingUrl: hotel.bookingLinks[0]?.url,
+      amenities: hotel.amenities,
+      images: hotel.images,
+      status: 'pending',
+      source: 'hotel_search',
+      createdAt: now,
+      updatedAt: now,
+    }
+
+    handleAddReservation(reservation)
   }
 
   const isEmpty = reservations.length === 0 && suggestions.length === 0
@@ -180,6 +229,17 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
         onClose={() => setShowAddModal(false)}
         onAddReservation={handleAddReservation}
         onOpenHotelSearch={handleOpenHotelSearch}
+      />
+
+      {/* Hotel Search Modal */}
+      <HotelSearchModal
+        open={showHotelSearch}
+        onOpenChange={setShowHotelSearch}
+        destination={plan.trip.destination}
+        checkIn={plan.trip.startDate}
+        checkOut={plan.trip.endDate}
+        adults={plan.trip.travelers}
+        onAddToPlan={handleHotelAddToPlan}
       />
     </div>
   )
