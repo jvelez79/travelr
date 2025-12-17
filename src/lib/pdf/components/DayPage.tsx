@@ -207,7 +207,7 @@ function formatDayDate(dateString: string): string {
 
 export function DayPage({ day, plan, pageNumber }: DayPageProps) {
   // Find accommodation for this day
-  const accommodation = plan.accommodation?.suggestions?.find((acc) => {
+  const accommodation = plan.accommodations?.find((acc) => {
     const checkIn = new Date(acc.checkIn)
     const checkOut = new Date(acc.checkOut)
     const dayDate = new Date(day.date)

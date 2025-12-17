@@ -348,33 +348,39 @@ export function PlanView({ plan, onUpdatePlan, dayGenerationStates, getDayStatus
         <TabsContent value="accommodation" className="mt-6">
           <div className="space-y-4">
             {/* Summary */}
-            <div className="bg-card rounded-xl border border-border p-6 text-center">
-              <p className="text-sm text-muted-foreground mb-1">Tipo de hospedaje seleccionado</p>
-              <p className="font-semibold capitalize text-lg">{plan.accommodation.type}</p>
-              <div className="mt-4 pt-4 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-1">Total estimado</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(plan.accommodation.totalCost)}</p>
+            {(plan.accommodations?.length || 0) > 0 && (
+              <div className="bg-card rounded-xl border border-border p-6 text-center">
+                <p className="text-sm text-muted-foreground mb-1">Hospedajes</p>
+                <p className="font-semibold text-lg">{plan.accommodations?.length || 0} alojamiento(s)</p>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground mb-1">Total estimado</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrency((plan.accommodations || []).reduce((sum, a) => sum + (a.pricePerNight || 0) * a.nights, 0))}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Suggestions */}
-            {plan.accommodation.suggestions.map((acc) => (
+            {/* Accommodations */}
+            {(plan.accommodations || []).map((acc) => (
               <div key={acc.id} className="bg-card rounded-xl border border-border overflow-hidden">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h3 className="text-lg font-semibold">{acc.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {acc.area} • {acc.nights} noches • {formatCurrency(acc.pricePerNight)}/noche
+                        {acc.area} • {acc.nights} noches{acc.pricePerNight ? ` • ${formatCurrency(acc.pricePerNight)}/noche` : ''}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-xl font-bold text-primary">
-                        {formatCurrency(acc.pricePerNight * acc.nights)}
-                      </span>
-                    </div>
+                    {acc.pricePerNight && (
+                      <div className="text-right">
+                        <span className="text-xl font-bold text-primary">
+                          {formatCurrency(acc.pricePerNight * acc.nights)}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">{acc.why}</p>
+                  {acc.whyThisPlace && <p className="text-sm text-muted-foreground mb-4">{acc.whyThisPlace}</p>}
                   <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from "react"
-import type { TimelineEntry, GeneratedPlan, AccommodationSuggestion } from "@/types/plan"
+import type { TimelineEntry } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 import type { PlaceCategory } from "@/types/explore"
 
 // Right panel state types
@@ -11,7 +12,7 @@ export type RightPanelState =
   | { type: 'search'; dayNumber: number; timeSlot?: string; replaceActivityId?: string; preselectedCategory?: PlaceCategory }
   | { type: 'ai'; dayNumber: number }
   | { type: 'customActivity'; dayNumber: number; timeSlot?: string }
-  | { type: 'accommodation'; accommodation: AccommodationSuggestion }
+  | { type: 'accommodation'; accommodation: Accommodation }
 
 // Explore modal state type
 export interface ExploreModalState {
@@ -57,7 +58,7 @@ interface CanvasContextType {
 
   // Quick actions
   selectActivity: (activity: TimelineEntry, dayNumber: number) => void
-  selectAccommodation: (accommodation: AccommodationSuggestion) => void
+  selectAccommodation: (accommodation: Accommodation) => void
   openSearch: (dayNumber: number, timeSlot?: string) => void
   openSearchToReplace: (dayNumber: number, activityId: string, category: PlaceCategory) => void
   openAISuggestions: (dayNumber: number) => void
@@ -104,7 +105,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     setRightPanelOpen(true) // Open panel on mobile
   }, [])
 
-  const selectAccommodation = useCallback((accommodation: AccommodationSuggestion) => {
+  const selectAccommodation = useCallback((accommodation: Accommodation) => {
     setRightPanelState({ type: 'accommodation', accommodation })
     setRightPanelOpen(true) // Open panel on mobile
   }, [])

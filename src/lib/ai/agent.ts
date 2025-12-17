@@ -11,6 +11,7 @@ import type {
   DocumentItem,
   PackingItem,
 } from '@/types/plan'
+import type { Accommodation } from '@/types/accommodation'
 import { parseAIResponse } from './utils'
 import { createMetricsCollector } from './metrics'
 
@@ -120,14 +121,14 @@ export async function generateInitialPlan(
       ...day,
       day: index + 1,
       // Map timeline entries with IDs
-      timeline: day.timeline?.map((tl, tlIdx) => ({
+      timeline: day.timeline?.map((tl) => ({
         ...tl,
-        id: tl.id || `tl-${index + 1}-${tlIdx + 1}`,
+        id: tl.id || crypto.randomUUID(),
       })) || [],
       // Map activities with IDs
-      activities: day.activities?.map((act, actIdx) => ({
+      activities: day.activities?.map((act) => ({
         ...act,
-        id: act.id || `act-${index + 1}-${actIdx + 1}`,
+        id: act.id || crypto.randomUUID(),
       })) || [],
       // Ensure meals has proper structure
       meals: day.meals || {},
@@ -137,9 +138,9 @@ export async function generateInitialPlan(
         mainActivities: [],
       },
       // Map important notes with IDs
-      importantNotes: day.importantNotes?.map((note, noteIdx) => ({
+      importantNotes: day.importantNotes?.map((note) => ({
         ...note,
-        id: note.id || `note-${index + 1}-${noteIdx + 1}`,
+        id: note.id || crypto.randomUUID(),
       })) || [],
     })),
     accommodation: {
@@ -305,22 +306,22 @@ function buildPlanFromParsedData(
     itinerary: ((parsed.itinerary as ItineraryDay[]) || []).map((day: ItineraryDay, index: number) => ({
       ...day,
       day: index + 1,
-      timeline: day.timeline?.map((tl, tlIdx) => ({
+      timeline: day.timeline?.map((tl) => ({
         ...tl,
-        id: tl.id || `tl-${index + 1}-${tlIdx + 1}`,
+        id: tl.id || crypto.randomUUID(),
       })) || [],
-      activities: day.activities?.map((act, actIdx) => ({
+      activities: day.activities?.map((act) => ({
         ...act,
-        id: act.id || `act-${index + 1}-${actIdx + 1}`,
+        id: act.id || crypto.randomUUID(),
       })) || [],
       meals: day.meals || {},
       summary: day.summary || {
         duration: '',
         mainActivities: [],
       },
-      importantNotes: day.importantNotes?.map((note, noteIdx) => ({
+      importantNotes: day.importantNotes?.map((note) => ({
         ...note,
-        id: note.id || `note-${index + 1}-${noteIdx + 1}`,
+        id: note.id || crypto.randomUUID(),
       })) || [],
     })),
     accommodation: {
@@ -500,19 +501,19 @@ export async function generatePlanProgressively(
         day: dayNumber,
         date: dateStr,
         title: dayParsed.title || dayTitle,
-        timeline: dayParsed.timeline?.map((tl: { id?: string }, tlIdx: number) => ({
+        timeline: dayParsed.timeline?.map((tl: { id?: string }) => ({
           ...tl,
-          id: tl.id || `tl-${dayNumber}-${tlIdx + 1}`,
+          id: tl.id || crypto.randomUUID(),
         })) || [],
-        activities: dayParsed.activities?.map((act: { id?: string }, actIdx: number) => ({
+        activities: dayParsed.activities?.map((act: { id?: string }) => ({
           ...act,
-          id: act.id || `act-${dayNumber}-${actIdx + 1}`,
+          id: act.id || crypto.randomUUID(),
         })) || [],
         meals: dayParsed.meals || {},
         summary: dayParsed.summary || { duration: '', mainActivities: [] },
-        importantNotes: dayParsed.importantNotes?.map((note: { id?: string }, noteIdx: number) => ({
+        importantNotes: dayParsed.importantNotes?.map((note: { id?: string }) => ({
           ...note,
-          id: note.id || `note-${dayNumber}-${noteIdx + 1}`,
+          id: note.id || crypto.randomUUID(),
         })) || [],
       })
     }
@@ -588,9 +589,9 @@ function createMinimalDay(
     date,
     title,
     timeline: [
-      { id: `tl-${dayNumber}-1`, time: '09:00', activity: 'Explorar', location: destination, icon: '🚶' },
-      { id: `tl-${dayNumber}-2`, time: '13:00', activity: 'Almuerzo', location: destination, icon: '🍽️' },
-      { id: `tl-${dayNumber}-3`, time: '19:00', activity: 'Cena', location: destination, icon: '🍽️' },
+      { id: crypto.randomUUID(), time: '09:00', activity: 'Explorar', location: destination, icon: '🚶' },
+      { id: crypto.randomUUID(), time: '13:00', activity: 'Almuerzo', location: destination, icon: '🍽️' },
+      { id: crypto.randomUUID(), time: '19:00', activity: 'Cena', location: destination, icon: '🍽️' },
     ],
     activities: [],
     meals: {},
@@ -624,14 +625,14 @@ export async function regenerateDay(
     ...parsed,
     day: dayNumber,
     // Map timeline entries with IDs
-    timeline: parsed.timeline?.map((tl: Partial<TimelineEntry>, tlIdx: number) => ({
+    timeline: parsed.timeline?.map((tl: Partial<TimelineEntry>) => ({
       ...tl,
-      id: tl.id || `tl-${dayNumber}-${tlIdx + 1}`,
+      id: tl.id || crypto.randomUUID(),
     })) || [],
     // Map activities with IDs
-    activities: parsed.activities?.map((act: { id?: string }, actIdx: number) => ({
+    activities: parsed.activities?.map((act: { id?: string }) => ({
       ...act,
-      id: act.id || `act-${dayNumber}-${actIdx + 1}`,
+      id: act.id || crypto.randomUUID(),
     })) || [],
     // Ensure meals has proper structure
     meals: parsed.meals || {},
@@ -641,9 +642,9 @@ export async function regenerateDay(
       mainActivities: [],
     },
     // Map important notes with IDs
-    importantNotes: parsed.importantNotes?.map((note: Partial<ImportantNote>, noteIdx: number) => ({
+    importantNotes: parsed.importantNotes?.map((note: Partial<ImportantNote>) => ({
       ...note,
-      id: note.id || `note-${dayNumber}-${noteIdx + 1}`,
+      id: note.id || crypto.randomUUID(),
     })) || [],
   }
 }
@@ -668,21 +669,21 @@ function createMinimalPlan(
       title: i === 0 ? `Llegada a ${trip.destination}` : i === totalDays - 1 ? 'Día de regreso' : `Día ${i + 1} en ${trip.destination}`,
       timeline: [
         {
-          id: `tl-${i + 1}-1`,
+          id: crypto.randomUUID(),
           time: '09:00',
           activity: i === 0 ? 'Llegada y check-in' : 'Explorar la zona',
           location: trip.destination,
           icon: i === 0 ? 'plane' : 'walk',
         },
         {
-          id: `tl-${i + 1}-2`,
+          id: crypto.randomUUID(),
           time: '13:00',
           activity: 'Almuerzo',
           location: trip.destination,
           icon: 'fork',
         },
         {
-          id: `tl-${i + 1}-3`,
+          id: crypto.randomUUID(),
           time: '19:00',
           activity: 'Cena',
           location: trip.destination,
@@ -861,6 +862,8 @@ export interface PlanSummaryResult {
     suggestions: AccommodationSuggestion[]
     totalCost: number
   }
+  // NEW: Unified accommodations array
+  accommodations?: Accommodation[]
   trip: TripBasics
   preferences: TravelPreferences
 }
@@ -888,6 +891,30 @@ export async function generatePlanSummaryOnly(
   const data = await response.json()
   const summaryParsed = data.summary
 
+  // Process unified accommodations array (new format)
+  const accommodations: Accommodation[] = (summaryParsed.accommodations || []).map(
+    (acc: Partial<Accommodation>, idx: number) => ({
+      id: acc.id || crypto.randomUUID(),
+      name: acc.name || 'Hotel',
+      type: acc.type || 'hotel',
+      area: acc.area || trip.destination,
+      checkIn: acc.checkIn || trip.startDate,
+      checkOut: acc.checkOut || trip.endDate,
+      checkInTime: acc.checkInTime,
+      checkOutTime: acc.checkOutTime,
+      nights: acc.nights || 1,
+      pricePerNight: acc.pricePerNight,
+      totalPrice: acc.totalPrice,
+      currency: acc.currency || 'USD',
+      origin: 'ai_suggestion' as const,
+      status: 'suggested' as const,
+      whyThisPlace: acc.whyThisPlace,
+      amenities: acc.amenities,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })
+  )
+
   return {
     summary: {
       title: summaryParsed.summary?.title || `Viaje a ${trip.destination}`,
@@ -906,6 +933,8 @@ export async function generatePlanSummaryOnly(
       })) || [],
       totalCost: summaryParsed.accommodation?.totalCost || 0,
     },
+    // Include unified accommodations array
+    accommodations,
     trip,
     preferences,
   }
@@ -917,7 +946,7 @@ export async function generatePlanSummaryOnly(
 export function createPartialPlanFromSummary(
   summaryResult: PlanSummaryResult
 ): GeneratedPlan {
-  const { summary, dayTitles, accommodation, trip, preferences } = summaryResult
+  const { summary, dayTitles, accommodation, accommodations, trip, preferences } = summaryResult
   const startDate = new Date(trip.startDate)
 
   // Create placeholder days
@@ -946,6 +975,8 @@ export function createPartialPlanFromSummary(
     preferences,
     summary,
     accommodation: accommodation as GeneratedPlan['accommodation'],
+    // Include unified accommodations array (new format)
+    accommodations: accommodations || [],
     itinerary,
     documentsStatus: 'idle',
     packingStatus: 'idle',

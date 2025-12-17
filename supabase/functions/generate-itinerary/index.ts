@@ -1598,6 +1598,30 @@ function createInitialPlan(
     }
   })
 
+  // Normalize and validate accommodation suggestions
+  const accommodationSuggestions = (summaryResult.accommodation?.suggestions || []).map(
+    (acc: Record<string, unknown>, idx: number) => ({
+      id: acc.id || `acc-${idx + 1}`,
+      name: acc.name || "Hotel por definir",
+      type: acc.type || preferences.accommodationType,
+      area: acc.area || "",
+      pricePerNight: acc.pricePerNight || 0,
+      why: acc.why || "",
+      nights: acc.nights || 1,
+      checkIn: acc.checkIn || trip.start_date,
+      checkOut: acc.checkOut || trip.end_date,
+      checkInTime: acc.checkInTime || "3:00 PM",
+      checkOutTime: acc.checkOutTime || "11:00 AM",
+      amenities: acc.amenities || [],
+      location: acc.location,
+    })
+  )
+
+  console.log("[createInitialPlan] Accommodation suggestions:", accommodationSuggestions.length)
+  accommodationSuggestions.forEach((acc: Record<string, unknown>) => {
+    console.log(`  - ${acc.name}: ${acc.checkIn} to ${acc.checkOut} (${acc.nights} nights)`)
+  })
+
   return {
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
@@ -1612,7 +1636,26 @@ function createInitialPlan(
     },
     preferences,
     summary: summaryResult.summary,
-    accommodation: summaryResult.accommodation,
+    // Unified accommodations array (new format)
+    accommodations: accommodationSuggestions.map((s: Record<string, unknown>) => ({
+      id: s.id || crypto.randomUUID(),
+      name: s.name,
+      type: s.type,
+      area: s.area,
+      checkIn: s.checkIn,
+      checkOut: s.checkOut,
+      checkInTime: s.checkInTime,
+      checkOutTime: s.checkOutTime,
+      nights: s.nights,
+      pricePerNight: s.pricePerNight,
+      currency: "USD",
+      origin: "ai_suggestion" as const,
+      status: "suggested" as const,
+      whyThisPlace: s.why,
+      amenities: s.amenities,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })),
     itinerary,
     documentsStatus: "idle",
     packingStatus: "idle",
@@ -1677,34 +1720,67 @@ function buildSummaryPrompt(
   preferences: QuickQuestionsResponse,
   totalDays: number
 ): string {
+  const totalNights = totalDays - 1
+
   return `Genera un resumen de viaje en JSON para:
 - Destino: ${trip.destination}
 - Origen: ${trip.origin}
-- Fechas: ${trip.start_date} al ${trip.end_date} (${totalDays} días)
+- Fecha inicio: ${trip.start_date}
+- Fecha fin: ${trip.end_date}
+- Total días: ${totalDays}
+- Total noches: ${totalNights}
 - Viajeros: ${trip.travelers}
 - Prioridad: ${preferences.priority}
 - Intereses: ${preferences.interests?.join(", ") || "general"}
 - Ritmo: ${preferences.pace}
 - Estilo: ${preferences.style}
-- Alojamiento: ${preferences.accommodationType}
+- Tipo alojamiento preferido: ${preferences.accommodationType}
+
+IMPORTANTE SOBRE ALOJAMIENTO:
+- Genera sugerencias de alojamiento que cubran TODAS las ${totalNights} noches del viaje
+- Si el viaje incluye múltiples zonas/regiones, divide el alojamiento estratégicamente
+- Cada sugerencia debe tener checkIn (fecha llegada) y checkOut (fecha salida) en formato YYYY-MM-DD
+- La primera noche es ${trip.start_date}, la última noche es el día antes de ${trip.end_date}
+- Los checkIn/checkOut deben ser consecutivos sin huecos
 
 Responde con este JSON exacto:
 {
   "summary": {
     "title": "Título atractivo del viaje",
-    "description": "Descripción breve del viaje",
-    "highlights": ["highlight1", "highlight2", "highlight3"],
+    "description": "Descripción breve del viaje (2-3 oraciones)",
+    "highlights": ["highlight1", "highlight2", "highlight3", "highlight4", "highlight5"],
     "totalDays": ${totalDays},
-    "totalNights": ${totalDays - 1},
-    "totalDriving": { "distance": "X km", "time": "X horas" }
+    "totalNights": ${totalNights},
+    "totalDriving": { "distance": "X km aproximados", "time": "X horas total" }
   },
-  "dayTitles": ["Título día 1", "Título día 2", ...],
+  "dayTitles": ["Título descriptivo día 1", "Título descriptivo día 2", "...uno por cada día"],
   "accommodation": {
     "type": "${preferences.accommodationType}",
-    "suggestions": [],
+    "suggestions": [
+      {
+        "id": "acc-1",
+        "name": "Nombre del hotel/alojamiento",
+        "type": "${preferences.accommodationType}",
+        "area": "Zona/barrio/región",
+        "pricePerNight": 80,
+        "why": "Por qué este alojamiento es ideal para esta parte del viaje",
+        "nights": 3,
+        "checkIn": "YYYY-MM-DD",
+        "checkOut": "YYYY-MM-DD",
+        "checkInTime": "3:00 PM",
+        "checkOutTime": "11:00 AM",
+        "amenities": ["WiFi", "Parking", "Pool", "etc"]
+      }
+    ],
     "totalCost": 0
   }
-}`
+}
+
+NOTAS:
+- dayTitles debe tener exactamente ${totalDays} títulos (uno por día)
+- suggestions debe cubrir las ${totalNights} noches completas
+- Si el destino tiene múltiples zonas interesantes, sugiere 2-3 alojamientos en diferentes áreas
+- Asegúrate que los checkOut de un alojamiento coincidan con el checkIn del siguiente`
 }
 
 function buildDayPrompt(

@@ -23,6 +23,7 @@ export interface HotelSearchParams {
 
 export interface HotelResult {
   id: string
+  hasPropertyToken: boolean // true if id is a valid SerpAPI property_token
   name: string
   type: string // "Hotel", "Resort", "Hostel", "Apartment"
   hotelClass?: number // 1-5 stars

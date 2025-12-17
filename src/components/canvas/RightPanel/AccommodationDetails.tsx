@@ -1,8 +1,9 @@
 "use client"
 
-import { Hotel, MapPin, Calendar, DollarSign, Wifi, Car, Coffee } from "lucide-react"
+import { Hotel, MapPin, Calendar, DollarSign, Wifi, Car, Coffee, CheckCircle, Clock, Sparkles } from "lucide-react"
 import { useCanvasContext } from "../CanvasContext"
-import type { AccommodationSuggestion } from "@/types/plan"
+import type { Accommodation, AccommodationStatus } from "@/types/accommodation"
+import { cn } from "@/lib/utils"
 
 // Map common amenities to icons
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -13,8 +14,36 @@ const AMENITY_ICONS: Record<string, React.ReactNode> = {
   "Breakfast": <Coffee className="w-3.5 h-3.5" />,
 }
 
+// Status configuration
+const STATUS_CONFIG: Record<AccommodationStatus, {
+  label: string
+  icon: React.ReactNode
+  className: string
+}> = {
+  suggested: {
+    label: "Sugerencia AI",
+    icon: <Sparkles className="w-3.5 h-3.5" />,
+    className: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300",
+  },
+  pending: {
+    label: "Pendiente",
+    icon: <Clock className="w-3.5 h-3.5" />,
+    className: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300",
+  },
+  confirmed: {
+    label: "Confirmado",
+    icon: <CheckCircle className="w-3.5 h-3.5" />,
+    className: "bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300",
+  },
+  cancelled: {
+    label: "Cancelado",
+    icon: null,
+    className: "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
+  },
+}
+
 interface AccommodationDetailsProps {
-  accommodation: AccommodationSuggestion
+  accommodation: Accommodation
 }
 
 export function AccommodationDetails({ accommodation }: AccommodationDetailsProps) {
@@ -64,9 +93,19 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
             </div>
             <div>
               <h4 className="font-semibold text-lg text-foreground">{accommodation.name}</h4>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                {getAccommodationTypeLabel(accommodation.type)}
-              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  {getAccommodationTypeLabel(accommodation.type)}
+                </span>
+                {/* Status Badge */}
+                <span className={cn(
+                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+                  STATUS_CONFIG[accommodation.status].className
+                )}>
+                  {STATUS_CONFIG[accommodation.status].icon}
+                  {STATUS_CONFIG[accommodation.status].label}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -77,9 +116,9 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">{accommodation.area}</p>
-              {accommodation.location && (
+              {accommodation.placeData?.coordinates && (
                 <a
-                  href={`https://www.google.com/maps?q=${accommodation.location.lat},${accommodation.location.lng}`}
+                  href={`https://www.google.com/maps?q=${accommodation.placeData.coordinates.lat},${accommodation.placeData.coordinates.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary hover:underline"
@@ -130,7 +169,7 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
         </div>
 
         {/* Price */}
-        {accommodation.pricePerNight > 0 && (
+        {accommodation.pricePerNight && accommodation.pricePerNight > 0 && (
           <div>
             <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               Precio
@@ -170,25 +209,25 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
           </div>
         )}
 
-        {/* Why this hotel */}
-        {accommodation.why && (
+        {/* Why this place (AI suggestions) */}
+        {accommodation.whyThisPlace && (
           <div>
             <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               Por que este lugar
             </h5>
             <p className="text-sm text-foreground bg-primary/5 rounded-lg p-3 border-l-2 border-primary">
-              {accommodation.why}
+              {accommodation.whyThisPlace}
             </p>
           </div>
         )}
 
-        {/* Confirmation note */}
-        {accommodation.confirmationNote && (
+        {/* User notes */}
+        {accommodation.notes && (
           <div>
             <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Notas de confirmacion
+              Notas
             </h5>
-            <p className="text-sm text-foreground">{accommodation.confirmationNote}</p>
+            <p className="text-sm text-foreground">{accommodation.notes}</p>
           </div>
         )}
       </div>

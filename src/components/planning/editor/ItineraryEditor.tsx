@@ -3,7 +3,8 @@
 import { useMemo } from "react"
 import { DayEditor } from "./DayEditor"
 import { getAccommodationForDay } from "@/lib/accommodation/utils"
-import type { GeneratedPlan, ItineraryDay, TimelineEntry, AccommodationSuggestion } from "@/types/plan"
+import type { GeneratedPlan, ItineraryDay, TimelineEntry } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface ItineraryEditorProps {
@@ -19,7 +20,7 @@ interface ItineraryEditorProps {
   registerDayRef?: (dayNumber: number, ref: HTMLDivElement | null) => void
   onRegenerateDay?: (dayNumber: number) => Promise<void>
   // Accommodation integration
-  onAccommodationClick?: (accommodation: AccommodationSuggestion) => void
+  onAccommodationClick?: (accommodation: Accommodation) => void
 }
 
 export function ItineraryEditor({
@@ -34,10 +35,10 @@ export function ItineraryEditor({
   onRegenerateDay,
   onAccommodationClick,
 }: ItineraryEditorProps) {
-  // Get accommodation suggestions from plan
-  const accommodationSuggestions = useMemo(() => {
-    return plan.accommodation?.suggestions || []
-  }, [plan.accommodation?.suggestions])
+  // Get accommodations from plan
+  const accommodations = useMemo(() => {
+    return plan.accommodations || []
+  }, [plan.accommodations])
 
   // Update a single day
   const updateDay = (dayNumber: number, updatedDay: ItineraryDay) => {
@@ -65,7 +66,7 @@ export function ItineraryEditor({
         const dayAccommodation = getAccommodationForDay(
           day.date,
           day.day,
-          accommodationSuggestions
+          accommodations
         )
 
         return (

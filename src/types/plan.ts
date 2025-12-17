@@ -1,7 +1,7 @@
 // Types for AI-generated travel plans
 
 import type { PlaceCategory, AccessibilityOptions, ServingOptions } from './explore'
-import type { AccommodationReservation } from './accommodation'
+import type { AccommodationReservation, Accommodation } from './accommodation'
 
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
 export type TravelPace = 'relaxed' | 'moderate' | 'active'
@@ -355,6 +355,7 @@ export interface GeneratedPlan {
 
   // Main sections (generated initially)
   itinerary: ItineraryDay[]
+  // @deprecated Use accommodations[] instead for unified accommodation management
   accommodation: {
     type: AccommodationType
     suggestions: AccommodationSuggestion[]
@@ -386,7 +387,12 @@ export interface GeneratedPlan {
   savedPlaces?: SavedPlace[]
 
   // Confirmed accommodation reservations (separate from AI suggestions)
+  // @deprecated Use accommodations[] instead
   accommodationReservations?: AccommodationReservation[]
+
+  // UNIFIED accommodations array (NEW)
+  // Contains both AI suggestions and user-added accommodations
+  accommodations?: Accommodation[]
 
   // AI metadata
   aiGenerated: {

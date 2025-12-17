@@ -174,7 +174,7 @@ function getIncludedItems(plan: GeneratedPlan): string[] {
   items.push('Itinerario detallado dia a dia')
 
   // Accommodation
-  if (plan.accommodation?.suggestions?.length > 0) {
+  if (plan.accommodations?.length && plan.accommodations.length > 0) {
     const nights = plan.summary.totalNights
     items.push(`${nights} noches de hospedaje sugerido`)
   }
@@ -269,7 +269,7 @@ export function MapPage({ plan, staticMapUrl }: MapPageProps) {
           {/* Rows */}
           {plan.itinerary.map((day, index) => {
             // Find accommodation for this day
-            const accommodation = plan.accommodation?.suggestions?.find((acc) => {
+            const accommodation = plan.accommodations?.find((acc) => {
               const checkIn = new Date(acc.checkIn)
               const dayDate = new Date(day.date)
               return checkIn <= dayDate && new Date(acc.checkOut) > dayDate

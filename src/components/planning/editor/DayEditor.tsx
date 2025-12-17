@@ -12,7 +12,8 @@ import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
 import { useAccommodationTransport } from "@/hooks/useAccommodationTransport"
 import { cn } from "@/lib/utils"
-import type { ItineraryDay, TimelineEntry, AccommodationSuggestion } from "@/types/plan"
+import type { ItineraryDay, TimelineEntry } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 import type { DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface DayEditorProps {
@@ -28,8 +29,8 @@ interface DayEditorProps {
   registerRef?: (ref: HTMLDivElement | null) => void
   onRegenerate?: () => Promise<void>
   // Accommodation integration
-  accommodation?: AccommodationSuggestion | null
-  onAccommodationClick?: (accommodation: AccommodationSuggestion) => void
+  accommodation?: Accommodation | null
+  onAccommodationClick?: (accommodation: Accommodation) => void
 }
 
 export function DayEditor({
@@ -383,6 +384,7 @@ export function DayEditor({
               <>
                 <AccommodationBlock
                   accommodation={accommodation}
+                  dayDate={day.date}
                   onClick={() => onAccommodationClick?.(accommodation)}
                 />
                 {/* Transport from accommodation to first activity */}
@@ -391,7 +393,7 @@ export function DayEditor({
                     travelInfo={accommodationTransport}
                     fromLocation={{
                       name: accommodation.name,
-                      coordinates: accommodation.location
+                      coordinates: accommodation.placeData?.coordinates
                     }}
                     toLocation={{
                       name: firstActivity.location,

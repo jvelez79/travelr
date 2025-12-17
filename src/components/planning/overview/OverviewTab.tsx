@@ -6,6 +6,7 @@ import { FlightsSection } from "./FlightsSection"
 import { LodgingSection } from "./LodgingSection"
 import { PlacesToVisitSection } from "./PlacesToVisitSection"
 import type { GeneratedPlan, FlightReservation, SavedPlace } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 
 interface OverviewTabProps {
   plan: GeneratedPlan
@@ -13,9 +14,11 @@ interface OverviewTabProps {
 }
 
 export function OverviewTab({ plan, onUpdatePlan }: OverviewTabProps) {
+  const accommodations = plan.accommodations || []
+
   const counts = {
     flights: plan.flights?.length || 0,
-    lodging: plan.accommodation.suggestions.length,
+    lodging: accommodations.length,
     rentalCars: 0, // TODO: Add rental car support in the future
     restaurants: 0,
     attachments: 0,
@@ -62,35 +65,36 @@ export function OverviewTab({ plan, onUpdatePlan }: OverviewTabProps) {
   }
 
   const handleAddHotel = (hotel: any) => {
-    // Transform HotelResult to AccommodationSuggestion
-    const accommodation = {
-      id: hotel.id,
+    const nights = Math.ceil(
+      (new Date(plan.trip.endDate).getTime() -
+        new Date(plan.trip.startDate).getTime()) /
+        (1000 * 60 * 60 * 24)
+    )
+
+    // Transform HotelResult to Accommodation
+    const newAccommodation: Accommodation = {
+      id: hotel.id || crypto.randomUUID(),
       name: hotel.name,
-      type: hotel.type.toLowerCase() as "hotel" | "airbnb" | "hostel" | "mixed",
-      area: hotel.location.area || hotel.location.address,
-      pricePerNight: hotel.price.perNight,
-      why: `Hotel encontrado con búsqueda en ${hotel.location.area || ""}`,
-      nights: Math.ceil(
-        (new Date(plan.trip.endDate).getTime() -
-          new Date(plan.trip.startDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      ),
+      type: hotel.type?.toLowerCase() || "hotel",
+      area: hotel.location?.area || hotel.location?.address || "",
+      pricePerNight: hotel.price?.perNight,
+      nights,
       checkIn: plan.trip.startDate,
       checkOut: plan.trip.endDate,
       checkInTime: hotel.checkInTime,
       checkOutTime: hotel.checkOutTime,
       amenities: hotel.amenities,
+      currency: "USD",
+      origin: "user_added",
+      status: "pending",
+      whyThisPlace: `Hotel encontrado con búsqueda en ${hotel.location?.area || ""}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
 
     onUpdatePlan({
       ...plan,
-      accommodation: {
-        ...plan.accommodation,
-        suggestions: [...plan.accommodation.suggestions, accommodation],
-        totalCost:
-          plan.accommodation.totalCost +
-          accommodation.pricePerNight * accommodation.nights,
-      },
+      accommodations: [...accommodations, newAccommodation],
       updatedAt: new Date().toISOString(),
     })
   }
@@ -120,8 +124,7 @@ export function OverviewTab({ plan, onUpdatePlan }: OverviewTabProps) {
       />
 
       <LodgingSection
-        suggestions={plan.accommodation.suggestions}
-        totalCost={plan.accommodation.totalCost}
+        accommodations={accommodations}
         currency={plan.budget?.currency || 'USD'}
         tripData={{
           destination: plan.trip.destination,

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Loader2, AlertCircle, MapPin } from "lucide-react"
-import type { GeneratedPlan, AccommodationSuggestion } from "@/types/plan"
+import type { GeneratedPlan } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 
 interface ItineraryMapViewProps {
   plan: GeneratedPlan
@@ -18,20 +19,20 @@ interface TravelBase {
 }
 
 function extractTravelBases(plan: GeneratedPlan): TravelBase[] {
-  if (!plan.accommodation?.suggestions) return []
+  if (!plan.accommodations?.length) return []
 
-  return plan.accommodation.suggestions
+  return plan.accommodations
     .filter(
-      (acc): acc is AccommodationSuggestion & { location: { lat: number; lng: number } } =>
-        !!acc.location &&
-        typeof acc.location.lat === "number" &&
-        typeof acc.location.lng === "number" &&
-        !(acc.location.lat === 0 && acc.location.lng === 0)
+      (acc): acc is Accommodation & { placeData: { coordinates: { lat: number; lng: number } } } =>
+        !!acc.placeData?.coordinates &&
+        typeof acc.placeData.coordinates.lat === "number" &&
+        typeof acc.placeData.coordinates.lng === "number" &&
+        !(acc.placeData.coordinates.lat === 0 && acc.placeData.coordinates.lng === 0)
     )
     .map((acc, index) => ({
       id: acc.id,
       name: acc.area || acc.name,
-      location: { lat: acc.location.lat, lng: acc.location.lng },
+      location: { lat: acc.placeData.coordinates.lat, lng: acc.placeData.coordinates.lng },
       nights: acc.nights,
       order: index,
       checkIn: acc.checkIn,

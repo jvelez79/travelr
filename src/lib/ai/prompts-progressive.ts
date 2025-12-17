@@ -53,28 +53,56 @@ Genera JSON con esta estructura:
     "suggestions": [
       {
         "id": "acc-1",
-        "name": "Nombre del hospedaje",
+        "name": "Nombre EXACTO del hospedaje (para linking)",
         "type": "hotel",
-        "area": "Zona",
+        "area": "Zona/Ciudad",
         "location": {
           "lat": 10.4674,
           "lng": -84.6427
         },
         "pricePerNight": 80,
-        "why": "Razón",
+        "why": "Ubicación perfecta para...",
         "nights": 3,
         "checkIn": "YYYY-MM-DD",
         "checkOut": "YYYY-MM-DD",
-        "amenities": ["WiFi", "Pool"]
+        "checkInTime": "3:00 PM",
+        "checkOutTime": "11:00 AM",
+        "amenities": ["WiFi", "Pool", "Parking"]
       }
     ],
     "totalCost": 240
-  }
+  },
+  "accommodations": [
+    {
+      "id": "unified-acc-1",
+      "name": "Nombre EXACTO del hospedaje real",
+      "type": "hotel",
+      "area": "Zona/Ciudad específica",
+      "checkIn": "YYYY-MM-DD",
+      "checkOut": "YYYY-MM-DD",
+      "checkInTime": "3:00 PM",
+      "checkOutTime": "11:00 AM",
+      "nights": 3,
+      "pricePerNight": 80,
+      "currency": "USD",
+      "origin": "ai_suggestion",
+      "status": "suggested",
+      "whyThisPlace": "Ubicación perfecta para visitar...",
+      "amenities": ["WiFi", "Pool", "Parking"]
+    }
+  ]
 }
 
 IMPORTANTE:
 - dayTitles debe tener exactamente {totalDays} elementos
 - Cada título debe ser descriptivo: "Día X: [Actividad principal]"
+- Para accommodation.suggestions Y accommodations[]:
+  * USA NOMBRES EXACTOS de hoteles reales del destino (para poder linkearlo con Google Places)
+  * NO inventes nombres genéricos como "Hotel Central"
+  * Prefiere cadenas conocidas o boutiques con buenas reseñas
+  * Incluye AMBOS: "accommodation.suggestions" (legacy) Y "accommodations" (nuevo formato unificado)
+  * En "accommodations": SIEMPRE incluye origin="ai_suggestion" y status="suggested"
+  * Calcula "nights" correctamente basado en checkIn/checkOut
 - Responde SOLO con JSON válido`
 
 /**

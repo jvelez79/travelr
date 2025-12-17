@@ -262,8 +262,10 @@ function transformSerpAPIProperty(property: SerpAPIProperty): HotelResult | null
       : []
 
     // Build hotel result
+    const hasPropertyToken = !!property.property_token
     const hotel: HotelResult = {
       id: property.property_token || generateId(property.name),
+      hasPropertyToken,
       name: property.name,
       type: property.type || "Hotel",
       hotelClass: property.extracted_hotel_class,

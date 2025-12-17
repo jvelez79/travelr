@@ -25,8 +25,9 @@ export function PriceComparisonDialog({
   const [error, setError] = useState<string | null>(null)
 
   // Fetch detailed hotel info when dialog opens to get real OTA links
+  // Only fetch if we have a valid SerpAPI property token
   useEffect(() => {
-    if (open && hotel?.id) {
+    if (open && hotel?.id && hotel.hasPropertyToken) {
       setLoading(true)
       setError(null)
 
@@ -41,12 +42,17 @@ export function PriceComparisonDialog({
           }
         })
         .catch((err) => {
-          console.error("Error loading hotel details:", err)
-          setError("No se pudieron cargar los enlaces de reserva")
+          // Only log as warning (expected when property tokens expire or SerpAPI rate-limits)
+          console.warn("Hotel details fetch failed, using fallback:", err.message)
+          // Only show error to user if we have NO fallback booking links
+          if (!hotel.bookingLinks?.length) {
+            setError("No se pudieron cargar los enlaces de reserva")
+          }
+          // Otherwise silently use fallback booking links
         })
         .finally(() => setLoading(false))
     }
-  }, [open, hotel?.id])
+  }, [open, hotel?.id, hotel?.hasPropertyToken])
 
   // Reset state when dialog closes
   useEffect(() => {

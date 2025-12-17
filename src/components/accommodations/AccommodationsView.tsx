@@ -22,7 +22,7 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
   const [showHotelSearch, setShowHotelSearch] = useState(false)
 
   const reservations = plan.accommodationReservations || []
-  const suggestions = plan.accommodation?.suggestions || []
+  const accommodations = plan.accommodations || []
 
   const handleReservationClick = (reservation: AccommodationReservation) => {
     // TODO: Open details panel
@@ -102,7 +102,7 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
     handleAddReservation(reservation)
   }
 
-  const isEmpty = reservations.length === 0 && suggestions.length === 0
+  const isEmpty = reservations.length === 0 && accommodations.length === 0
 
   return (
     <div className="space-y-6">
@@ -177,35 +177,37 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
       )}
 
       {/* AI Suggestions */}
-      {suggestions.length > 0 && (
+      {accommodations.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-            Sugerencias de la AI ({suggestions.length})
+            Alojamientos ({accommodations.length})
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {suggestions.map((suggestion, index) => (
-              <Card key={`${suggestion.id}-${index}`} className="overflow-hidden">
+            {accommodations.map((accommodation, index) => (
+              <Card key={`${accommodation.id}-${index}`} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Sugerencia AI</p>
-                      <h4 className="font-semibold">{suggestion.name}</h4>
+                      <p className="text-xs text-muted-foreground mb-1">{accommodation.status === 'suggested' ? 'Sugerencia AI' : accommodation.status}</p>
+                      <h4 className="font-semibold">{accommodation.name}</h4>
                     </div>
-                    <span className="text-lg font-bold text-primary">
-                      ${suggestion.pricePerNight}/noche
-                    </span>
+                    {accommodation.pricePerNight && (
+                      <span className="text-lg font-bold text-primary">
+                        ${accommodation.pricePerNight}/noche
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    {suggestion.area} • {suggestion.nights} noches
+                    {accommodation.area} • {accommodation.nights} noches
                   </p>
-                  {suggestion.why && (
+                  {accommodation.whyThisPlace && (
                     <p className="text-sm italic text-muted-foreground">
-                      "{suggestion.why}"
+                      "{accommodation.whyThisPlace}"
                     </p>
                   )}
-                  {suggestion.amenities && suggestion.amenities.length > 0 && (
+                  {accommodation.amenities && accommodation.amenities.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {suggestion.amenities.slice(0, 3).map((amenity, i) => (
+                      {accommodation.amenities.slice(0, 3).map((amenity, i) => (
                         <span
                           key={i}
                           className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full"

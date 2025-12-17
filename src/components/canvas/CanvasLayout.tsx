@@ -129,7 +129,7 @@ function CanvasLayoutInner({
 
   // Get accommodation for the current day in the explore modal
   const dayAccommodation = (() => {
-    if (!exploreModalState?.dayNumber || !plan.accommodation?.suggestions?.length) {
+    if (!exploreModalState?.dayNumber || !plan.accommodations?.length) {
       return undefined
     }
 
@@ -139,8 +139,8 @@ function CanvasLayoutInner({
     currentDayDate.setDate(tripStartDate.getDate() + dayNumber - 1)
 
     // Find accommodation that covers this day (between checkIn and checkOut)
-    for (const acc of plan.accommodation.suggestions) {
-      if (!acc.location?.lat || !acc.location?.lng) continue
+    for (const acc of plan.accommodations) {
+      if (!acc.placeData?.coordinates?.lat || !acc.placeData?.coordinates?.lng) continue
 
       const checkIn = new Date(acc.checkIn)
       const checkOut = new Date(acc.checkOut)
@@ -150,8 +150,8 @@ function CanvasLayoutInner({
         return {
           name: acc.name,
           location: {
-            lat: acc.location.lat,
-            lng: acc.location.lng,
+            lat: acc.placeData.coordinates.lat,
+            lng: acc.placeData.coordinates.lng,
           },
         }
       }

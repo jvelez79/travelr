@@ -3,7 +3,8 @@
  * Generates static map images for PDF export
  */
 
-import type { GeneratedPlan, AccommodationSuggestion } from '@/types/plan'
+import type { GeneratedPlan } from '@/types/plan'
+import type { Accommodation } from '@/types/accommodation'
 
 interface TravelBase {
   name: string
@@ -15,19 +16,19 @@ interface TravelBase {
  * Extract travel bases from plan (same logic as ItineraryMapView)
  */
 export function extractTravelBases(plan: GeneratedPlan): TravelBase[] {
-  if (!plan.accommodation?.suggestions) return []
+  if (!plan.accommodations?.length) return []
 
-  return plan.accommodation.suggestions
+  return plan.accommodations
     .filter(
-      (acc): acc is AccommodationSuggestion & { location: { lat: number; lng: number } } =>
-        !!acc.location &&
-        typeof acc.location.lat === 'number' &&
-        typeof acc.location.lng === 'number' &&
-        !(acc.location.lat === 0 && acc.location.lng === 0)
+      (acc): acc is Accommodation & { placeData: { coordinates: { lat: number; lng: number } } } =>
+        !!acc.placeData?.coordinates &&
+        typeof acc.placeData.coordinates.lat === 'number' &&
+        typeof acc.placeData.coordinates.lng === 'number' &&
+        !(acc.placeData.coordinates.lat === 0 && acc.placeData.coordinates.lng === 0)
     )
     .map((acc, index) => ({
       name: acc.area || acc.name,
-      location: { lat: acc.location.lat, lng: acc.location.lng },
+      location: { lat: acc.placeData.coordinates.lat, lng: acc.placeData.coordinates.lng },
       order: index,
     }))
     .sort((a, b) => a.order - b.order)

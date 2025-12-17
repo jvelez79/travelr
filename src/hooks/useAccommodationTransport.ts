@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
-import type { AccommodationSuggestion, TimelineEntry, TravelInfo } from "@/types/plan"
+import type { TimelineEntry, TravelInfo } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 import {
   fetchDirections,
   calculateDistance,
@@ -23,7 +24,7 @@ interface UseAccommodationTransportResult {
  * @returns Object with travelInfo and loading state
  */
 export function useAccommodationTransport(
-  accommodation: AccommodationSuggestion | null,
+  accommodation: Accommodation | null,
   firstActivity: TimelineEntry | null
 ): UseAccommodationTransportResult {
   const [travelInfo, setTravelInfo] = useState<TravelInfo | null>(null)
@@ -41,9 +42,9 @@ export function useAccommodationTransport(
       return
     }
 
-    // Get coordinates
-    const accommodationCoords: Coordinates | null = accommodation.location
-      ? { lat: accommodation.location.lat, lng: accommodation.location.lng }
+    // Get coordinates from accommodation's placeData
+    const accommodationCoords: Coordinates | null = accommodation.placeData?.coordinates
+      ? { lat: accommodation.placeData.coordinates.lat, lng: accommodation.placeData.coordinates.lng }
       : null
 
     const activityCoords: Coordinates | null = firstActivity.placeData?.coordinates
@@ -102,8 +103,8 @@ export function useAccommodationTransport(
       isCancelled = true
     }
   }, [
-    accommodation?.location?.lat,
-    accommodation?.location?.lng,
+    accommodation?.placeData?.coordinates?.lat,
+    accommodation?.placeData?.coordinates?.lng,
     firstActivity?.placeData?.coordinates?.lat,
     firstActivity?.placeData?.coordinates?.lng,
   ])
