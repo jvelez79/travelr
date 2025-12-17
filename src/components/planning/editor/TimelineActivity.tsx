@@ -4,7 +4,6 @@ import { useState, useRef } from "react"
 import Image from "next/image"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { CheckCircle2 } from "lucide-react"
 import type { TimelineEntry } from "@/types/plan"
 import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { getActivityPixelBounds } from "@/lib/timelineUtils"
@@ -144,15 +143,6 @@ export function TimelineActivity({
             {activity.activity}
           </span>
 
-          {/* Google Place verified indicator */}
-          {hasPlaceLink && (
-            <div
-              className="flex-shrink-0"
-              title="Lugar verificado en Google"
-            >
-              <CheckCircle2 className="w-4 h-4 text-green-600" />
-            </div>
-          )}
 
           {/* Fixed time indicator */}
           {activity.isFixedTime && (

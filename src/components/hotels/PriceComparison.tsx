@@ -59,8 +59,8 @@ export function PriceComparison({
               className={`flex items-center justify-between p-4 rounded-lg border ${
                 isBestPrice
                   ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                  : "border-border bg-card"
-              } hover:shadow-sm transition-all`}
+                  : "border-border bg-card hover:border-primary/50 hover:bg-muted/30"
+              } hover:shadow-sm transition-all cursor-pointer`}
             >
               <div className="flex items-center gap-3 flex-1">
                 {/* Provider Logo or Name */}
@@ -99,7 +99,7 @@ export function PriceComparison({
 
                 {/* Best Price Badge */}
                 {isBestPrice && (
-                  <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+                  <Badge variant="default" className="bg-primary hover:bg-primary/90">
                     Mejor precio
                   </Badge>
                 )}
@@ -117,7 +117,7 @@ export function PriceComparison({
                 variant={isBestPrice ? "default" : "outline"}
                 size="sm"
                 asChild
-                className="ml-3"
+                className="ml-3 focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <a
                   href={link.url}

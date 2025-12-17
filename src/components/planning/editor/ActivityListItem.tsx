@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
 import type { TimelineEntry } from "@/types/plan"
 import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { PlaceHoverCard } from "./PlaceHoverCard"
@@ -122,20 +121,6 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
         )}
       </div>
 
-      {/* Duration badge */}
-      {duration > 0 && (
-        <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground">
-          {formatDuration(duration)}
-        </div>
-      )}
-
-      {/* Google Place verified indicator */}
-      {hasPlaceLink && (
-        <div className="flex-shrink-0" title="Lugar verificado en Google">
-          <CheckCircle2 className="w-4 h-4 text-green-600" />
-        </div>
-      )}
-
       {/* Fixed time indicator */}
       {activity.isFixedTime && (
         <span className="flex-shrink-0 text-muted-foreground" title="Hora fija">
@@ -145,9 +130,16 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
         </span>
       )}
 
-      {/* Actions */}
+      {/* Duration badge - slides left on hover to make room for actions */}
+      {duration > 0 && (
+        <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground transition-transform duration-200 ease-out group-hover/activity:-translate-x-16">
+          {formatDuration(duration)}
+        </div>
+      )}
+
+      {/* Actions - positioned absolutely on the right, appear on hover */}
       {!disabled && (
-        <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity">
+        <div className="absolute right-3 flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity duration-200">
           <button
             onClick={(e) => {
               e.stopPropagation()

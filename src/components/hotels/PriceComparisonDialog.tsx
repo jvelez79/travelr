@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ExternalLink, Loader2 } from "lucide-react"
+import { ExternalLink, Loader2, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { PriceComparison } from "./PriceComparison"
@@ -77,7 +77,7 @@ export function PriceComparisonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -89,14 +89,18 @@ export function PriceComparisonDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Hotel Image */}
+        {/* Hotel Images */}
         {hotel.images.length > 0 && (
-          <div className="relative h-48 overflow-hidden rounded-lg bg-muted -mt-2">
-            <img
-              src={hotel.images[0]}
-              alt={hotel.name}
-              className="w-full h-full object-cover"
-            />
+          <div className={`grid gap-2 -mt-2 ${hotel.images.length >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {hotel.images.slice(0, 2).map((img, i) => (
+              <div key={i} className="aspect-4/3 overflow-hidden rounded-lg bg-muted">
+                <img
+                  src={img}
+                  alt={`${hotel.name} - ${i + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
           </div>
         )}
 
@@ -111,7 +115,10 @@ export function PriceComparisonDialog({
           {hotel.rating && (
             <div>
               <p className="text-xs text-muted-foreground">Calificación</p>
-              <p className="font-semibold">{hotel.rating.toFixed(1)} / 5.0</p>
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span className="font-semibold">{hotel.rating.toFixed(1)}</span>
+              </div>
             </div>
           )}
           <div>

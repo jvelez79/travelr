@@ -141,6 +141,7 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 | `skill-zustand-canvas` | Canvas state management |
 | `skill-travel-domain` | Travel industry knowledge |
 | `skill-tdd-nextjs` | Quick MVP testing patterns |
+| `skill-ui-ux-travel-app` | UI/UX design system patterns and guidelines |
 
 ### Agents (`.claude/agents/`)
 
@@ -150,6 +151,8 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 | `full-stack-builder-agent` | Primary implementation |
 | `quick-reviewer-agent` | Pragmatic code review |
 | `debugger-agent` | Bug investigation and fixes |
+| `ux-system-designer-agent` | Design system guardian - generates UI patterns |
+| `ux-reviewer-agent` | UX quality gate - reviews UI implementations |
 
 ### Commands (`.claude/commands/`)
 
