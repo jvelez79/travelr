@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import { SYSTEM_PROMPT, GENERATE_PACKING_PROMPT, fillPrompt } from '@/lib/ai/prompts'
 import { parseAIResponse } from '@/lib/ai/utils'
 import type { PackingItem } from '@/types/plan'
@@ -54,10 +56,37 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     console.log(`[AI] generate-packing completed in ${duration}ms`)
 
+    // Log AI request
+    logAIRequest({
+      endpoint: '/api/ai/generate-packing',
+      provider: ai.name,
+      model: getModelForProvider(ai.name),
+      inputTokens: response.usage?.inputTokens ?? 0,
+      outputTokens: response.usage?.outputTokens ?? 0,
+      durationMs: duration,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { destination: trip.destination },
+    }).catch(console.error)
+
     return NextResponse.json({ packing: parsed.packing || [] })
   } catch (error) {
     const duration = Date.now() - startTime
     console.error(`[AI] generate-packing failed after ${duration}ms:`, error)
+
+    // Log error
+    logAIRequest({
+      endpoint: '/api/ai/generate-packing',
+      provider: 'unknown',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: duration,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
 
     const message = error instanceof Error ? error.message : 'Unknown error'
     const isTimeout = message.includes('timed out')

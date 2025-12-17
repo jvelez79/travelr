@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import { SYSTEM_PROMPT_PROGRESSIVE, GENERATE_PLAN_SUMMARY_PROMPT, fillPrompt, getAccommodationRules, getStyleRules, getPaceRules } from '@/lib/ai/prompts-progressive'
 import { parseAIResponse } from '@/lib/ai/utils'
 import type { TravelPreferences } from '@/types/plan'
@@ -76,6 +78,20 @@ export async function POST(request: NextRequest) {
       outputTokens: response.usage?.outputTokens,
     })
 
+    // Log AI request (fire and forget)
+    logAIRequest({
+      endpoint: '/api/ai/generate-plan-summary',
+      provider: ai.name,
+      model: getModelForProvider(ai.name),
+      inputTokens: response.usage?.inputTokens ?? 0,
+      outputTokens: response.usage?.outputTokens ?? 0,
+      durationMs: elapsed,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { destination: trip.destination, totalDays },
+    }).catch(console.error)
+
     return NextResponse.json({
       summary: parsed,
       totalDays,
@@ -83,7 +99,22 @@ export async function POST(request: NextRequest) {
       elapsed,
     })
   } catch (error) {
+    const elapsed = Date.now() - startTime
     console.error('[generate-plan-summary] Error:', error)
+
+    // Log error (fire and forget)
+    logAIRequest({
+      endpoint: '/api/ai/generate-plan-summary',
+      provider: 'unknown',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: elapsed,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
+
     return NextResponse.json(
       { error: 'Failed to generate plan summary' },
       { status: 500 }

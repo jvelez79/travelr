@@ -4,47 +4,114 @@ import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { QuickQuestions } from "@/components/planning/QuickQuestions"
 import { CanvasLayout } from "@/components/canvas"
 import { generateContextualQuestions } from "@/lib/ai/agent"
 import { getCachedPlan, cachePlan } from "@/lib/ai/cache"
+import { calculateTransportForTimeline } from "@/lib/transportUtils"
 import { createEmptyPlan } from "@/lib/plan/empty-plan"
 import {
   useDayGeneration,
   loadGenerationState,
   type DayGenerationStatus,
 } from "@/hooks/useDayGeneration"
+import { useTrip } from "@/hooks/useTrips"
+import { usePlan, useSavePlan } from "@/hooks/usePlan"
+import { useAuth } from "@/contexts/AuthContext"
 import type {
   GeneratedPlan,
   QuickQuestionsResponse,
   ContextualQuestion,
   ItineraryDay,
 } from "@/types/plan"
+import type { Trip as DbTrip } from "@/types/database"
 
 type PlanningMode = "guided" | "manual"
 
-interface Trip {
+// Helper to convert DB trip to UI format
+interface TripUI {
   id: string
   destination: string
   origin: string
   startDate: string
   endDate: string
   travelers: number
+  mode?: string | null
+}
+
+function dbTripToUI(trip: DbTrip): TripUI {
+  return {
+    id: trip.id,
+    destination: trip.destination,
+    origin: trip.origin,
+    startDate: trip.start_date,
+    endDate: trip.end_date,
+    travelers: trip.travelers ?? 1,
+    mode: trip.mode,
+  }
 }
 
 type PlanningStep = "loading" | "questions" | "generating-summary" | "viewing"
+
+// Helper to calculate transport for a single day and update plan
+async function calculateAndUpdateDayTransport(
+  currentPlan: GeneratedPlan,
+  dayNumber: number
+): Promise<GeneratedPlan> {
+  const day = currentPlan.itinerary.find(d => d.day === dayNumber)
+  if (!day || day.timeline.length < 2) return currentPlan
+
+  const timelineWithTransport = await calculateTransportForTimeline(day.timeline)
+
+  return {
+    ...currentPlan,
+    itinerary: currentPlan.itinerary.map(d =>
+      d.day === dayNumber ? { ...d, timeline: timelineWithTransport } : d
+    )
+  }
+}
+
+// Helper to calculate transport for all days in a plan
+async function calculateAllDaysTransport(
+  currentPlan: GeneratedPlan
+): Promise<GeneratedPlan> {
+  let updatedPlan = { ...currentPlan }
+
+  for (const day of currentPlan.itinerary) {
+    if (day.timeline.length >= 2) {
+      updatedPlan = await calculateAndUpdateDayTransport(updatedPlan, day.day)
+    }
+  }
+
+  return updatedPlan
+}
 
 export default function PlanningPage() {
   const params = useParams()
   const tripId = params.id as string
 
-  const [trip, setTrip] = useState<Trip | null>(null)
+  // Auth hook
+  const { user } = useAuth()
+
+  // Supabase hooks
+  const { trip: dbTrip, loading: tripLoading, error: tripError } = useTrip(tripId)
+  const { planData: savedPlanData, loading: planLoading } = usePlan(tripId)
+  const { savePlan, loading: savingPlan } = useSavePlan()
+
+  // Convert DB trip to UI format
+  const trip = dbTrip ? dbTripToUI(dbTrip) : null
+
   const [step, setStep] = useState<PlanningStep>("loading")
   const [contextualQuestions, setContextualQuestions] = useState<ContextualQuestion[]>([])
   const [error, setError] = useState<string | null>(null)
   const [preferences, setPreferences] = useState<QuickQuestionsResponse | null>(null)
   // Local plan state for manual updates (drag & drop, edits)
   const [localPlan, setLocalPlan] = useState<GeneratedPlan | null>(null)
+  // Track if initial load is done
+  const [initialLoadDone, setInitialLoadDone] = useState(false)
+  // Track if transport has been calculated for loaded plan
+  const [transportCalculated, setTransportCalculated] = useState(false)
 
   // Day generation hook
   const {
@@ -65,11 +132,22 @@ export default function PlanningPage() {
     updatePlan,
   } = useDayGeneration({
     tripId,
-    onDayComplete: (dayNumber, day) => {
+    userId: user?.id,
+    onDayComplete: async (dayNumber, day) => {
       console.log(`[planning] Day ${dayNumber} completed`)
-      // Save progress to localStorage
-      if (plan) {
-        localStorage.setItem(`plan-${tripId}`, JSON.stringify(plan))
+      // Calculate transport for the completed day and save to Supabase
+      if (plan && day.timeline.length >= 2) {
+        try {
+          const updatedPlan = await calculateAndUpdateDayTransport(plan, dayNumber)
+          setLocalPlan(updatedPlan)
+          await savePlan(tripId, updatedPlan as unknown as Record<string, unknown>)
+        } catch (error) {
+          console.error('[planning] Error calculating transport:', error)
+          // Still save the plan without transport
+          await savePlan(tripId, plan as unknown as Record<string, unknown>)
+        }
+      } else if (plan) {
+        await savePlan(tripId, plan as unknown as Record<string, unknown>)
       }
     },
     onAllComplete: (completedPlan) => {
@@ -97,26 +175,26 @@ export default function PlanningPage() {
 
   // Load trip data and check for saved generation state
   useEffect(() => {
-    const trips = JSON.parse(localStorage.getItem("trips") || "[]")
-    const found = trips.find((t: Trip) => t.id === tripId)
-    setTrip(found || null)
+    // Wait for both trip and plan to load from Supabase
+    if (tripLoading || planLoading || initialLoadDone) return
+
+    // Mark initial load as done
+    setInitialLoadDone(true)
 
     // Check for saved generation state first (for recovery)
     const savedGenerationState = loadGenerationState(tripId)
 
-    // Check if we already have a plan
-    const savedPlanData = localStorage.getItem(`plan-${tripId}`)
-
+    // Check if we already have a plan from Supabase
     if (savedPlanData) {
       // Load saved plan into local state
-      const loadedPlan = JSON.parse(savedPlanData) as GeneratedPlan
+      const loadedPlan = savedPlanData as unknown as GeneratedPlan
       setLocalPlan(loadedPlan)
 
       // Always hydrate from saved generation state if it exists
       // This ensures the hook's plan state is set for regenerateDay to work
       if (savedGenerationState) {
         console.log('[planning] Found saved generation state, hydrating...')
-        console.log('[planning] Loaded plan has', loadedPlan.itinerary.length, 'days')
+        console.log('[planning] Loaded plan has', loadedPlan.itinerary?.length || 0, 'days')
         console.log('[planning] Generation status:', savedGenerationState.status)
 
         // Restore preferences if saved
@@ -133,7 +211,7 @@ export default function PlanningPage() {
       }
 
       setStep("viewing")
-    } else if (found) {
+    } else if (trip) {
       // No plan exists yet - check if we have partial generation state (e.g., summary generated but lost plan)
       if (savedGenerationState?.summaryResult && savedGenerationState.status === 'ready_to_generate') {
         console.log('[planning] Found summary but no plan, recovering...')
@@ -149,19 +227,20 @@ export default function PlanningPage() {
         return
       }
 
-      // Check the planning mode
-      const mode = localStorage.getItem(`trip-mode-${tripId}`) as PlanningMode | null
+      // Check the planning mode from trip.mode (now in DB)
+      const mode = trip.mode as PlanningMode | null
 
       if (mode === "manual") {
-        // Create empty plan and go directly to viewing
+        // Create empty plan and save to Supabase
         const emptyPlan = createEmptyPlan({
-          destination: found.destination,
-          origin: found.origin,
-          startDate: found.startDate,
-          endDate: found.endDate,
-          travelers: found.travelers,
+          destination: trip.destination,
+          origin: trip.origin,
+          startDate: trip.startDate,
+          endDate: trip.endDate,
+          travelers: trip.travelers,
         })
-        localStorage.setItem(`plan-${tripId}`, JSON.stringify(emptyPlan))
+        savePlan(tripId, emptyPlan as unknown as Record<string, unknown>)
+        setLocalPlan(emptyPlan)
         setStep("viewing")
       } else {
         // Guided mode: Check if user already answered questions (preferences saved)
@@ -172,11 +251,57 @@ export default function PlanningPage() {
           setStep("generating-summary")
         } else {
           // Load contextual questions with full trip context
-          loadContextualQuestions(found)
+          loadContextualQuestions(trip)
         }
       }
     }
-  }, [tripId, hydrateFromSavedState])
+    // If trip is null after loading completes, set step to "viewing" to show "trip not found"
+    // This prevents infinite loading spinner when trip doesn't exist
+    if (!trip && !tripLoading && !planLoading) {
+      setStep("viewing")
+    }
+  }, [tripId, tripLoading, planLoading, savedPlanData, trip, initialLoadDone, hydrateFromSavedState, savePlan])
+
+  // Calculate transport for loaded plan (runs once after initial load)
+  useEffect(() => {
+    // Only run if:
+    // - Plan is loaded and has activities
+    // - Transport hasn't been calculated yet
+    // - We're in viewing mode
+    if (!localPlan || transportCalculated || step !== "viewing") return
+
+    // Check if any day needs transport calculation
+    const needsTransport = localPlan.itinerary.some(day => {
+      // Day has activities but first activity doesn't have travelToNext (except last activity)
+      if (day.timeline.length < 2) return false
+      // Check if first activity has transport info
+      const firstActivity = day.timeline[0]
+      return !firstActivity.travelToNext
+    })
+
+    if (!needsTransport) {
+      setTransportCalculated(true)
+      return
+    }
+
+    // Calculate transport for all days
+    const calculateTransport = async () => {
+      console.log('[planning] Calculating transport for loaded plan...')
+      try {
+        const planWithTransport = await calculateAllDaysTransport(localPlan)
+        setLocalPlan(planWithTransport)
+        setTransportCalculated(true)
+        // Save updated plan with transport info
+        await savePlan(tripId, planWithTransport as unknown as Record<string, unknown>)
+        console.log('[planning] Transport calculation complete')
+      } catch (error) {
+        console.error('[planning] Error calculating transport for loaded plan:', error)
+        setTransportCalculated(true) // Mark as done to avoid infinite retries
+      }
+    }
+
+    calculateTransport()
+  }, [localPlan, transportCalculated, step, tripId, savePlan])
 
   // Start day generation when we have a plan with empty days
   useEffect(() => {
@@ -194,7 +319,7 @@ export default function PlanningPage() {
     }
   }, [plan, step, dayStates, getDayStatus, isAnyDayGenerating, startDayGeneration])
 
-  const loadContextualQuestions = async (tripData: Trip) => {
+  const loadContextualQuestions = async (tripData: TripUI) => {
     try {
       const questions = await generateContextualQuestions(tripData)
       setContextualQuestions(questions)
@@ -225,16 +350,17 @@ export default function PlanningPage() {
 
     if (cachedPlan) {
       console.log('[planning] Using cached plan')
-      localStorage.setItem(`plan-${tripId}`, JSON.stringify(cachedPlan))
+      savePlan(tripId, cachedPlan as unknown as Record<string, unknown>)
+      setLocalPlan(cachedPlan)
       setStep("viewing")
       return
     }
 
-    // Start generating summary (fast ~10s)
+    // Start generating summary - plan updates via Realtime subscription
     setStep("generating-summary")
     setError(null)
 
-    const partialPlan = await generateSummary(
+    const success = await generateSummary(
       {
         destination: trip.destination,
         origin: trip.origin,
@@ -252,13 +378,12 @@ export default function PlanningPage() {
       responses  // Pass full preferences for persistence
     )
 
-    if (partialPlan) {
-      // Save partial plan
-      localStorage.setItem(`plan-${tripId}`, JSON.stringify(partialPlan))
-      // Go to viewing immediately - days will generate in background
+    if (success) {
+      // Go to viewing immediately - plan will update via Supabase Realtime
+      // No need to save plan here - the Edge Function handles DB updates
       setStep("viewing")
     } else {
-      // Error occurred
+      // Error occurred - stay on questions to allow retry
       setStep("questions")
     }
   }
@@ -268,12 +393,13 @@ export default function PlanningPage() {
     setLocalPlan(updatedPlan)
     // Also update the hook's internal plan state to keep them in sync
     updatePlan(updatedPlan)
-    // Persist to localStorage
-    localStorage.setItem(`plan-${tripId}`, JSON.stringify(updatedPlan))
+    // Persist to Supabase
+    savePlan(tripId, updatedPlan as unknown as Record<string, unknown>)
   }
 
-  const handleStartOver = () => {
-    localStorage.removeItem(`plan-${tripId}`)
+  const handleStartOver = async () => {
+    // Delete plan from Supabase will cascade from trip deletion
+    // For now, just reset local state and show questions again
     setLocalPlan(null)
     setStep("questions")
   }
@@ -282,7 +408,7 @@ export default function PlanningPage() {
   const displayPlan = plan || localPlan
 
   // Loading state
-  if (step === "loading") {
+  if (step === "loading" || tripLoading || planLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -408,6 +534,62 @@ export default function PlanningPage() {
             <p className="text-sm text-muted-foreground mt-4">
               Solo unos segundos más...
             </p>
+          </div>
+        )}
+
+        {/* Loading state while canvas prepares */}
+        {step === "viewing" && !displayPlan && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-8">
+            <div className="relative mb-4">
+              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <svg className="w-10 h-10 text-primary animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+              </div>
+              <div className="absolute inset-0 -m-2">
+                <svg className="w-24 h-24 animate-spin" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" className="text-border" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="70 200" className="text-primary" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="text-center space-y-2">
+              <h2 className="text-xl font-semibold">Cargando tu itinerario...</h2>
+              <p className="text-muted-foreground">Preparando el canvas de planificación</p>
+            </div>
+
+            {/* Skeleton preview of canvas layout */}
+            <div className="w-full max-w-4xl mt-8">
+              <div className="flex gap-4">
+                {/* Left sidebar skeleton */}
+                <div className="hidden md:block w-48 space-y-3">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+
+                {/* Center panel skeleton */}
+                <div className="flex-1 space-y-4">
+                  <Skeleton className="h-10 w-3/4" />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="border rounded-lg p-4 space-y-3">
+                      <Skeleton className="h-6 w-1/3" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right panel skeleton */}
+                <div className="hidden lg:block w-64 space-y-3">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>

@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import { SYSTEM_PROMPT, GENERATE_PLAN_PROMPT, fillPrompt } from '@/lib/ai/prompts'
 import type { TravelPreferences } from '@/types/plan'
 
@@ -18,6 +20,8 @@ interface GeneratePlanRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
     const body: GeneratePlanRequest = await request.json()
     const { trip, preferences } = body
@@ -51,6 +55,22 @@ export async function POST(request: NextRequest) {
         timeout: 300000, // 5 minutes for fallback
       })
 
+      const duration = Date.now() - startTime
+
+      // Log AI request (fallback path)
+      logAIRequest({
+        endpoint: '/api/ai/generate-plan-stream',
+        provider: ai.name,
+        model: getModelForProvider(ai.name),
+        inputTokens: response.usage?.inputTokens ?? 0,
+        outputTokens: response.usage?.outputTokens ?? 0,
+        durationMs: duration,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'success',
+        metadata: { destination: trip.destination, streaming: false },
+      }).catch(console.error)
+
       // Return as a single SSE event
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
@@ -74,6 +94,12 @@ export async function POST(request: NextRequest) {
     console.log('[generate-plan-stream] Starting streaming response')
     const encoder = new TextEncoder()
 
+    // Track usage for logging
+    let totalUsage = { inputTokens: 0, outputTokens: 0 }
+    const providerName = ai.name
+    const model = getModelForProvider(ai.name)
+    const metadata = { destination: trip.destination, streaming: true }
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -83,12 +109,51 @@ export async function POST(request: NextRequest) {
             maxTokens: 32000,
             temperature: 0.7,
           })) {
+            // Capture usage from done chunk
+            if (chunk.type === 'done' && chunk.usage) {
+              totalUsage.inputTokens = chunk.usage.inputTokens || 0
+              totalUsage.outputTokens = chunk.usage.outputTokens || 0
+            }
+
             const sseData = `data: ${JSON.stringify(chunk)}\n\n`
             controller.enqueue(encoder.encode(sseData))
           }
+
+          // Log successful stream completion
+          const duration = Date.now() - startTime
+          logAIRequest({
+            endpoint: '/api/ai/generate-plan-stream',
+            provider: providerName,
+            model,
+            inputTokens: totalUsage.inputTokens,
+            outputTokens: totalUsage.outputTokens,
+            durationMs: duration,
+            startedAt: new Date(startTime),
+            completedAt: new Date(),
+            status: 'success',
+            metadata,
+          }).catch(console.error)
+
           controller.close()
         } catch (error) {
           console.error('[generate-plan-stream] Stream error:', error)
+
+          // Log failed stream
+          const duration = Date.now() - startTime
+          logAIRequest({
+            endpoint: '/api/ai/generate-plan-stream',
+            provider: providerName,
+            model,
+            inputTokens: totalUsage.inputTokens,
+            outputTokens: totalUsage.outputTokens,
+            durationMs: duration,
+            startedAt: new Date(startTime),
+            completedAt: new Date(),
+            status: 'error',
+            errorMessage: String(error),
+            metadata,
+          }).catch(console.error)
+
           const errorChunk = { type: 'error', error: String(error) }
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorChunk)}\n\n`))
           controller.close()
@@ -104,7 +169,22 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    const duration = Date.now() - startTime
     console.error('[generate-plan-stream] Error:', error)
+
+    // Log error
+    logAIRequest({
+      endpoint: '/api/ai/generate-plan-stream',
+      provider: 'unknown',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: duration,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
+
     return new Response(
       JSON.stringify({ error: 'Failed to start stream' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
+import { AdminLink } from "@/components/AdminLink"
 
 // Canvas Mockup Component - Visual representation of the app
 function CanvasMockup() {
@@ -191,6 +192,7 @@ export default function Home() {
           <Logo href="/" size="md" />
 
           <div className="flex items-center gap-6">
+            <AdminLink variant="text" />
             <Link
               href="/trips"
               className="hidden sm:block text-sm text-muted-foreground hover:text-foreground transition-colors"

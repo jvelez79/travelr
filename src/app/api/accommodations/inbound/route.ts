@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import crypto from "crypto"
+import { logAIRequest } from "@/lib/ai/logging"
 import {
   buildEmailExtractionPrompt,
   parseExtractionResponse,
@@ -66,6 +67,10 @@ function extractTripIdFromEmail(email: string): string | null {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const startTime = Date.now()
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
+  let tripId: string | null = null
+
   try {
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
     const apiKey = process.env.ANTHROPIC_API_KEY
@@ -90,7 +95,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // Extract tripId from the "to" email address
     const toEmail = payload.to[0]
-    const tripId = extractTripIdFromEmail(toEmail)
+    tripId = extractTripIdFromEmail(toEmail)
 
     if (!tripId) {
       console.error("Could not extract tripId from email:", toEmail)
@@ -128,7 +133,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+        model,
         max_tokens: 2048,
         messages: [
           {
@@ -139,9 +144,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }),
     })
 
+    const durationMs = Date.now() - startTime
+
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Anthropic API error:", errorText)
+
+      // Log failed request
+      logAIRequest({
+        endpoint: '/api/accommodations/inbound',
+        provider: 'anthropic',
+        model,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'error',
+        errorMessage: errorText,
+        metadata: { tripId, source: 'email_forward' },
+      }).catch(console.error)
+
       return NextResponse.json(
         { error: "AI extraction failed" },
         { status: 500 }
@@ -150,6 +173,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const data = await response.json()
     const aiResponse = data.content?.[0]?.text
+
+    // Log successful request
+    logAIRequest({
+      endpoint: '/api/accommodations/inbound',
+      provider: 'anthropic',
+      model,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { tripId, source: 'email_forward' },
+    }).catch(console.error)
 
     if (!aiResponse) {
       return NextResponse.json(
@@ -207,7 +244,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       message: "Accommodation extracted successfully",
     })
   } catch (error) {
+    const durationMs = Date.now() - startTime
     console.error("Inbound email processing error:", error)
+
+    // Log error
+    logAIRequest({
+      endpoint: '/api/accommodations/inbound',
+      provider: 'anthropic',
+      model,
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      metadata: { tripId, source: 'email_forward' },
+    }).catch(console.error)
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

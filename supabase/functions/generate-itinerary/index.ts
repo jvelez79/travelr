@@ -129,6 +129,88 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 const DEFAULT_MODEL = "claude-sonnet-4-20250514"
 const MAX_RETRIES = 3
 
+// ============================================================
+// AI Logging - Pricing and Helper Functions
+// ============================================================
+
+interface TokenPricing {
+  inputPer1M: number
+  outputPer1M: number
+}
+
+const AI_PRICING: Record<string, TokenPricing> = {
+  'claude-sonnet-4-20250514': { inputPer1M: 3.0, outputPer1M: 15.0 },
+  'claude-3-5-sonnet-20241022': { inputPer1M: 3.0, outputPer1M: 15.0 },
+  'claude-3-opus-20240229': { inputPer1M: 15.0, outputPer1M: 75.0 },
+  'claude-3-haiku-20240307': { inputPer1M: 0.25, outputPer1M: 1.25 },
+  'claude-haiku-4-5': { inputPer1M: 0.8, outputPer1M: 4.0 },
+  'default': { inputPer1M: 3.0, outputPer1M: 15.0 },
+}
+
+function calculateCostCents(model: string, inputTokens: number, outputTokens: number): number {
+  const pricing = AI_PRICING[model] || AI_PRICING['default']
+  const inputCost = (inputTokens / 1_000_000) * pricing.inputPer1M
+  const outputCost = (outputTokens / 1_000_000) * pricing.outputPer1M
+  return Math.round((inputCost + outputCost) * 100)
+}
+
+interface AILogData {
+  endpoint: string
+  provider: string
+  model: string
+  tripId: string
+  userId?: string
+  inputTokens: number
+  outputTokens: number
+  durationMs: number
+  startedAt: Date
+  completedAt: Date
+  status: 'success' | 'error'
+  errorMessage?: string
+  metadata?: Record<string, unknown>
+}
+
+async function logAIRequestToSupabase(
+  supabase: ReturnType<typeof createClient>,
+  data: AILogData
+): Promise<void> {
+  try {
+    const costCents = calculateCostCents(data.model, data.inputTokens, data.outputTokens)
+
+    const { error } = await supabase.from('ai_request_logs').insert({
+      request_id: crypto.randomUUID(),
+      endpoint: data.endpoint,
+      provider: data.provider,
+      model: data.model,
+      user_id: data.userId || null,
+      trip_id: data.tripId || null,
+      input_tokens: data.inputTokens,
+      output_tokens: data.outputTokens,
+      cost_cents: costCents,
+      duration_ms: data.durationMs,
+      started_at: data.startedAt.toISOString(),
+      completed_at: data.completedAt.toISOString(),
+      status: data.status,
+      error_message: data.errorMessage || null,
+      metadata: {
+        ...data.metadata,
+        source: 'edge-function',
+      },
+    })
+
+    if (error) {
+      console.error('[logAIRequestToSupabase] Failed to log:', error)
+    }
+  } catch (err) {
+    console.error('[logAIRequestToSupabase] Error:', err)
+  }
+}
+
+// Global supabase client for logging (set in main handler)
+let globalSupabase: ReturnType<typeof createClient> | null = null
+let currentTripId: string | null = null
+let currentUserId: string | null = null
+
 // Helper: Calculate days between dates
 function calculateDays(startDate: string, endDate: string): number {
   const start = new Date(startDate)
@@ -160,6 +242,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Set global variables for AI logging
+    globalSupabase = supabase
+    currentTripId = tripId
+    currentUserId = userId
 
     // Route to appropriate handler
     switch (action) {
@@ -551,7 +638,9 @@ async function generateSummary(
     throw new Error("ANTHROPIC_API_KEY not configured")
   }
 
+  const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL
   const prompt = buildSummaryPrompt(trip, preferences, totalDays)
+  const startTime = Date.now()
 
   const response = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
@@ -561,7 +650,7 @@ async function generateSummary(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL,
+      model,
       max_tokens: 4000,
       temperature: 0.7,
       system: SYSTEM_PROMPT,
@@ -569,13 +658,53 @@ async function generateSummary(
     }),
   })
 
+  const durationMs = Date.now() - startTime
+
   if (!response.ok) {
     const error = await response.text()
+
+    // Log failed request
+    if (globalSupabase && currentTripId) {
+      logAIRequestToSupabase(globalSupabase, {
+        endpoint: 'edge-function/generate-summary',
+        provider: 'anthropic',
+        model,
+        tripId: currentTripId,
+        userId: currentUserId || undefined,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'error',
+        errorMessage: error,
+        metadata: { destination: trip.destination, totalDays },
+      }).catch(console.error)
+    }
+
     throw new Error(`Anthropic API error: ${error}`)
   }
 
   const data = await response.json()
   const content = data.content[0].text
+
+  // Log successful request
+  if (globalSupabase && currentTripId) {
+    logAIRequestToSupabase(globalSupabase, {
+      endpoint: 'edge-function/generate-summary',
+      provider: 'anthropic',
+      model,
+      tripId: currentTripId,
+      userId: currentUserId || undefined,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { destination: trip.destination, totalDays },
+    }).catch(console.error)
+  }
 
   return parseJSON<SummaryResult>(content, "summary")
 }
@@ -1080,7 +1209,9 @@ async function generateDayMetadata(
     throw new Error("ANTHROPIC_API_KEY not configured")
   }
 
+  const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL
   const prompt = buildMetadataPrompt(trip, preferences, dayNumber, dayTitle, date)
+  const startTime = Date.now()
 
   const response = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
@@ -1090,7 +1221,7 @@ async function generateDayMetadata(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL,
+      model,
       max_tokens: 1000,
       temperature: 0.7,
       system: SYSTEM_PROMPT,
@@ -1098,13 +1229,53 @@ async function generateDayMetadata(
     }),
   })
 
+  const durationMs = Date.now() - startTime
+
   if (!response.ok) {
     const error = await response.text()
+
+    // Log failed request
+    if (globalSupabase && currentTripId) {
+      logAIRequestToSupabase(globalSupabase, {
+        endpoint: 'edge-function/generate-day-metadata',
+        provider: 'anthropic',
+        model,
+        tripId: currentTripId,
+        userId: currentUserId || undefined,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'error',
+        errorMessage: error,
+        metadata: { dayNumber, destination: trip.destination },
+      }).catch(console.error)
+    }
+
     throw new Error(`Anthropic API error (metadata): ${error}`)
   }
 
   const data = await response.json()
   const content = data.content[0].text
+
+  // Log successful request
+  if (globalSupabase && currentTripId) {
+    logAIRequestToSupabase(globalSupabase, {
+      endpoint: 'edge-function/generate-day-metadata',
+      provider: 'anthropic',
+      model,
+      tripId: currentTripId,
+      userId: currentUserId || undefined,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { dayNumber, destination: trip.destination },
+    }).catch(console.error)
+  }
 
   return parseJSON<DayMetadata>(content, "metadata")
 }
@@ -1125,6 +1296,7 @@ async function generateSingleActivity(
     throw new Error("ANTHROPIC_API_KEY not configured")
   }
 
+  const model = Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL
   const prompt = buildActivityPrompt(
     trip,
     preferences,
@@ -1136,6 +1308,7 @@ async function generateSingleActivity(
     previousActivities,
     placesContext
   )
+  const startTime = Date.now()
 
   const response = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
@@ -1145,7 +1318,7 @@ async function generateSingleActivity(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: Deno.env.get("ANTHROPIC_MODEL") || DEFAULT_MODEL,
+      model,
       max_tokens: 500,
       temperature: 0.7,
       system: SYSTEM_PROMPT,
@@ -1153,13 +1326,53 @@ async function generateSingleActivity(
     }),
   })
 
+  const durationMs = Date.now() - startTime
+
   if (!response.ok) {
     const error = await response.text()
+
+    // Log failed request
+    if (globalSupabase && currentTripId) {
+      logAIRequestToSupabase(globalSupabase, {
+        endpoint: 'edge-function/generate-activity',
+        provider: 'anthropic',
+        model,
+        tripId: currentTripId,
+        userId: currentUserId || undefined,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'error',
+        errorMessage: error,
+        metadata: { dayNumber, slotIndex, timeSlot: timeSlot.slot, destination: trip.destination },
+      }).catch(console.error)
+    }
+
     throw new Error(`Anthropic API error (activity): ${error}`)
   }
 
   const data = await response.json()
   const content = data.content[0].text
+
+  // Log successful request
+  if (globalSupabase && currentTripId) {
+    logAIRequestToSupabase(globalSupabase, {
+      endpoint: 'edge-function/generate-activity',
+      provider: 'anthropic',
+      model,
+      tripId: currentTripId,
+      userId: currentUserId || undefined,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { dayNumber, slotIndex, timeSlot: timeSlot.slot, destination: trip.destination },
+    }).catch(console.error)
+  }
 
   return parseJSON<SingleActivity>(content, "activity")
 }

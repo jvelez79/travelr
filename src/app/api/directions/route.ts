@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 import type { TransportMethod, TravelInfo } from "@/types/plan"
+import type { Database, Json } from "@/types/database"
 
 const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY || ""
 const ROUTES_API_BASE = "https://routes.googleapis.com/directions/v2:computeRoutes"
+
+// Supabase client for server-side cache (using anon key for public cache)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Cache TTL: 30 days (shared cache benefits from longer TTL)
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
 
 // Map our transport methods to Google's travel modes
 const TRANSPORT_TO_GOOGLE_MODE: Record<TransportMethod, string> = {
@@ -10,6 +20,36 @@ const TRANSPORT_TO_GOOGLE_MODE: Record<TransportMethod, string> = {
   walking: "WALK",
   transit: "TRANSIT",
   none: "DRIVE", // Fallback
+}
+
+/**
+ * Generate a cache key from coordinates and transport mode
+ * Normalizes coordinates to 4 decimal places (~11m precision)
+ */
+function generateCacheKey(
+  fromLat: number,
+  fromLng: number,
+  toLat: number,
+  toLng: number,
+  mode: string
+): string {
+  const normalized = [
+    fromLat.toFixed(4),
+    fromLng.toFixed(4),
+    toLat.toFixed(4),
+    toLng.toFixed(4),
+    mode,
+  ].join("|")
+
+  // Simple hash function for shorter key
+  let hash = 0
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+
+  return `dir_${Math.abs(hash).toString(36)}`
 }
 
 interface GoogleRouteResponse {
@@ -72,6 +112,27 @@ export async function GET(request: NextRequest) {
       { error: "Google API not configured" },
       { status: 500 }
     )
+  }
+
+  // Generate cache key
+  const cacheKey = generateCacheKey(originLat, originLng, destLat, destLng, mode)
+
+  // Check Supabase cache first
+  try {
+    const { data: cached } = await supabase
+      .from("directions_cache")
+      .select("travel_info")
+      .eq("cache_key", cacheKey)
+      .gt("expires_at", new Date().toISOString())
+      .single()
+
+    if (cached?.travel_info) {
+      console.log("[directions] Cache HIT:", cacheKey)
+      return NextResponse.json(cached.travel_info as TravelInfo)
+    }
+  } catch {
+    // Cache miss or error - continue to fetch from Google
+    console.log("[directions] Cache MISS:", cacheKey)
   }
 
   try {
@@ -158,8 +219,32 @@ export async function GET(request: NextRequest) {
       method: mode,
     }
 
+    // Store in Supabase cache (fire and forget - don't block response)
+    supabase
+      .from("directions_cache")
+      .upsert(
+        {
+          cache_key: cacheKey,
+          from_lat: originLat,
+          from_lng: originLng,
+          to_lat: destLat,
+          to_lng: destLng,
+          mode,
+          travel_info: travelInfo as unknown as Json,
+          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        },
+        { onConflict: "cache_key" }
+      )
+      .then(({ error }) => {
+        if (error) {
+          console.error("[directions] Cache store error:", error.message)
+        } else {
+          console.log("[directions] Cached:", cacheKey)
+        }
+      })
+
     console.log(
-      "[directions] Success:",
+      "[directions] Google API:",
       `${originLat},${originLng} -> ${destLat},${destLng}`,
       `= ${distance} (${duration})`
     )

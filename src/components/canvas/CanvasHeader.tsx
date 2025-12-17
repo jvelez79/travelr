@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
 import { useCanvasContext } from "./CanvasContext"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
-import { HelpCircle, MoreVertical, RefreshCw, X, Menu } from "lucide-react"
+import { HelpCircle, MoreVertical, RefreshCw, X, Menu, LogOut, User, Sparkles } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -18,7 +19,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ExportPDFButton } from "@/components/export/ExportPDFButton"
+import { useAuth } from "@/contexts/AuthContext"
 import type { GeneratedPlan } from "@/types/plan"
 
 interface Trip {
@@ -39,6 +42,44 @@ interface CanvasHeaderProps {
 export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
   const { isSidebarOpen, setSidebarOpen } = useCanvasContext()
   const { isMobile, isTablet, isDesktop } = useResponsiveLayout()
+  const { user, signOut, isAdmin } = useAuth()
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (!user?.email) return "?"
+    return user.email.charAt(0).toUpperCase()
+  }
+
+  // Admin: Regenerate trip without going through questions
+  const handleRegenerate = async () => {
+    if (!confirm('¿Regenerar todo el itinerario? Esto reemplazará todos los días actuales.')) {
+      return
+    }
+
+    setIsRegenerating(true)
+    try {
+      const response = await fetch('/api/admin/regenerate-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tripId: trip.id, regenerateAll: true }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert(`Regeneración iniciada. Días: ${data.daysToRegenerate.join(', ')}`)
+        // The page will update via Realtime subscription
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error regenerating:', error)
+      alert('Error al regenerar el viaje')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
 
   const formatDateRange = () => {
     if (!trip.startDate || !trip.endDate) return "Fechas por definir"
@@ -108,6 +149,20 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
               {plan && (
                 <ExportPDFButton plan={plan} variant="dropdown-item" />
               )}
+              {/* Admin-only: Regenerate with AI */}
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className="text-orange-600 focus:text-orange-600"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isRegenerating ? 'Regenerando...' : 'Regenerar con AI'}
+                  </DropdownMenuItem>
+                </>
+              )}
               {!isDesktop && (
                 <>
                   <DropdownMenuSeparator />
@@ -132,6 +187,36 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
               </TooltipTrigger>
               <TooltipContent>Volver a mis viajes</TooltipContent>
             </Tooltip>
+          )}
+
+          {/* User menu */}
+          {user && (
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button className="ml-2 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-full">
+                      <Avatar size="sm">
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {getUserInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Mi cuenta</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium truncate">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar sesion
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </TooltipProvider>

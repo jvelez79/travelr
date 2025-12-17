@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import {
   SYSTEM_PROMPT_PROGRESSIVE,
   GENERATE_SINGLE_DAY_PROMPT,
@@ -113,13 +115,42 @@ export async function POST(request: NextRequest) {
       outputTokens: response.usage?.outputTokens,
     })
 
+    // Log AI request (fire and forget)
+    logAIRequest({
+      endpoint: '/api/ai/generate-day',
+      provider: ai.name,
+      model: getModelForProvider(ai.name),
+      inputTokens: response.usage?.inputTokens ?? 0,
+      outputTokens: response.usage?.outputTokens ?? 0,
+      durationMs: elapsed,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { dayNumber, dayTitle },
+    }).catch(console.error)
+
     return NextResponse.json({
       day: parsed,
       usage: response.usage,
       elapsed,
     })
   } catch (error) {
+    const elapsed = Date.now() - startTime
     console.error('[generate-day] Error:', error)
+
+    // Log error (fire and forget)
+    logAIRequest({
+      endpoint: '/api/ai/generate-day',
+      provider: 'unknown',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: elapsed,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
+
     return NextResponse.json(
       { error: 'Failed to generate day' },
       { status: 500 }

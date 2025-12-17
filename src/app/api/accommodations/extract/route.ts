@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { logAIRequest } from "@/lib/ai/logging"
 import {
   buildAccommodationExtractionPrompt,
   parseExtractionResponse,
@@ -19,6 +20,9 @@ const ALLOWED_TYPES: MediaType[] = [
 ]
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const startTime = Date.now()
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
+
   try {
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) {
@@ -96,7 +100,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+        model,
         max_tokens: 2048,
         messages: [
           {
@@ -107,9 +111,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }),
     })
 
+    const durationMs = Date.now() - startTime
+
     if (!response.ok) {
       const errorText = await response.text()
       console.error("Anthropic API error:", errorText)
+
+      // Log failed request
+      logAIRequest({
+        endpoint: '/api/accommodations/extract',
+        provider: 'anthropic',
+        model,
+        inputTokens: 0,
+        outputTokens: 0,
+        durationMs,
+        startedAt: new Date(startTime),
+        completedAt: new Date(),
+        status: 'error',
+        errorMessage: errorText,
+        metadata: { tripId, fileType: mediaType, fileSize: file.size },
+      }).catch(console.error)
+
       return NextResponse.json(
         { error: `AI extraction failed: ${response.status}` },
         { status: 500 }
@@ -118,6 +140,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const data = await response.json()
     const aiResponse = data.content?.[0]?.text
+
+    // Log successful request
+    logAIRequest({
+      endpoint: '/api/accommodations/extract',
+      provider: 'anthropic',
+      model,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { tripId, fileType: mediaType, fileSize: file.size },
+    }).catch(console.error)
 
     if (!aiResponse) {
       return NextResponse.json(
@@ -151,7 +187,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       },
     })
   } catch (error) {
+    const durationMs = Date.now() - startTime
     console.error("Extract accommodation error:", error)
+
+    // Log error
+    logAIRequest({
+      endpoint: '/api/accommodations/extract',
+      provider: 'anthropic',
+      model,
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }

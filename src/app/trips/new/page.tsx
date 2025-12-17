@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PlanningModeSelector, type PlanningMode } from "@/components/planning/PlanningModeSelector"
 import { PlaceAutocomplete } from "@/components/shared/PlaceAutocomplete"
+import { useCreateTrip, useUpdateTrip, useDeleteTrip } from "@/hooks/useTrips"
 
 interface TripFormData {
   destination: string
@@ -22,7 +23,6 @@ type Step = "form" | "mode-selection"
 export default function NewTripPage() {
   const router = useRouter()
   const [step, setStep] = useState<Step>("form")
-  const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState<TripFormData>({
     destination: "",
     origin: "",
@@ -31,6 +31,13 @@ export default function NewTripPage() {
     travelers: 1,
   })
   const [tripId, setTripId] = useState<string | null>(null)
+
+  // Supabase hooks
+  const { createTrip, loading: isCreating } = useCreateTrip()
+  const { updateTrip, loading: isUpdating } = useUpdateTrip()
+  const { deleteTrip, loading: isDeleting } = useDeleteTrip()
+
+  const isLoading = isCreating || isUpdating
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target
@@ -42,47 +49,40 @@ export default function NewTripPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    // Generate a temporary ID (will be replaced with Supabase)
-    const newTripId = crypto.randomUUID()
+    // Create trip in Supabase
+    const trip = await createTrip({
+      destination: formData.destination,
+      origin: formData.origin,
+      start_date: formData.startDate,
+      end_date: formData.endDate,
+      travelers: formData.travelers,
+      status: "planning",
+      current_phase: 1,
+    })
 
-    // Store in localStorage for now (will be replaced with Supabase)
-    const trip = {
-      id: newTripId,
-      ...formData,
-      status: "planning" as const,
-      currentPhase: 1,
-      createdAt: new Date().toISOString(),
+    if (trip) {
+      setTripId(trip.id)
+      setStep("mode-selection")
     }
-
-    const existingTrips = JSON.parse(localStorage.getItem("trips") || "[]")
-    localStorage.setItem("trips", JSON.stringify([...existingTrips, trip]))
-
-    setTripId(newTripId)
-    setIsLoading(false)
-    setStep("mode-selection")
   }
 
-  const handleModeSelect = (mode: PlanningMode) => {
+  const handleModeSelect = async (mode: PlanningMode) => {
     if (!tripId) return
 
-    setIsLoading(true)
+    // Update trip with selected mode
+    const updated = await updateTrip(tripId, { mode })
 
-    // Store the selected mode
-    localStorage.setItem(`trip-mode-${tripId}`, mode)
-
-    // Redirect to planning flow
-    router.push(`/trips/${tripId}/planning`)
+    if (updated) {
+      // Redirect to planning flow
+      router.push(`/trips/${tripId}/planning`)
+    }
   }
 
-  const handleBackToForm = () => {
+  const handleBackToForm = async () => {
     // Remove the trip we just created
     if (tripId) {
-      const existingTrips = JSON.parse(localStorage.getItem("trips") || "[]")
-      const filteredTrips = existingTrips.filter((t: { id: string }) => t.id !== tripId)
-      localStorage.setItem("trips", JSON.stringify(filteredTrips))
-      localStorage.removeItem(`trip-mode-${tripId}`)
+      await deleteTrip(tripId)
     }
     setTripId(null)
     setStep("form")

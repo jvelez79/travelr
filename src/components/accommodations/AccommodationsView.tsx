@@ -183,8 +183,8 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
             Sugerencias de la AI ({suggestions.length})
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {suggestions.map((suggestion) => (
-              <Card key={suggestion.id} className="overflow-hidden">
+            {suggestions.map((suggestion, index) => (
+              <Card key={`${suggestion.id}-${index}`} className="overflow-hidden">
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>

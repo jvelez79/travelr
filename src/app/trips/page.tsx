@@ -1,21 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
-
-interface Trip {
-  id: string
-  destination: string
-  origin: string
-  startDate: string
-  endDate: string
-  travelers: number
-  status: "planning" | "draft" | "completed"
-  currentPhase: number
-  createdAt: string
-}
+import { AdminLink } from "@/components/AdminLink"
+import { useTrips, useDeleteTrip } from "@/hooks/useTrips"
+import type { Trip, TripStatus } from "@/types/database"
 
 function formatDate(dateString: string): string {
   if (!dateString) return ""
@@ -41,7 +32,7 @@ function calculateDays(startDate: string, endDate: string): number | null {
   return diffDays
 }
 
-function getStatusBadge(status: Trip["status"]) {
+function getStatusBadge(status: string | null) {
   switch (status) {
     case "completed":
       return {
@@ -61,9 +52,9 @@ function getStatusBadge(status: Trip["status"]) {
   }
 }
 
-function TripCard({ trip, onDelete }: { trip: Trip; onDelete: (id: string) => void }) {
+function TripCard({ trip, onDelete, isDeleting }: { trip: Trip; onDelete: (id: string) => void; isDeleting: boolean }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const days = calculateDays(trip.startDate, trip.endDate)
+  const days = calculateDays(trip.start_date, trip.end_date)
   const status = getStatusBadge(trip.status)
 
   return (
@@ -111,7 +102,7 @@ function TripCard({ trip, onDelete }: { trip: Trip; onDelete: (id: string) => vo
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <span>{formatDateRange(trip.startDate, trip.endDate)}</span>
+            <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
           </div>
           {days && (
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -125,7 +116,7 @@ function TripCard({ trip, onDelete }: { trip: Trip; onDelete: (id: string) => vo
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span>{trip.travelers} {trip.travelers === 1 ? "viajero" : "viajeros"}</span>
+            <span>{trip.travelers ?? 1} {(trip.travelers ?? 1) === 1 ? "viajero" : "viajeros"}</span>
           </div>
         </div>
 
@@ -168,8 +159,9 @@ function TripCard({ trip, onDelete }: { trip: Trip; onDelete: (id: string) => vo
               size="sm"
               className="flex-1"
               onClick={() => onDelete(trip.id)}
+              disabled={isDeleting}
             >
-              Eliminar
+              {isDeleting ? "Eliminando..." : "Eliminar"}
             </Button>
           </div>
         </div>
@@ -242,33 +234,17 @@ function EmptyState() {
 }
 
 export default function TripsPage() {
-  const [trips, setTrips] = useState<Trip[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { trips, loading: isLoading, error, refetch } = useTrips()
+  const { deleteTrip, loading: isDeleting } = useDeleteTrip()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    // Load trips from localStorage
-    const storedTrips = localStorage.getItem("trips")
-    if (storedTrips) {
-      try {
-        const parsed = JSON.parse(storedTrips)
-        // Sort by createdAt descending (most recent first)
-        const sorted = parsed.sort((a: Trip, b: Trip) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-        setTrips(sorted)
-      } catch {
-        setTrips([])
-      }
+  const handleDeleteTrip = async (tripId: string) => {
+    setDeletingId(tripId)
+    const success = await deleteTrip(tripId)
+    if (success) {
+      refetch()
     }
-    setIsLoading(false)
-  }, [])
-
-  const handleDeleteTrip = (tripId: string) => {
-    const updatedTrips = trips.filter(trip => trip.id !== tripId)
-    setTrips(updatedTrips)
-    localStorage.setItem("trips", JSON.stringify(updatedTrips))
-    // Also remove mode preference
-    localStorage.removeItem(`trip-mode-${tripId}`)
+    setDeletingId(null)
   }
 
   return (
@@ -278,14 +254,17 @@ export default function TripsPage() {
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Logo href="/" size="md" />
 
-          <Link href="/trips/new">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Nuevo Viaje
-            </Button>
-          </Link>
+          <div className="flex items-center gap-3">
+            <AdminLink />
+            <Link href="/trips/new">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Nuevo Viaje
+              </Button>
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -315,6 +294,20 @@ export default function TripsPage() {
               <p className="text-muted-foreground">Cargando viajes...</p>
             </div>
           </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive mx-auto mb-4">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-muted-foreground mb-4">Error al cargar los viajes</p>
+              <Button variant="outline" onClick={() => refetch()}>
+                Reintentar
+              </Button>
+            </div>
+          </div>
         ) : trips.length === 0 ? (
           <EmptyState />
         ) : (
@@ -324,6 +317,7 @@ export default function TripsPage() {
                 key={trip.id}
                 trip={trip}
                 onDelete={handleDeleteTrip}
+                isDeleting={deletingId === trip.id}
               />
             ))}
           </div>

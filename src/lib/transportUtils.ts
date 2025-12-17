@@ -2,15 +2,11 @@
  * Transport Utilities
  *
  * Core logic for calculating transportation between activities.
- * Uses Google Maps Directions API with localStorage caching.
+ * Uses Google Maps Directions API with server-side Supabase caching.
+ * The cache is global and shared between all users.
  */
 
 import type { TimelineEntry, TravelInfo, TransportMethod } from "@/types/plan"
-import {
-  getCachedDirections,
-  cacheDirections,
-  clearExpiredDirectionsCache,
-} from "./directions-cache"
 
 export interface Coordinates {
   lat: number
@@ -99,7 +95,8 @@ export function shouldCalculateTransport(
 }
 
 /**
- * Fetch directions from API (with cache)
+ * Fetch directions from API
+ * The API handles caching server-side in Supabase (global cache)
  * Returns null if request fails (graceful degradation)
  */
 export async function fetchDirections(
@@ -107,12 +104,6 @@ export async function fetchDirections(
   to: Coordinates,
   mode: TransportMethod
 ): Promise<TravelInfo | null> {
-  // Check cache first
-  const cached = getCachedDirections(from.lat, from.lng, to.lat, to.lng, mode)
-  if (cached) {
-    return cached
-  }
-
   try {
     const params = new URLSearchParams({
       originLat: from.lat.toString(),
@@ -130,10 +121,6 @@ export async function fetchDirections(
     }
 
     const travelInfo: TravelInfo = await response.json()
-
-    // Cache the result
-    cacheDirections(travelInfo, from.lat, from.lng, to.lat, to.lng, mode)
-
     return travelInfo
   } catch (error) {
     console.error("[transportUtils] Failed to fetch directions:", error)
@@ -188,9 +175,6 @@ export async function calculateTransportForTimeline(
       return activity
     })
   }
-
-  // Clear expired cache entries before starting
-  clearExpiredDirectionsCache()
 
   // Build list of activity pairs that need transport calculation
   const pairs: Array<{

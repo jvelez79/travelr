@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import {
   SYSTEM_PROMPT_PROGRESSIVE,
   GENERATE_SINGLE_DAY_PROMPT,
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
     const writer = stream.writable.getWriter()
 
     // Start streaming in background
-    streamDayGeneration(ai, prompt, writer, encoder, dayNumber, startTime)
+    streamDayGeneration(ai, prompt, writer, encoder, dayNumber, startTime, trip.destination)
 
     return new Response(stream.readable, {
       headers: {
@@ -146,11 +148,15 @@ async function streamDayGeneration(
   writer: WritableStreamDefaultWriter<Uint8Array>,
   encoder: TextEncoder,
   dayNumber: number,
-  startTime: number
+  startTime: number,
+  destination: string
 ) {
   let fullContent = ''
   let lastSentIndex = 0
   let timelineEntries: unknown[] = []
+  let totalUsage = { inputTokens: 0, outputTokens: 0 }
+  const providerName = ai.name
+  const model = getModelForProvider(ai.name)
 
   try {
     // Send start event
@@ -188,17 +194,53 @@ async function streamDayGeneration(
           encoder.encode(`event: chunk\ndata: ${JSON.stringify({ length: fullContent.length })}\n\n`)
         )
       } else if (chunk.type === 'done') {
+        // Capture usage
+        if (chunk.usage) {
+          totalUsage.inputTokens = chunk.usage.inputTokens || 0
+          totalUsage.outputTokens = chunk.usage.outputTokens || 0
+        }
+
         // Parse final result
         const finalDay = parseCompleteDayJSON(fullContent, dayNumber)
 
         const elapsed = Date.now() - startTime
         console.log('[generate-day-stream] Day', dayNumber, 'completed in', elapsed, 'ms')
 
+        // Log successful stream
+        logAIRequest({
+          endpoint: '/api/ai/generate-day-stream',
+          provider: providerName,
+          model,
+          inputTokens: totalUsage.inputTokens,
+          outputTokens: totalUsage.outputTokens,
+          durationMs: elapsed,
+          startedAt: new Date(startTime),
+          completedAt: new Date(),
+          status: 'success',
+          metadata: { dayNumber, destination, streaming: true },
+        }).catch(console.error)
+
         // Send complete event with full day data
         await writer.write(
           encoder.encode(`event: complete\ndata: ${JSON.stringify({ day: finalDay, elapsed })}\n\n`)
         )
       } else if (chunk.type === 'error') {
+        // Log error
+        const elapsed = Date.now() - startTime
+        logAIRequest({
+          endpoint: '/api/ai/generate-day-stream',
+          provider: providerName,
+          model,
+          inputTokens: totalUsage.inputTokens,
+          outputTokens: totalUsage.outputTokens,
+          durationMs: elapsed,
+          startedAt: new Date(startTime),
+          completedAt: new Date(),
+          status: 'error',
+          errorMessage: chunk.error,
+          metadata: { dayNumber, destination, streaming: true },
+        }).catch(console.error)
+
         await writer.write(
           encoder.encode(`event: error\ndata: ${JSON.stringify({ error: chunk.error })}\n\n`)
         )
@@ -206,6 +248,23 @@ async function streamDayGeneration(
     }
   } catch (error) {
     console.error('[generate-day-stream] Stream error:', error)
+
+    // Log error
+    const elapsed = Date.now() - startTime
+    logAIRequest({
+      endpoint: '/api/ai/generate-day-stream',
+      provider: providerName,
+      model,
+      inputTokens: totalUsage.inputTokens,
+      outputTokens: totalUsage.outputTokens,
+      durationMs: elapsed,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: String(error),
+      metadata: { dayNumber, destination, streaming: true },
+    }).catch(console.error)
+
     await writer.write(
       encoder.encode(`event: error\ndata: ${JSON.stringify({ error: 'Stream failed' })}\n\n`)
     )
@@ -403,6 +462,20 @@ async function fallbackToNonStreaming(
 
   const day = parseCompleteDayJSON(response.content, dayNumber)
   const elapsed = Date.now() - startTime
+
+  // Log AI request (fallback path)
+  logAIRequest({
+    endpoint: '/api/ai/generate-day-stream',
+    provider: ai.name,
+    model: getModelForProvider(ai.name),
+    inputTokens: response.usage?.inputTokens ?? 0,
+    outputTokens: response.usage?.outputTokens ?? 0,
+    durationMs: elapsed,
+    startedAt: new Date(startTime),
+    completedAt: new Date(),
+    status: 'success',
+    metadata: { dayNumber, destination: trip.destination, streaming: false },
+  }).catch(console.error)
 
   // Return as SSE format for consistency
   const encoder = new TextEncoder()

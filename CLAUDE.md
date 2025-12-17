@@ -96,8 +96,82 @@ Cuando te pida hacer testing del app, debes usar el Chrome DevTools MCP para hac
 - No usar TodoWrite para tareas del proyecto - solo para planificación interna de sesión
 - Siempre sincronizar el progreso con Linear
 
+## Documentación con Context7
+
+**IMPORTANTE:** Siempre que vayas a configurar o interactuar con cualquier servicio o elemento de Supabase (Auth, Database, Storage, Edge Functions, RLS, etc.), debes usar el MCP server **Context7** para obtener la documentación actualizada de Supabase.
+
+```
+# Primero resolver el library ID
+mcp__context7__resolve-library-id: "supabase"
+
+# Luego obtener la documentación relevante
+mcp__context7__get-library-docs: context7CompatibleLibraryID="/supabase/supabase", topic="<tema específico>"
+```
+
+Esto asegura que siempre uses las APIs y patrones más recientes de Supabase.
+
 ## Notas Importantes
 
 - El AI Provider permite usar Claude Code CLI en desarrollo para aprovechar suscripción Max
 - Google Places es la fuente de verdad para todos los datos de lugares
 - El canvas usa Zustand para state management con optimistic updates
+- **Supabase**: Siempre consultar documentación via Context7 antes de implementar
+
+## Solo Dev Workflow System
+
+Este proyecto usa un sistema de workflow optimizado para desarrollo solo con skills, subagents y commands.
+
+### Quick Start
+
+```bash
+# Ship a feature from idea to production
+/feature-quick [idea description]
+
+# Example
+/feature-quick Add ability to share trips with friends via link
+```
+
+### Skills (`.claude/skills/`)
+
+| Skill | Purpose |
+|-------|---------|
+| `skill-feature-validation` | GO/NO-GO decisions on feature ideas |
+| `skill-nextjs-patterns` | Next.js 14 App Router conventions |
+| `skill-supabase-patterns` | Supabase integration patterns |
+| `skill-zustand-canvas` | Canvas state management |
+| `skill-travel-domain` | Travel industry knowledge |
+| `skill-tdd-nextjs` | Quick MVP testing patterns |
+
+### Agents (`.claude/agents/`)
+
+| Agent | Role |
+|-------|------|
+| `business-advisor-agent` | Feature validation (GO/MAYBE/NO-GO) |
+| `full-stack-builder-agent` | Primary implementation |
+| `quick-reviewer-agent` | Pragmatic code review |
+| `debugger-agent` | Bug investigation and fixes |
+
+### Commands (`.claude/commands/`)
+
+| Command | Description |
+|---------|-------------|
+| `/feature-quick` | Ship a feature from idea to production |
+
+### Workflow Phases
+
+```
+1. VALIDATE (15 min)  → business-advisor-agent → GO/NO-GO
+2. PLAN (15-30 min)   → Define implementation checklist
+3. BUILD (2-4 hours)  → full-stack-builder-agent → Feature branch
+4. REVIEW (10 min)    → quick-reviewer-agent → OK/FIXES
+5. SHIP              → Merge → Deploy → Monitor
+```
+
+### Key Reference Files
+
+When implementing new features, reference these existing patterns:
+- `src/hooks/useTrips.ts` - Hook pattern
+- `src/components/planning/PlanningModeSelector.tsx` - Component pattern
+- `src/app/api/generation/start/route.ts` - API route pattern
+- `src/contexts/AuthContext.tsx` - Auth context pattern
+- `src/components/canvas/CanvasContext.tsx` - Canvas state pattern

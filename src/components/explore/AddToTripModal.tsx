@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   Dialog,
@@ -13,8 +13,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { createSavedPlaceFromPlace } from "@/lib/places"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
+import { useTrips } from "@/hooks/useTrips"
+import { usePlan, useSavePlan } from "@/hooks/usePlan"
 import type { Place } from "@/types/explore"
-import type { SavedPlace, PlaceData, TimelineEntry } from "@/types/plan"
+import type { SavedPlace, PlaceData, TimelineEntry, GeneratedPlan } from "@/types/plan"
 
 // Convert a Place to PlaceData for activity linking
 function placeToPlaceData(place: Place): PlaceData {
@@ -37,14 +39,6 @@ function placeToPlaceData(place: Place): PlaceData {
   }
 }
 
-interface Trip {
-  id: string
-  destination: string
-  startDate: string
-  endDate: string
-  travelers: number
-}
-
 interface AddToTripModalProps {
   place: Place | null
   isOpen: boolean
@@ -53,40 +47,18 @@ interface AddToTripModalProps {
 
 export function AddToTripModal({ place, isOpen, onClose }: AddToTripModalProps) {
   const router = useRouter()
-  const [trips, setTrips] = useState<Trip[]>([])
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Load trips from localStorage
-  useEffect(() => {
-    if (isOpen) {
-      const savedTrips: Trip[] = []
+  // Use Supabase hooks
+  const { trips, loading: tripsLoading } = useTrips()
+  const { planData: selectedPlanData } = usePlan(selectedTripId)
+  const { savePlan } = useSavePlan()
 
-      // Scan localStorage for trip data
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i)
-        if (key?.startsWith("trip-")) {
-          try {
-            const tripData = JSON.parse(localStorage.getItem(key) || "{}")
-            if (tripData.destination) {
-              savedTrips.push({
-                id: key.replace("trip-", ""),
-                destination: tripData.destination,
-                startDate: tripData.startDate || "",
-                endDate: tripData.endDate || "",
-                travelers: tripData.travelers || 1,
-              })
-            }
-          } catch {
-            // Ignore invalid JSON
-          }
-        }
-      }
-
-      setTrips(savedTrips)
-      setSelectedTripId(savedTrips.length > 0 ? savedTrips[0].id : null)
-    }
-  }, [isOpen])
+  // Auto-select first trip when trips load
+  if (!selectedTripId && trips.length > 0 && !tripsLoading) {
+    setSelectedTripId(trips[0].id)
+  }
 
   const handleAddToTrip = async () => {
     if (!place || !selectedTripId) return
@@ -94,12 +66,9 @@ export function AddToTripModal({ place, isOpen, onClose }: AddToTripModalProps) 
     setIsLoading(true)
 
     try {
-      // Get existing plan from localStorage
-      const planKey = `plan-${selectedTripId}`
-      const existingPlan = localStorage.getItem(planKey)
-
-      if (existingPlan) {
-        const plan = JSON.parse(existingPlan)
+      // Get existing plan from Supabase
+      if (selectedPlanData) {
+        const plan = selectedPlanData as unknown as GeneratedPlan
 
         // First, ensure the place is saved with full data
         const savedPlaces: SavedPlace[] = plan.savedPlaces || []
@@ -149,8 +118,8 @@ export function AddToTripModal({ place, isOpen, onClose }: AddToTripModalProps) 
           }
         }
 
-        plan.updatedAt = new Date().toISOString()
-        localStorage.setItem(planKey, JSON.stringify(plan))
+        // Save updated plan to Supabase
+        await savePlan(selectedTripId, plan as unknown as Record<string, unknown>)
       }
 
       // Close modal and show success
@@ -166,10 +135,9 @@ export function AddToTripModal({ place, isOpen, onClose }: AddToTripModalProps) 
   }
 
   const handleCreateNewTrip = () => {
-    // Store the place to add after trip creation
-    if (place) {
-      localStorage.setItem("pending-place-to-add", JSON.stringify(place))
-    }
+    // Navigate to trip creation
+    // Note: The place data will need to be re-added after trip creation
+    // since we don't have a server-side mechanism to pass pending places
     router.push("/trips/new")
   }
 
@@ -241,10 +209,10 @@ export function AddToTripModal({ place, isOpen, onClose }: AddToTripModalProps) 
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-sm">{trip.destination}</p>
-                    {trip.startDate && trip.endDate && (
+                    {trip.start_date && trip.end_date && (
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
-                        {trip.travelers > 1 && ` · ${trip.travelers} viajeros`}
+                        {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
+                        {(trip.travelers ?? 1) > 1 && ` · ${trip.travelers} viajeros`}
                       </p>
                     )}
                   </div>

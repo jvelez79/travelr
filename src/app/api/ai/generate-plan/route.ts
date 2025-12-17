@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAIProvider } from '@/lib/ai'
+import { logAIRequest } from '@/lib/ai/logging'
+import { getModelForProvider } from '@/lib/ai/pricing'
 import { SYSTEM_PROMPT, GENERATE_PLAN_PROMPT, fillPrompt } from '@/lib/ai/prompts'
 import { parseAIResponse } from '@/lib/ai/utils'
 import type { TravelPreferences } from '@/types/plan'
@@ -18,6 +20,8 @@ interface GeneratePlanRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+
   try {
     const body: GeneratePlanRequest = await request.json()
     const { trip, preferences } = body
@@ -55,10 +59,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid AI response - could not parse JSON' }, { status: 500 })
     }
 
-    console.log('[generate-plan] Successfully parsed plan')
+    const duration = Date.now() - startTime
+    console.log(`[generate-plan] Successfully parsed plan in ${duration}ms`)
+
+    // Log AI request
+    logAIRequest({
+      endpoint: '/api/ai/generate-plan',
+      provider: ai.name,
+      model: getModelForProvider(ai.name),
+      inputTokens: response.usage?.inputTokens ?? 0,
+      outputTokens: response.usage?.outputTokens ?? 0,
+      durationMs: duration,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'success',
+      metadata: { destination: trip.destination, style: preferences.style },
+    }).catch(console.error)
+
     return NextResponse.json({ plan: parsed })
   } catch (error) {
-    console.error('[generate-plan] Error:', error)
+    const duration = Date.now() - startTime
+    console.error(`[generate-plan] Error after ${duration}ms:`, error)
+
+    // Log error
+    logAIRequest({
+      endpoint: '/api/ai/generate-plan',
+      provider: 'unknown',
+      inputTokens: 0,
+      outputTokens: 0,
+      durationMs: duration,
+      startedAt: new Date(startTime),
+      completedAt: new Date(),
+      status: 'error',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }).catch(console.error)
+
     const message = error instanceof Error ? error.message : 'Unknown error'
     const isTimeout = message.includes('timed out')
     return NextResponse.json(
