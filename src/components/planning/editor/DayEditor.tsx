@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { useDroppable } from "@dnd-kit/core"
+import { Hotel, CheckCircle, Clock, Sparkles, LogOut, AlertTriangle, ChevronRight } from "lucide-react"
 import { ActivityListItem } from "./ActivityListItem"
 import { ActivityEditor } from "./ActivityEditor"
 import { DayTimelineModal } from "./DayTimelineModal"
 import { TransportBlock } from "./TransportBlock"
-import { AccommodationBlock } from "./AccommodationBlock"
 import { Skeleton } from "@/components/ui/skeleton"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
@@ -14,6 +14,7 @@ import { useAccommodationTransport } from "@/hooks/useAccommodationTransport"
 import { cn } from "@/lib/utils"
 import type { ItineraryDay, TimelineEntry } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
+import type { AccommodationIndicatorInfo } from "@/lib/accommodation/utils"
 import type { DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface DayEditorProps {
@@ -28,8 +29,10 @@ interface DayEditorProps {
   onAddActivityClick?: () => void
   registerRef?: (ref: HTMLDivElement | null) => void
   onRegenerate?: () => Promise<void>
-  // Accommodation integration
-  accommodation?: Accommodation | null
+  // Accommodation integration (separated concerns)
+  accommodationIndicator?: AccommodationIndicatorInfo | null // For header display
+  transportOriginAccommodation?: Accommodation | null // For transport calculation (Day 2+)
+  checkOutAccommodation?: Accommodation | null // For check-out block
   onAccommodationClick?: (accommodation: Accommodation) => void
 }
 
@@ -43,7 +46,9 @@ export function DayEditor({
   onAddActivityClick,
   registerRef,
   onRegenerate,
-  accommodation,
+  accommodationIndicator,
+  transportOriginAccommodation,
+  checkOutAccommodation,
   onAccommodationClick,
 }: DayEditorProps) {
   const [expanded, setExpanded] = useState(true)
@@ -58,9 +63,10 @@ export function DayEditor({
   const displayTimeline = isGenerating ? streamingTimeline : day.timeline
   const firstActivity = displayTimeline.length > 0 ? displayTimeline[0] : null
 
-  // Calculate transport from accommodation to first activity
+  // Calculate transport from accommodation to first activity (only for Day 2+)
+  // transportOriginAccommodation is null for Day 1, so transport won't be shown
   const { travelInfo: accommodationTransport, isLoading: isLoadingAccommodationTransport } =
-    useAccommodationTransport(accommodation ?? null, firstActivity)
+    useAccommodationTransport(transportOriginAccommodation ?? null, firstActivity)
 
   // Droppable for receiving places from PlaceSearch
   const { isOver, setNodeRef: setDropRef } = useDroppable({
@@ -362,6 +368,94 @@ export function DayEditor({
           {/* Divider line */}
           <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
 
+          {/* Accommodation Context Panel - Where you're staying tonight */}
+          {accommodationIndicator ? (
+            <button
+              onClick={() => onAccommodationClick?.(accommodationIndicator.accommodation)}
+              className={cn(
+                "group/acc w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-4 text-left",
+                "border-l-4 cursor-pointer",
+                "transition-all duration-200 ease-out",
+                "hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5",
+                accommodationIndicator.accommodation.status === "confirmed"
+                  ? "bg-green-50/50 dark:bg-green-950/20 border-l-green-500 hover:bg-green-50 dark:hover:bg-green-950/40"
+                  : accommodationIndicator.accommodation.status === "pending"
+                  ? "bg-amber-50/50 dark:bg-amber-950/20 border-l-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                  : "bg-blue-50/50 dark:bg-blue-950/20 border-l-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+              )}
+            >
+              <Hotel className={cn(
+                "w-5 h-5 flex-shrink-0",
+                accommodationIndicator.accommodation.status === "confirmed"
+                  ? "text-green-600 dark:text-green-400"
+                  : accommodationIndicator.accommodation.status === "pending"
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-blue-600 dark:text-blue-400"
+              )} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">
+                  Esta noche: {accommodationIndicator.accommodation.name}
+                </p>
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  {accommodationIndicator.isCheckInDay ? (
+                    <>
+                      <span>Check-in desde las {accommodationIndicator.accommodation.checkInTime || "3:00 PM"}</span>
+                      <span>·</span>
+                      <span>Noche 1/{accommodationIndicator.totalNights}</span>
+                    </>
+                  ) : accommodationIndicator.isLastNight ? (
+                    <>
+                      <Clock className="w-3 h-3 text-amber-500" />
+                      <span className="text-amber-600 dark:text-amber-400 font-medium">
+                        Check-out mañana {accommodationIndicator.accommodation.checkOutTime || "11:00 AM"}
+                      </span>
+                      <span>·</span>
+                      <span>Noche {accommodationIndicator.nightNumber}/{accommodationIndicator.totalNights}</span>
+                    </>
+                  ) : (
+                    <span>Noche {accommodationIndicator.nightNumber}/{accommodationIndicator.totalNights}</span>
+                  )}
+                </p>
+              </div>
+              {/* Status badge */}
+              <div className="flex-shrink-0">
+                {accommodationIndicator.accommodation.status === "confirmed" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-xs font-medium text-green-700 dark:text-green-300">
+                    <CheckCircle className="w-3 h-3" />
+                    Confirmado
+                  </span>
+                )}
+                {accommodationIndicator.accommodation.status === "suggested" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-xs font-medium text-blue-700 dark:text-blue-300">
+                    <Sparkles className="w-3 h-3" />
+                    Sugerencia AI
+                  </span>
+                )}
+                {accommodationIndicator.accommodation.status === "pending" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    <Clock className="w-3 h-3" />
+                    Pendiente
+                  </span>
+                )}
+              </div>
+              {/* Chevron indicator - shows more info available */}
+              <ChevronRight className={cn(
+                "w-4 h-4 flex-shrink-0 transition-all duration-200",
+                "text-muted-foreground/50 group-hover/acc:text-muted-foreground",
+                "opacity-0 -translate-x-1 group-hover/acc:opacity-100 group-hover/acc:translate-x-0"
+              )} />
+            </button>
+          ) : (
+            // No accommodation for this night - show warning
+            <div className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-4 bg-muted/30 border-l-4 border-l-muted-foreground/30">
+              <AlertTriangle className="w-5 h-5 text-muted-foreground/70 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Sin alojamiento</p>
+                <p className="text-xs text-muted-foreground/70">No hay hotel reservado para esta noche</p>
+              </div>
+            </div>
+          )}
+
           {/* Activities List with Transport */}
           <div className="space-y-0.5">
             {isPending && (
@@ -379,21 +473,47 @@ export function DayEditor({
               </div>
             )}
 
-            {/* Accommodation Block - Starting point of the day */}
-            {!isPending && !isGenerating && accommodation && (
+            {/* Check-out Block - Only shown on checkout day */}
+            {!isPending && !isGenerating && checkOutAccommodation && (
+              <button
+                onClick={() => onAccommodationClick?.(checkOutAccommodation)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-2",
+                  "bg-slate-100 dark:bg-slate-800",
+                  "border-2 border-dashed border-slate-300 dark:border-slate-600",
+                  "cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                )}
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                  <LogOut className="w-5 h-5 text-slate-600 dark:text-slate-300" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
+                      Check-out
+                    </span>
+                    {checkOutAccommodation.checkOutTime && (
+                      <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        {checkOutAccommodation.checkOutTime}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">
+                    {checkOutAccommodation.name}
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {/* Transport from accommodation to first activity (Day 2+ only) */}
+            {!isPending && !isGenerating && transportOriginAccommodation && (
               <>
-                <AccommodationBlock
-                  accommodation={accommodation}
-                  dayDate={day.date}
-                  onClick={() => onAccommodationClick?.(accommodation)}
-                />
-                {/* Transport from accommodation to first activity */}
                 {accommodationTransport && firstActivity && (
                   <TransportBlock
                     travelInfo={accommodationTransport}
                     fromLocation={{
-                      name: accommodation.name,
-                      coordinates: accommodation.placeData?.coordinates
+                      name: transportOriginAccommodation.name,
+                      coordinates: transportOriginAccommodation.placeData?.coordinates
                     }}
                     toLocation={{
                       name: firstActivity.location,

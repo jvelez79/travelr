@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Plan, PlanInsert, Json } from '@/types/database'
@@ -25,15 +25,30 @@ export function usePlan(tripId: string | null) {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const fetchPlan = useCallback(async () => {
-    if (!user || !tripId) {
+  // Track if we've already fetched for this tripId to avoid refetch on auth state changes
+  const hasFetchedRef = useRef<string | null>(null)
+  // Track if plan doesn't exist (vs just not fetched yet)
+  const planNotFoundRef = useRef(false)
+
+  const fetchPlan = useCallback(async (force = false) => {
+    const userId = user?.id
+    if (!userId || !tripId) {
       setPlan(null)
       setPlanData(null)
       setLoading(false)
       return
     }
 
-    setLoading(true)
+    // Skip refetch if we already have data for this trip (unless forced)
+    const cacheKey = `${userId}-${tripId}`
+    if (!force && hasFetchedRef.current === cacheKey && (plan || planNotFoundRef.current)) {
+      return
+    }
+
+    // Only show loading if we don't have data yet
+    if (!plan && !planNotFoundRef.current) {
+      setLoading(true)
+    }
     setError(null)
 
     try {
@@ -41,7 +56,7 @@ export function usePlan(tripId: string | null) {
         .from('plans')
         .select('*')
         .eq('trip_id', tripId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       if (fetchError) {
@@ -49,25 +64,30 @@ export function usePlan(tripId: string | null) {
         if (fetchError.code === 'PGRST116') {
           setPlan(null)
           setPlanData(null)
+          planNotFoundRef.current = true
         } else {
           throw fetchError
         }
       } else {
         setPlan(data)
         setPlanData(data?.data as PlanData || null)
+        planNotFoundRef.current = false
       }
+      hasFetchedRef.current = cacheKey
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error fetching plan'))
     } finally {
       setLoading(false)
     }
-  }, [user, tripId, supabase])
+  }, [user?.id, tripId, supabase, plan])
 
   useEffect(() => {
     fetchPlan()
-  }, [fetchPlan])
+  }, [user?.id, tripId]) // Only refetch when user ID or trip ID changes, not on every callback change
 
-  return { plan, planData, loading, error, refetch: fetchPlan }
+  const refetch = useCallback(() => fetchPlan(true), [fetchPlan])
+
+  return { plan, planData, loading, error, refetch }
 }
 
 // ============================================

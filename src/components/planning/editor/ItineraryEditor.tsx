@@ -2,7 +2,12 @@
 
 import { useMemo } from "react"
 import { DayEditor } from "./DayEditor"
-import { getAccommodationForDay } from "@/lib/accommodation/utils"
+import {
+  getAccommodationForDay,
+  getAccommodationIndicatorForDay,
+  getCheckOutForDay,
+} from "@/lib/accommodation/utils"
+import type { AccommodationIndicatorInfo } from "@/lib/accommodation/utils"
 import type { GeneratedPlan, ItineraryDay, TimelineEntry } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
@@ -62,10 +67,22 @@ export function ItineraryEditor({
         const streamingTimeline = getDayTimeline?.(day.day) || []
         const isGenerating = dayStatus === 'generating'
 
-        // Get the accommodation for this day (where user stayed the night before)
-        const dayAccommodation = getAccommodationForDay(
+        // Get accommodation indicator info for header (where you're staying tonight)
+        const accommodationIndicator = getAccommodationIndicatorForDay(
+          day.date,
+          accommodations
+        )
+
+        // Get the accommodation for transport calculation (where user woke up - Day 2+)
+        const transportOriginAccommodation = getAccommodationForDay(
           day.date,
           day.day,
+          accommodations
+        )
+
+        // Check if this is a check-out day
+        const checkOutAccommodation = getCheckOutForDay(
+          day.date,
           accommodations
         )
 
@@ -81,7 +98,10 @@ export function ItineraryEditor({
             onAddActivityClick={onAddActivityClick ? () => onAddActivityClick(day.day) : undefined}
             registerRef={registerDayRef ? (ref) => registerDayRef(day.day, ref) : undefined}
             onRegenerate={onRegenerateDay ? () => onRegenerateDay(day.day) : undefined}
-            accommodation={dayAccommodation}
+            // New props for separated concerns
+            accommodationIndicator={accommodationIndicator}
+            transportOriginAccommodation={transportOriginAccommodation}
+            checkOutAccommodation={checkOutAccommodation}
             onAccommodationClick={onAccommodationClick}
           />
         )

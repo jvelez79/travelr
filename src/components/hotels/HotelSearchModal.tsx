@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -68,15 +68,41 @@ export function HotelSearchModal({
   const [hoveredHotel, setHoveredHotel] = useState<HotelResult | null>(null)
   const [mobileViewMode, setMobileViewMode] = useState<'list' | 'map'>('list')
 
-  // Reset search params when modal opens with new values
+  // Track if modal has been initialized to avoid resetting state on tab switch
+  const hasInitializedRef = useRef(false)
+  const prevParamsRef = useRef({ destination, checkIn, checkOut, adults, children })
+
+  // Reset search params only on first open or when props actually change
   useEffect(() => {
-    if (open) {
+    if (!open) {
+      // Reset initialization flag when modal closes
+      hasInitializedRef.current = false
+      return
+    }
+
+    // Check if search params have actually changed
+    const paramsChanged =
+      prevParamsRef.current.destination !== destination ||
+      prevParamsRef.current.checkIn !== checkIn ||
+      prevParamsRef.current.checkOut !== checkOut ||
+      prevParamsRef.current.adults !== adults ||
+      prevParamsRef.current.children !== children
+
+    // Only reset state on first open OR when params actually changed
+    if (!hasInitializedRef.current || paramsChanged) {
       setSearchDestination(destination)
       setSearchCheckIn(checkIn)
       setSearchCheckOut(checkOut)
       setSearchAdults(adults)
       setSearchChildren(children)
-      setShowDetailPanel(false)
+
+      // Only close detail panel on first open, not on param changes
+      if (!hasInitializedRef.current) {
+        setShowDetailPanel(false)
+      }
+
+      hasInitializedRef.current = true
+      prevParamsRef.current = { destination, checkIn, checkOut, adults, children }
     }
   }, [open, destination, checkIn, checkOut, adults, children])
 

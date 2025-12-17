@@ -191,7 +191,7 @@ db-diff: ## Genera migración desde cambios en la DB
 # PRODUCCIÓN
 # =============================================================================
 
-deploy: deploy-db deploy-functions ## Deploy completo
+deploy: secrets deploy-db deploy-functions ## Deploy completo (secrets + db + functions)
 	@echo "$(GREEN)Deploy completo finalizado$(NC)"
 
 deploy-db: ## Push de migraciones a producción

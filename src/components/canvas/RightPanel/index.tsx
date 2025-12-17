@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback } from "react"
 import { useCanvasContext } from "../CanvasContext"
 import { EmptyState } from "./EmptyState"
 import { ActivityDetails } from "./ActivityDetails"
@@ -7,14 +8,61 @@ import { AccommodationDetails } from "./AccommodationDetails"
 import { PlaceSearch } from "./PlaceSearch"
 import { ActivityEditorInPanel } from "./ActivityEditorInPanel"
 import type { GeneratedPlan } from "@/types/plan"
+import type { Accommodation } from "@/types/accommodation"
 
 interface RightPanelProps {
   plan: GeneratedPlan
   onUpdatePlan?: (plan: GeneratedPlan) => void
+  onOpenHotelSearch?: (accommodation?: Accommodation) => void
 }
 
-export function RightPanel({ plan, onUpdatePlan }: RightPanelProps) {
-  const { rightPanelState, openCustomActivityEditor } = useCanvasContext()
+export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanelProps) {
+  const { rightPanelState, openCustomActivityEditor, clearRightPanel } = useCanvasContext()
+
+  // Accommodation action handlers
+  const updateAccommodations = useCallback((newAccommodations: Accommodation[]) => {
+    if (!onUpdatePlan) return
+    onUpdatePlan({
+      ...plan,
+      accommodations: newAccommodations,
+      accommodationReservations: undefined, // Clear legacy field
+    })
+  }, [plan, onUpdatePlan])
+
+  const handleDeleteAccommodation = useCallback((accommodation: Accommodation) => {
+    if (!confirm(`¿Eliminar ${accommodation.name}?`)) return
+    const updated = (plan.accommodations || []).filter(a => a.id !== accommodation.id)
+    updateAccommodations(updated)
+    clearRightPanel()
+  }, [plan.accommodations, updateAccommodations, clearRightPanel])
+
+  const handleDismissAccommodation = useCallback((accommodation: Accommodation) => {
+    const updated = (plan.accommodations || []).filter(a => a.id !== accommodation.id)
+    updateAccommodations(updated)
+    clearRightPanel()
+  }, [plan.accommodations, updateAccommodations, clearRightPanel])
+
+  const handleMarkConfirmedAccommodation = useCallback((accommodation: Accommodation) => {
+    const updated = (plan.accommodations || []).map(a =>
+      a.id === accommodation.id
+        ? { ...a, status: 'confirmed' as const, updatedAt: new Date().toISOString() }
+        : a
+    )
+    updateAccommodations(updated)
+  }, [plan.accommodations, updateAccommodations])
+
+  const handleReplaceAccommodation = useCallback((accommodation: Accommodation) => {
+    onOpenHotelSearch?.(accommodation)
+  }, [onOpenHotelSearch])
+
+  const handleBookNowAccommodation = useCallback((accommodation: Accommodation) => {
+    onOpenHotelSearch?.(accommodation)
+  }, [onOpenHotelSearch])
+
+  const handleEditAccommodation = useCallback((accommodation: Accommodation) => {
+    // TODO: Open edit modal
+    console.log("Edit accommodation:", accommodation)
+  }, [])
 
   return (
     <div className="h-full bg-card">
@@ -34,6 +82,12 @@ export function RightPanel({ plan, onUpdatePlan }: RightPanelProps) {
       {rightPanelState.type === 'accommodation' && (
         <AccommodationDetails
           accommodation={rightPanelState.accommodation}
+          onEdit={handleEditAccommodation}
+          onDelete={handleDeleteAccommodation}
+          onReplace={handleReplaceAccommodation}
+          onMarkConfirmed={handleMarkConfirmedAccommodation}
+          onDismiss={handleDismissAccommodation}
+          onBookNow={handleBookNowAccommodation}
         />
       )}
 

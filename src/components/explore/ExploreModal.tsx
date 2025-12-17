@@ -106,12 +106,25 @@ export function ExploreModal({
   const [locationCoords, setLocationCoords] = useState<Coordinates | null>(null)
   const [coordsLoading, setCoordsLoading] = useState(true)
 
-  // Geocode location when modal opens or dayLocation changes
+  // Track previous location params to detect actual changes
+  const prevLocationRef = useRef({ dayLocation, tripDestination })
+  const hasFetchedCoordsRef = useRef(false)
+
+  // Geocode location when modal opens or location actually changes
   useEffect(() => {
     if (!isOpen) {
-      // Reset state when modal closes
-      setCoordsLoading(true)
-      setLocationCoords(null)
+      // Only reset when modal actually closes (user action, not tab switch)
+      hasFetchedCoordsRef.current = false
+      return
+    }
+
+    // Check if location params actually changed
+    const locationChanged =
+      prevLocationRef.current.dayLocation !== dayLocation ||
+      prevLocationRef.current.tripDestination !== tripDestination
+
+    // Skip refetch if we already have coords and location hasn't changed
+    if (hasFetchedCoordsRef.current && locationCoords && !locationChanged) {
       return
     }
 
@@ -128,10 +141,12 @@ export function ExploreModal({
 
       setLocationCoords(coords)
       setCoordsLoading(false)
+      hasFetchedCoordsRef.current = true
+      prevLocationRef.current = { dayLocation, tripDestination }
     }
 
     fetchCoords()
-  }, [isOpen, dayLocation, tripDestination])
+  }, [isOpen, dayLocation, tripDestination, locationCoords])
 
   // Fetch places by category using the internal hook
   const { places: categoryPlaces, isLoading: placesLoading, isLoadingMore, hasMore, loadMore, refetch } = usePlaces({

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { CanvasProvider } from "./CanvasContext"
 import { CanvasDndProvider } from "./CanvasDndContext"
 import { CanvasHeader } from "./CanvasHeader"
@@ -8,14 +8,18 @@ import { LeftSidebar } from "./LeftSidebar"
 import { RightPanel } from "./RightPanel"
 import { CentralPanel } from "./CentralPanel"
 import { ExploreModal } from "@/components/explore/ExploreModal"
+import { HotelSearchModal } from "@/components/hotels/HotelSearchModal"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { useCanvasContext } from "./CanvasContext"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
+import { calculateNights, createUserAccommodation } from "@/types/accommodation"
 import type { GeneratedPlan, TimelineEntry, PlaceData, ItineraryDay } from "@/types/plan"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 import type { Place, PlaceCategory } from "@/types/explore"
+import type { HotelResult } from "@/lib/hotels/types"
+import type { Accommodation } from "@/types/accommodation"
 
 /**
  * Extract city name from a location string like "7av. Norte 18B, Antigua Guatemala"
@@ -117,6 +121,10 @@ function CanvasLayoutInner({
     openCustomActivityEditor,
   } = useCanvasContext()
   const { isDesktop, isMobile, isTablet } = useResponsiveLayout()
+
+  // Hotel search modal state
+  const [showHotelSearch, setShowHotelSearch] = useState(false)
+  const [searchAccommodation, setSearchAccommodation] = useState<Accommodation | null>(null)
 
   // Get available days for the modal - extract city from location address
   const availableDays = plan.itinerary.map(d => {
@@ -282,6 +290,79 @@ function CanvasLayoutInner({
     }
   }, [exploreModalState, plan, onUpdatePlan, closeExploreModal, clearRightPanel])
 
+  // Handle opening hotel search from RightPanel (for "Find Similar" button)
+  const handleOpenHotelSearch = useCallback((accommodation?: Accommodation) => {
+    setSearchAccommodation(accommodation || null)
+    setShowHotelSearch(true)
+  }, [])
+
+  // Handle adding a hotel from the search modal
+  const handleHotelAddToPlan = useCallback((hotel: HotelResult) => {
+    const checkIn = searchAccommodation?.checkIn || plan.trip.startDate
+    const checkOut = searchAccommodation?.checkOut || plan.trip.endDate
+    const nights = calculateNights(checkIn, checkOut)
+
+    // Map hotel type to AccommodationType
+    const typeMap: Record<string, Accommodation['type']> = {
+      'Hotel': 'hotel',
+      'Resort': 'resort',
+      'Hostel': 'hostel',
+      'Apartment': 'apartment',
+      'Vacation rental': 'vacation_rental',
+    }
+
+    // Create unified Accommodation
+    const newAccommodation = createUserAccommodation({
+      name: hotel.name,
+      type: typeMap[hotel.type] || 'hotel',
+      area: hotel.location.area || plan.trip.destination,
+      checkIn,
+      checkOut,
+      pricePerNight: hotel.price.perNight,
+      totalPrice: hotel.price.total,
+      currency: hotel.price.currency,
+      bookingPlatform: hotel.bookingLinks[0]?.provider,
+      bookingUrl: hotel.bookingLinks[0]?.url,
+      source: 'hotel_search',
+      status: 'pending',
+    })
+
+    // Add place data if available
+    if (hotel.location.lat && hotel.location.lng) {
+      newAccommodation.placeData = {
+        name: hotel.name,
+        coordinates: { lat: hotel.location.lat, lng: hotel.location.lng },
+        address: hotel.location.address,
+        rating: hotel.rating,
+        reviewCount: hotel.reviewCount,
+        images: hotel.images,
+      }
+    }
+
+    // Add amenities and check-in/out times
+    if (hotel.amenities) newAccommodation.amenities = hotel.amenities
+    if (hotel.checkInTime) newAccommodation.checkInTime = hotel.checkInTime
+    if (hotel.checkOutTime) newAccommodation.checkOutTime = hotel.checkOutTime
+
+    // If replacing, remove the old accommodation
+    let updated = plan.accommodations || []
+    if (searchAccommodation && searchAccommodation.id) {
+      updated = updated.filter(a => a.id !== searchAccommodation.id)
+    }
+    updated = [...updated, newAccommodation]
+
+    // Update plan
+    onUpdatePlan({
+      ...plan,
+      accommodations: updated,
+      accommodationReservations: undefined,
+    })
+
+    // Close modal and clear state
+    setShowHotelSearch(false)
+    setSearchAccommodation(null)
+  }, [plan, searchAccommodation, onUpdatePlan])
+
   return (
     <CanvasDndProvider onDropPlaceOnDay={handleDropPlaceOnDay}>
     <div className="h-screen flex flex-col bg-background overflow-hidden">
@@ -319,13 +400,13 @@ function CanvasLayoutInner({
         {/* Right Panel - Desktop: visible, Tablet: visible, Mobile: Sheet */}
         {isDesktop && (
           <aside className="w-80 border-l border-border bg-card shrink-0 overflow-y-auto">
-            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} />
+            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}
 
         {isTablet && (
           <aside className="w-72 border-l border-border bg-card shrink-0 overflow-y-auto">
-            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} />
+            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}
 
@@ -333,7 +414,7 @@ function CanvasLayoutInner({
           <Sheet open={isRightPanelOpen} onOpenChange={setRightPanelOpen}>
             <SheetContent side="right" className="w-full sm:w-96 p-0">
               <SheetTitle className="sr-only">Detalles y búsqueda</SheetTitle>
-              <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} />
+              <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
             </SheetContent>
           </Sheet>
         )}
@@ -358,6 +439,20 @@ function CanvasLayoutInner({
         onCreateCustomActivity={openCustomActivityEditor}
       />
     )}
+
+    {/* Hotel Search Modal - mounted at canvas level for "Find Similar" functionality */}
+    <HotelSearchModal
+      open={showHotelSearch}
+      onOpenChange={(open) => {
+        setShowHotelSearch(open)
+        if (!open) setSearchAccommodation(null)
+      }}
+      destination={plan.trip.destination}
+      checkIn={searchAccommodation?.checkIn || plan.trip.startDate}
+      checkOut={searchAccommodation?.checkOut || plan.trip.endDate}
+      adults={plan.trip.travelers}
+      onAddToPlan={handleHotelAddToPlan}
+    />
     </CanvasDndProvider>
   )
 }

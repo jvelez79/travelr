@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Trip, TripInsert, TripUpdate } from '@/types/database'
@@ -60,14 +60,27 @@ export function useTrip(id: string | null) {
   const { user } = useAuth()
   const supabase = createClient()
 
-  const fetchTrip = useCallback(async () => {
-    if (!user || !id) {
+  // Track if we've already fetched for this id to avoid refetch on auth state changes
+  const hasFetchedRef = useRef<string | null>(null)
+
+  const fetchTrip = useCallback(async (force = false) => {
+    const userId = user?.id
+    if (!userId || !id) {
       setTrip(null)
       setLoading(false)
       return
     }
 
-    setLoading(true)
+    // Skip refetch if we already have data for this trip (unless forced)
+    const cacheKey = `${userId}-${id}`
+    if (!force && hasFetchedRef.current === cacheKey && trip) {
+      return
+    }
+
+    // Only show loading if we don't have data yet
+    if (!trip) {
+      setLoading(true)
+    }
     setError(null)
 
     try {
@@ -75,23 +88,26 @@ export function useTrip(id: string | null) {
         .from('trips')
         .select('*')
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       if (fetchError) throw fetchError
       setTrip(data)
+      hasFetchedRef.current = cacheKey
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error fetching trip'))
     } finally {
       setLoading(false)
     }
-  }, [user, id, supabase])
+  }, [user?.id, id, supabase, trip])
 
   useEffect(() => {
     fetchTrip()
-  }, [fetchTrip])
+  }, [user?.id, id]) // Only refetch when user ID or trip ID changes, not on every callback change
 
-  return { trip, loading, error, refetch: fetchTrip }
+  const refetch = useCallback(() => fetchTrip(true), [fetchTrip])
+
+  return { trip, loading, error, refetch }
 }
 
 // ============================================

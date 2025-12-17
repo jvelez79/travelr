@@ -1,7 +1,25 @@
 "use client"
 
-import { Hotel, MapPin, Calendar, DollarSign, Wifi, Car, Coffee, CheckCircle, Clock, Sparkles } from "lucide-react"
+import {
+  Hotel,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Wifi,
+  Car,
+  Coffee,
+  CheckCircle,
+  Clock,
+  Sparkles,
+  ExternalLink,
+  Edit,
+  RefreshCw,
+  Trash2,
+  Search,
+  X
+} from "lucide-react"
 import { useCanvasContext } from "../CanvasContext"
+import { Button } from "@/components/ui/button"
 import type { Accommodation, AccommodationStatus } from "@/types/accommodation"
 import { cn } from "@/lib/utils"
 
@@ -44,10 +62,28 @@ const STATUS_CONFIG: Record<AccommodationStatus, {
 
 interface AccommodationDetailsProps {
   accommodation: Accommodation
+  onEdit?: (accommodation: Accommodation) => void
+  onDelete?: (accommodation: Accommodation) => void
+  onReplace?: (accommodation: Accommodation) => void
+  onMarkConfirmed?: (accommodation: Accommodation) => void
+  onDismiss?: (accommodation: Accommodation) => void
+  onBookNow?: (accommodation: Accommodation) => void
 }
 
-export function AccommodationDetails({ accommodation }: AccommodationDetailsProps) {
+export function AccommodationDetails({
+  accommodation,
+  onEdit,
+  onDelete,
+  onReplace,
+  onMarkConfirmed,
+  onDismiss,
+  onBookNow
+}: AccommodationDetailsProps) {
   const { clearRightPanel } = useCanvasContext()
+
+  const isSuggestion = accommodation.status === 'suggested'
+  const isPending = accommodation.status === 'pending'
+  const isConfirmed = accommodation.status === 'confirmed'
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -63,6 +99,10 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
       hotel: "Hotel",
       airbnb: "Airbnb",
       hostel: "Hostel",
+      resort: "Resort",
+      vacation_rental: "Alquiler Vacacional",
+      apartment: "Apartamento",
+      other: "Otro",
       mixed: "Mixto",
     }
     return labels[type] || type
@@ -77,9 +117,7 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
           onClick={clearRightPanel}
           className="p-1 hover:bg-muted rounded transition-colors"
         >
-          <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-5 h-5 text-muted-foreground" />
         </button>
       </div>
 
@@ -91,9 +129,9 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
             <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
               <Hotel className="w-5 h-5 text-slate-600 dark:text-slate-300" />
             </div>
-            <div>
-              <h4 className="font-semibold text-lg text-foreground">{accommodation.name}</h4>
-              <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-lg text-foreground truncate">{accommodation.name}</h4>
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   {getAccommodationTypeLabel(accommodation.type)}
                 </span>
@@ -110,6 +148,83 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
           </div>
         </div>
 
+        {/* Action Buttons based on status */}
+        <div className="space-y-2">
+          {isSuggestion && (
+            <div className="flex gap-2">
+              {onBookNow && (
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => onBookNow(accommodation)}
+                >
+                  <Search className="w-4 h-4 mr-1" />
+                  Buscar similar
+                </Button>
+              )}
+              {onDismiss && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onDismiss(accommodation)}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Descartar
+                </Button>
+              )}
+            </div>
+          )}
+
+          {isPending && (
+            <div className="flex gap-2">
+              {onMarkConfirmed && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => onMarkConfirmed(accommodation)}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  Marcar confirmado
+                </Button>
+              )}
+              {onEdit && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(accommodation)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {isConfirmed && onEdit && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full"
+              onClick={() => onEdit(accommodation)}
+            >
+              <Edit className="w-4 h-4 mr-1" />
+              Editar detalles
+            </Button>
+          )}
+
+          {(isPending || isConfirmed) && onReplace && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full"
+              onClick={() => onReplace(accommodation)}
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Reemplazar alojamiento
+            </Button>
+          )}
+        </div>
+
         {/* Location */}
         <div className="bg-muted/50 rounded-lg p-3">
           <div className="flex items-start gap-2">
@@ -121,9 +236,10 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
                   href={`https://www.google.com/maps?q=${accommodation.placeData.coordinates.lat},${accommodation.placeData.coordinates.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline"
+                  className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                 >
                   Ver en Google Maps
+                  <ExternalLink className="w-3 h-3" />
                 </a>
               )}
             </div>
@@ -181,10 +297,43 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
               </span>
               <span className="text-sm text-muted-foreground">/ noche</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Total estimado: <span className="font-medium text-foreground">
-                ${accommodation.pricePerNight * accommodation.nights}
-              </span>
+            {accommodation.totalPrice ? (
+              <p className="text-sm text-muted-foreground mt-1">
+                Total: <span className="font-medium text-foreground">
+                  ${accommodation.totalPrice}
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">
+                Total estimado: <span className="font-medium text-foreground">
+                  ${accommodation.pricePerNight * accommodation.nights}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Booking Link */}
+        {accommodation.bookingUrl && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => window.open(accommodation.bookingUrl, "_blank")}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Ver reserva en {accommodation.bookingPlatform || 'sitio'}
+          </Button>
+        )}
+
+        {/* Confirmation Number */}
+        {accommodation.confirmationNumber && (
+          <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+            <h5 className="text-xs font-medium text-green-700 dark:text-green-400 uppercase tracking-wide mb-1">
+              Numero de confirmacion
+            </h5>
+            <p className="text-sm font-mono font-medium text-foreground">
+              {accommodation.confirmationNumber}
             </p>
           </div>
         )}
@@ -232,12 +381,20 @@ export function AccommodationDetails({ accommodation }: AccommodationDetailsProp
         )}
       </div>
 
-      {/* Footer info */}
-      <div className="p-4 border-t border-border">
-        <p className="text-xs text-muted-foreground text-center">
-          Este alojamiento es el punto de partida para las actividades del dia.
-        </p>
-      </div>
+      {/* Footer with delete action */}
+      {onDelete && (isPending || isConfirmed) && (
+        <div className="p-4 border-t border-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={() => onDelete(accommodation)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Eliminar alojamiento
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

@@ -153,6 +153,7 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 | `debugger-agent` | Bug investigation and fixes |
 | `ux-system-designer-agent` | Design system guardian - generates UI patterns |
 | `ux-reviewer-agent` | UX quality gate - reviews UI implementations |
+| `ux-analyst-agent` | Conceptual usability analyst - evaluates features for clarity, value, user understanding |
 
 ### Commands (`.claude/commands/`)
 
@@ -178,3 +179,8 @@ When implementing new features, reference these existing patterns:
 - `src/app/api/generation/start/route.ts` - API route pattern
 - `src/contexts/AuthContext.tsx` - Auth context pattern
 - `src/components/canvas/CanvasContext.tsx` - Canvas state pattern
+
+
+### CRITICAL INFORMATION
+
+- Siempre (sin excepciones) que necesites hacer busquedas en internet o research usaras el skill perplexity-researcher

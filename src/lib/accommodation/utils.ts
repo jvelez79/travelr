@@ -9,6 +9,18 @@ const STATUS_PRIORITY: Record<AccommodationStatus, number> = {
 }
 
 /**
+ * Info returned by getAccommodationIndicatorForDay
+ */
+export interface AccommodationIndicatorInfo {
+  accommodation: Accommodation
+  nightNumber: number
+  totalNights: number
+  isCheckInDay: boolean
+  isCheckOutDay: boolean
+  isLastNight: boolean
+}
+
+/**
  * Gets the accommodation for a specific day.
  *
  * Priority logic:
@@ -163,4 +175,90 @@ export function hasAccommodationGap(
   }
 
   return false
+}
+
+/**
+ * Gets accommodation info for the day header indicator.
+ *
+ * This is different from getAccommodationForDay because:
+ * - It includes Day 1 (shows where you're staying tonight)
+ * - It calculates night number correctly from check-in
+ * - It provides metadata for UI display (isCheckInDay, isLastNight, etc.)
+ *
+ * @param dayDate - ISO date string of the day
+ * @param accommodations - Array of accommodations from the plan
+ * @returns AccommodationIndicatorInfo or null if no accommodation for this night
+ */
+export function getAccommodationIndicatorForDay(
+  dayDate: string,
+  accommodations: Accommodation[]
+): AccommodationIndicatorInfo | null {
+  if (!accommodations || accommodations.length === 0) {
+    return null
+  }
+
+  const currentDate = new Date(dayDate)
+  const currentDateStr = dayDate
+
+  // Find accommodation where this day is within the stay
+  // dayDate >= checkIn AND dayDate < checkOut (you're staying that night)
+  const applicableAccommodations = accommodations
+    .filter((acc) => acc.status !== "cancelled")
+    .filter((acc) => {
+      return currentDateStr >= acc.checkIn && currentDateStr < acc.checkOut
+    })
+
+  if (applicableAccommodations.length === 0) {
+    return null
+  }
+
+  // Sort by priority
+  applicableAccommodations.sort((a, b) => {
+    const priorityDiff = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]
+    if (priorityDiff !== 0) return priorityDiff
+    return new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime()
+  })
+
+  const accommodation = applicableAccommodations[0]
+
+  // Calculate night number
+  const checkInDate = new Date(accommodation.checkIn)
+  const diffTime = currentDate.getTime() - checkInDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  const nightNumber = diffDays + 1
+
+  // Calculate if this is the last night (day before checkout)
+  const checkOutDate = new Date(accommodation.checkOut)
+  const lastNightDate = new Date(checkOutDate)
+  lastNightDate.setDate(lastNightDate.getDate() - 1)
+  const lastNightStr = lastNightDate.toISOString().split("T")[0]
+
+  return {
+    accommodation,
+    nightNumber,
+    totalNights: accommodation.nights,
+    isCheckInDay: currentDateStr === accommodation.checkIn,
+    isCheckOutDay: currentDateStr === accommodation.checkOut,
+    isLastNight: currentDateStr === lastNightStr,
+  }
+}
+
+/**
+ * Checks if a day is a check-out day for any accommodation.
+ * Used to show the checkout block in the timeline.
+ */
+export function getCheckOutForDay(
+  dayDate: string,
+  accommodations: Accommodation[]
+): Accommodation | null {
+  if (!accommodations || accommodations.length === 0) {
+    return null
+  }
+
+  // Find accommodation where this day is the checkout date
+  const checkOutAccommodation = accommodations
+    .filter((acc) => acc.status !== "cancelled")
+    .find((acc) => acc.checkOut === dayDate)
+
+  return checkOutAccommodation || null
 }
