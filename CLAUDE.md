@@ -222,6 +222,7 @@ When implementing new features, reference these existing patterns:
 ### CRITICAL INFORMATION
 
 - Siempre (sin excepciones) que necesites hacer busquedas en internet o research usaras el skill perplexity-researcher
+- **NUNCA inventar URLs.** La URL de producción es `https://travelr.vercel.app` - está documentada en la sección "Ambientes" de este archivo. SIEMPRE consultar este archivo antes de mencionar URLs.
 
 ## Reglas Críticas de Supabase Queries
 
