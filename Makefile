@@ -194,9 +194,9 @@ db-diff: ## Genera migración desde cambios en la DB
 deploy: secrets deploy-db deploy-functions ## Deploy completo (secrets + db + functions)
 	@echo "$(GREEN)Deploy completo finalizado$(NC)"
 
-deploy-db: ## Push de migraciones a producción
+deploy-db: ## Push de migraciones a producción (usa proyecto vinculado)
 	@echo "$(YELLOW)Pusheando migraciones a producción...$(NC)"
-	@$(SUPABASE) db push --project-ref $(PROJECT_REF)
+	@$(SUPABASE) db push --include-all
 	@echo "$(GREEN)Migraciones aplicadas en producción$(NC)"
 
 deploy-functions: ## Deploy de Edge Functions a producción

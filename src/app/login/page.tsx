@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { AuthLayout, LoginForm } from '@/components/auth'
 import type { Metadata } from 'next'
 
@@ -12,7 +13,9 @@ export default function LoginPage() {
       title="Iniciar Sesión"
       subtitle="Ingresa tus credenciales para acceder a tu cuenta"
     >
-      <LoginForm />
+      <Suspense fallback={<div className="animate-pulse h-64 bg-muted rounded-lg" />}>
+        <LoginForm />
+      </Suspense>
     </AuthLayout>
   )
 }
