@@ -1578,7 +1578,7 @@ async function invokeSelf(
   dayNumber?: number
 ): Promise<void> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  // Use SERVICE_ROLE_KEY (manually configured secret - Supabase reserves SUPABASE_ prefix)
+  // SERVICE_ROLE_KEY: Same variable name in both local (.env) and production (secret)
   const serviceKey = Deno.env.get("SERVICE_ROLE_KEY")!
 
   // Use fetch with explicit Authorization header
