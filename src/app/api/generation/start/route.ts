@@ -64,11 +64,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Check if generation is already in progress
+    // IMPORTANT: Use .maybeSingle() because generation_states may not exist yet
+    // Using .single() would return HTTP 406 error when no rows exist
     const { data: existingState } = await supabase
       .from('generation_states')
       .select('status')
       .eq('trip_id', tripId)
-      .single()
+      .maybeSingle()
 
     if (existingState?.status === 'generating' || existingState?.status === 'generating_summary') {
       return NextResponse.json(

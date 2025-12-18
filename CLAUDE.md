@@ -110,6 +110,13 @@ mcp__context7__get-library-docs: context7CompatibleLibraryID="/supabase/supabase
 
 Esto asegura que siempre uses las APIs y patrones más recientes de Supabase.
 
+## Ambientes
+
+| Ambiente | URL |
+|----------|-----|
+| Producción | https://travelr.vercel.app |
+| Local | http://localhost:3000 |
+
 ## Herramientas de Debugging y Validación
 
 ### Vercel CLI
@@ -215,3 +222,49 @@ When implementing new features, reference these existing patterns:
 ### CRITICAL INFORMATION
 
 - Siempre (sin excepciones) que necesites hacer busquedas en internet o research usaras el skill perplexity-researcher
+
+## Reglas Críticas de Supabase Queries
+
+### .single() vs .maybeSingle() - NUNCA CONFUNDIR
+
+**REGLA ABSOLUTA:**
+
+| Método | Cuándo Usar | Comportamiento si no hay filas |
+|--------|-------------|-------------------------------|
+| `.single()` | SOLO cuando GARANTIZAS que existe exactamente 1 fila (ej: query por primary key después de INSERT) | **ERROR 406** - Rompe el flujo |
+| `.maybeSingle()` | Cuando la fila PUEDE o NO existir (ej: verificar si existe un registro) | Retorna `null` - Flujo continúa |
+
+**Ejemplos Correctos:**
+
+```typescript
+// ✅ CORRECTO: Verificar si existe un generation_state (puede no existir)
+const { data: existingState } = await supabase
+  .from('generation_states')
+  .select('status')
+  .eq('trip_id', tripId)
+  .maybeSingle()  // ← Retorna null si no existe
+
+// ✅ CORRECTO: Obtener un trip que DEBE existir (ya validado)
+const { data: trip } = await supabase
+  .from('trips')
+  .select('*')
+  .eq('id', tripId)
+  .single()  // ← OK porque sabemos que existe
+```
+
+**NUNCA HACER:**
+
+```typescript
+// ❌ INCORRECTO: Verificar existencia con .single()
+const { data } = await supabase
+  .from('generation_states')
+  .select('status')
+  .eq('trip_id', tripId)
+  .single()  // ← ERROR 406 si no existe fila!
+```
+
+**Por qué esto es crítico:**
+- En producción, `.single()` sin fila retorna HTTP 406 (Not Acceptable)
+- El código puede parecer funcionar en desarrollo pero fallar en producción
+- Este error es SILENCIOSO si no se verifica el `error` de la respuesta
+- Ha causado bugs de generación atascada múltiples veces en este proyecto
