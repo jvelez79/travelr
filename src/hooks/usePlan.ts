@@ -57,10 +57,10 @@ export function usePlan(tripId: string | null) {
         .select('*')
         .eq('trip_id', tripId)
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
 
       if (fetchError) {
-        // PGRST116 = no rows returned, which is OK for new trips
+        // With maybeSingle(), no rows returns null (not error), but keep this for other errors
         if (fetchError.code === 'PGRST116') {
           setPlan(null)
           setPlanData(null)

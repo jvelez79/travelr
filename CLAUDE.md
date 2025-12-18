@@ -115,7 +115,7 @@ Esto asegura que siempre uses las APIs y patrones más recientes de Supabase.
 | Ambiente | URL |
 |----------|-----|
 | Producción | https://travelr.vercel.app |
-| Local | http://localhost:3000 |
+| Local | http://localhost:3333 |
 
 ## Herramientas de Debugging y Validación
 

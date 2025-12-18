@@ -65,17 +65,20 @@ export function useGenerationState(tripId: string | null) {
         .select('*')
         .eq('trip_id', tripId)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (fetchError) {
-        // PGRST116 = no rows returned, which is OK
+        // With maybeSingle(), no rows returns null (not error), but keep this for other errors
         if (fetchError.code === 'PGRST116') {
           setState(null)
         } else {
           throw fetchError
         }
-      } else {
+      } else if (data) {
         setState(dbToState(data))
+      } else {
+        // No data found (maybeSingle returns null when no rows)
+        setState(null)
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error fetching generation state'))

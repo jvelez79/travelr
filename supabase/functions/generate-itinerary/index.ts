@@ -301,7 +301,7 @@ async function handleStart(
   const pendingDays = Array.from({ length: totalDays }, (_, i) => i + 1)
 
   // 2. Initialize generation state
-  await supabase.from("generation_states").upsert({
+  const { error: initError } = await supabase.from("generation_states").upsert({
     trip_id: tripId,
     user_id: userId,
     status: "generating_summary",
@@ -313,6 +313,11 @@ async function handleStart(
     error_message: null,
     retry_count: 0,
   }, { onConflict: "trip_id" })
+
+  if (initError) {
+    console.error("[handleStart] Failed to initialize generation state:", initError)
+    return errorResponse(`Failed to initialize generation state: ${initError.message}`)
+  }
 
   try {
     // 3. Generate summary
@@ -335,20 +340,30 @@ async function handleStart(
     const initialPlan = createInitialPlan(summaryResult, trip, preferences, totalDays)
 
     // 6. Save plan to database
-    await supabase.from("plans").upsert({
+    const { error: planError } = await supabase.from("plans").upsert({
       trip_id: tripId,
       user_id: userId,
       data: initialPlan,
       version: 1,
     }, { onConflict: "trip_id" })
 
+    if (planError) {
+      console.error("[handleStart] Failed to save plan:", planError)
+      throw new Error(`Failed to save plan: ${planError.message}`)
+    }
+
     // 7. Update generation state to ready
-    await supabase.from("generation_states").update({
+    const { error: updateError } = await supabase.from("generation_states").update({
       status: "ready_to_generate",
       summary_result: summaryResult,
       places_context: placesForAI,
       full_places: fullPlaces,
     }).eq("trip_id", tripId)
+
+    if (updateError) {
+      console.error("[handleStart] Failed to update generation state:", updateError)
+      throw new Error(`Failed to update generation state: ${updateError.message}`)
+    }
 
     console.log("[handleStart] Summary complete, invoking day 1...")
 
