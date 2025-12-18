@@ -1555,22 +1555,32 @@ async function enrichDayWithPlaces(
 // ============================================================
 
 async function invokeSelf(
-  supabase: ReturnType<typeof createClient>,
+  _supabase: ReturnType<typeof createClient>,
   tripId: string,
   userId: string,
   action: string,
   dayNumber?: number
 ): Promise<void> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
-  // Use functions.invoke for self-invocation
-  const { error } = await supabase.functions.invoke("generate-itinerary", {
-    body: { tripId, userId, action, dayNumber },
+  // Use fetch with explicit Authorization header
+  // supabase.functions.invoke() doesn't pass the service key correctly in production
+  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-itinerary`
+
+  const response = await fetch(edgeFunctionUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${serviceKey}`,
+    },
+    body: JSON.stringify({ tripId, userId, action, dayNumber }),
   })
 
-  if (error) {
-    console.error("[invokeSelf] Failed to invoke:", error)
-    throw error
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error("[invokeSelf] Failed to invoke:", response.status, errorText)
+    throw new Error(`Failed to invoke self: ${response.status} ${errorText}`)
   }
 }
 
