@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { TravelPreferences } from '@/types/plan'
 
 export const runtime = 'nodejs'
@@ -79,8 +78,6 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. Invoke Edge Function (fire and forget)
-    const adminClient = createAdminClient()
-
     // Using fetch directly to invoke Edge Function for more control
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!

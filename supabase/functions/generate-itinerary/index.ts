@@ -1,5 +1,6 @@
 /**
  * Edge Function: generate-itinerary
+ * Version: 2025-12-18 - Fix invokeSelf Authorization header
  *
  * Background generation of travel itineraries with chaining pattern.
  * Each invocation handles one step (summary or one day) then self-invokes for the next.
