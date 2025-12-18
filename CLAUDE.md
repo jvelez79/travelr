@@ -110,6 +110,37 @@ mcp__context7__get-library-docs: context7CompatibleLibraryID="/supabase/supabase
 
 Esto asegura que siempre uses las APIs y patrones más recientes de Supabase.
 
+## Herramientas de Debugging y Validación
+
+### Vercel CLI
+Disponible para debugging y validación del ambiente de producción/preview:
+
+```bash
+# Ver deployments
+vercel ls
+
+# Ver logs de producción
+vercel logs [deployment-url]
+
+# Ver variables de entorno
+vercel env ls
+```
+
+### Supabase MCP
+El MCP de Supabase está disponible para interactuar directamente con el proyecto:
+
+- **Consultas SQL**: Ejecutar queries directamente en la base de datos
+- **Ver tablas**: Listar y explorar estructura de tablas
+- **Migrations**: Ver y aplicar migraciones
+- **Logs**: Consultar logs de servicios (auth, postgres, edge functions)
+- **Edge Functions**: Listar, ver y deployar funciones
+
+Usar estas herramientas para:
+- Validar que los datos están correctos en producción
+- Debugging de problemas en tiempo real
+- Verificar estado de migraciones
+- Monitorear logs de errores
+
 ## Notas Importantes
 
 - El AI Provider permite usar Claude Code CLI en desarrollo para aprovechar suscripción Max

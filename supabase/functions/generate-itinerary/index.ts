@@ -1563,7 +1563,8 @@ async function invokeSelf(
   dayNumber?: number
 ): Promise<void> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  // Use custom SERVICE_ROLE_KEY (correctly configured) with fallback to default
+  const serviceKey = Deno.env.get("SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
   // Use fetch with explicit Authorization header
   // supabase.functions.invoke() doesn't pass the service key correctly in production
