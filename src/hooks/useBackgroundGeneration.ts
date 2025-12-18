@@ -108,23 +108,24 @@ export function useBackgroundGeneration({
 
     try {
       // Fetch generation state and plan in parallel
+      // Use maybeSingle() instead of single() to avoid 406 errors when no rows exist
       const [stateResult, planResult] = await Promise.all([
         supabase
           .from('generation_states')
           .select('*')
           .eq('trip_id', tripId)
           .eq('user_id', user.id)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('plans')
           .select('*')
           .eq('trip_id', tripId)
           .eq('user_id', user.id)
-          .single(),
+          .maybeSingle(),
       ])
 
       // Handle generation state
-      if (stateResult.error && stateResult.error.code !== 'PGRST116') {
+      if (stateResult.error) {
         throw stateResult.error
       }
       if (stateResult.data) {
@@ -136,7 +137,7 @@ export function useBackgroundGeneration({
       }
 
       // Handle plan
-      if (planResult.error && planResult.error.code !== 'PGRST116') {
+      if (planResult.error) {
         throw planResult.error
       }
       if (planResult.data?.data) {
