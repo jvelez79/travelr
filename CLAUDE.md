@@ -187,11 +187,25 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 |-------|------|
 | `business-advisor-agent` | Feature validation (GO/MAYBE/NO-GO) |
 | `full-stack-builder-agent` | Primary implementation |
-| `quick-reviewer-agent` | Pragmatic code review |
+| `code-reviewer-agent` | Pragmatic code review |
 | `debugger-agent` | Bug investigation and fixes |
-| `ux-system-designer-agent` | Design system guardian - generates UI patterns |
-| `ux-reviewer-agent` | UX quality gate - reviews UI implementations |
-| `ux-analyst-agent` | Conceptual usability analyst - evaluates features for clarity, value, user understanding |
+| `ui-pattern-generator-agent` | Generate UI patterns following design system |
+| `design-system-reviewer-agent` | Review visual consistency with design system |
+| `usability-analyst-agent` | Evaluate clarity, value, and user understanding |
+
+### Agent Decision Matrix
+
+```
+¿Qué agente uso?
+
+  ¿Validar idea?      → business-advisor-agent
+  ¿Implementar?       → full-stack-builder-agent
+  ¿Arreglar bug?      → debugger-agent
+  ¿Generar código UI? → ui-pattern-generator-agent
+  ¿Revisar código?    → code-reviewer-agent
+  ¿Revisar visual?    → design-system-reviewer-agent
+  ¿Evaluar UX/flujo?  → usability-analyst-agent
+```
 
 ### Commands (`.claude/commands/`)
 
@@ -205,7 +219,7 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 1. VALIDATE (15 min)  → business-advisor-agent → GO/NO-GO
 2. PLAN (15-30 min)   → Define implementation checklist
 3. BUILD (2-4 hours)  → full-stack-builder-agent → Feature branch
-4. REVIEW (10 min)    → quick-reviewer-agent → OK/FIXES
+4. REVIEW (10 min)    → code-reviewer-agent → OK/FIXES
 5. SHIP              → Merge → Deploy → Monitor
 ```
 

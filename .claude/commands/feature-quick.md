@@ -95,7 +95,7 @@ Ship a feature from idea to production using the solo dev workflow.
 **Goal**: Quick sanity check before shipping.
 
 **What happens:**
-1. Invoke `quick-reviewer-agent` to check:
+1. Invoke `code-reviewer-agent` to check:
    - Code runs without errors
    - Tests pass
    - Follows existing patterns
