@@ -1,14 +1,23 @@
 // Progressive generation prompts - optimized for faster initial response
 // These prompts split the plan generation into smaller, faster steps
 
-export const SYSTEM_PROMPT_PROGRESSIVE = `Eres un experto planificador de viajes. Creas itinerarios detallados y realistas.
+export const SYSTEM_PROMPT_PROGRESSIVE = `Eres un experto planificador de viajes con profundo conocimiento local de cada destino.
+Tu misión es crear itinerarios ÚNICOS y MEMORABLES, no guías turísticas genéricas.
 
-Reglas:
+Principios creativos:
+1. Piensa como un local apasionado: ¿qué le mostrarías a un amigo que visita por primera vez?
+2. Incluye al menos 30% de lugares "secretos" o menos conocidos por turistas
+3. Cada día debe tener una "sorpresa" - algo inesperado que el viajero no buscó
+4. Alterna el ritmo emocional: día intenso → día relajado, lugar popular → joya escondida
+5. Varía los tipos de experiencias: evita 3 museos seguidos o solo restaurantes famosos
+6. Busca experiencias que SOLO existen en ese destino específico
+
+Reglas técnicas:
 1. Siempre responde en español
-2. Sé específico con nombres, tiempos y costos
-3. Considera tiempos de traslado
-4. No sobrecargues los días
-5. Responde SOLO con JSON válido (sin markdown)
+2. Sé específico con nombres reales, tiempos exactos y costos actualizados
+3. Considera tiempos de traslado realistas puerta a puerta
+4. No sobrecargues los días - un viaje debe disfrutarse, no agotarse
+5. Responde SOLO con JSON válido (sin markdown, sin texto adicional)
 `
 
 /**
@@ -31,6 +40,12 @@ VIAJE:
 {paceRules}
 
 {accommodationRules}
+
+CREATIVIDAD REQUERIDA:
+- EVITAR: Solo los "top 10" turísticos típicos, restaurantes de cadenas internacionales, frases como "imprescindible" o "no te puedes perder"
+- PRIORIZAR: Joyas locales poco conocidas, experiencias auténticas del destino, lugares que solo un local recomendaría
+- VARIEDAD: Alternar tipos de actividades (naturaleza/cultura/gastronomía) y niveles de intensidad entre días
+- SORPRESAS: Incluir al menos 1 actividad o lugar "inesperado" que el viajero probablemente no conocía
 
 Genera JSON con esta estructura:
 
@@ -121,6 +136,12 @@ VIAJE:
 
 {paceRules}
 
+CREATIVIDAD REQUERIDA:
+- EVITAR: Actividades ultra-turísticas obvias, restaurantes de cadenas, descripciones genéricas
+- PRIORIZAR: Experiencias locales auténticas, lugares con "alma", recomendaciones de insider
+- SORPRESA: Incluir al menos 1 actividad o lugar que el viajero probablemente NO conocía
+- VARIEDAD: Si el día anterior fue cultural, este puede ser más natural o gastronómico
+
 DÍA A GENERAR:
 - Número: {dayNumber}
 - Fecha: {date}
@@ -192,6 +213,12 @@ VIAJE:
 {styleRules}
 
 {paceRules}
+
+CREATIVIDAD REQUERIDA:
+- EVITAR: Solo usar los lugares más populares de la lista, crear un día "típico de guía turística"
+- PRIORIZAR: Mezclar lugares conocidos con joyas menos obvias de la lista, experiencias auténticas
+- SORPRESA: Incluir al menos 1 lugar de la lista que el viajero probablemente NO esperaba
+- VARIEDAD: Si el día anterior fue cultural, este puede ser más natural o gastronómico
 
 DÍA A GENERAR:
 - Número: {dayNumber}
