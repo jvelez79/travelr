@@ -7,18 +7,20 @@ import { ActivityListItem } from "./ActivityListItem"
 import { ActivityEditor } from "./ActivityEditor"
 import { DayTimelineModal } from "./DayTimelineModal"
 import { TransportBlock } from "./TransportBlock"
+import { FlightBadge, getFlightsForDate } from "@/components/planning/overview/FlightBadge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
 import { useAccommodationTransport } from "@/hooks/useAccommodationTransport"
 import { cn } from "@/lib/utils"
-import type { ItineraryDay, TimelineEntry } from "@/types/plan"
+import type { ItineraryDay, TimelineEntry, FlightReservation } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 import type { AccommodationIndicatorInfo } from "@/lib/accommodation/utils"
 import type { DayGenerationStatus } from "@/hooks/useDayGeneration"
 
 interface DayEditorProps {
   day: ItineraryDay
+  flights?: FlightReservation[]
   onUpdateDay: (updatedDay: ItineraryDay) => void
   // Streaming props
   generationStatus?: DayGenerationStatus
@@ -38,6 +40,7 @@ interface DayEditorProps {
 
 export function DayEditor({
   day,
+  flights = [],
   onUpdateDay,
   generationStatus = 'completed',
   streamingTimeline = [],
@@ -62,6 +65,9 @@ export function DayEditor({
   // Use streaming timeline if generating, otherwise use day's timeline
   const displayTimeline = isGenerating ? streamingTimeline : day.timeline
   const firstActivity = displayTimeline.length > 0 ? displayTimeline[0] : null
+
+  // Get flights for this day
+  const dayFlights = getFlightsForDate(flights, day.date)
 
   // Calculate transport from accommodation to first activity (only for Day 2+)
   // transportOriginAccommodation is null for Day 1, so transport won't be shown
@@ -237,6 +243,8 @@ export function DayEditor({
               Pendiente
             </span>
           )}
+          {/* Flight badges for this day */}
+          {dayFlights.length > 0 && <FlightBadge flights={dayFlights} />}
           {hasError && (
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-destructive/10 text-xs font-medium text-destructive">

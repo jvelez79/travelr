@@ -172,7 +172,40 @@ Genera un JSON con esta estructura exacta (es crítico que sea JSON válido):
       }
     ],
     "totalCost": 240
-  }
+  },
+  "flights": [
+    {
+      "id": "flight-outbound",
+      "type": "outbound",
+      "origin": "SJU",
+      "originCity": "San Juan, Puerto Rico",
+      "destination": "SJO",
+      "destinationCity": "San José, Costa Rica",
+      "date": "YYYY-MM-DD",
+      "arrivalDate": "YYYY-MM-DD",
+      "departureTime": "08:00",
+      "arrivalTime": "12:30",
+      "airline": "Copa Airlines",
+      "confirmationNumber": null,
+      "notes": "Vuelo sugerido - buscar mejores opciones",
+      "pricePerPerson": 350
+    },
+    {
+      "id": "flight-return",
+      "type": "return",
+      "origin": "SJO",
+      "originCity": "San José, Costa Rica",
+      "destination": "SJU",
+      "destinationCity": "San Juan, Puerto Rico",
+      "date": "YYYY-MM-DD",
+      "departureTime": "14:00",
+      "arrivalTime": "18:30",
+      "airline": "Copa Airlines",
+      "confirmationNumber": null,
+      "notes": "Vuelo sugerido - buscar mejores opciones",
+      "pricePerPerson": 350
+    }
+  ]
 }
 
 NOTAS DE CATEGORÍAS PARA importantNotes (usa estos valores exactos):
@@ -191,6 +224,17 @@ ICONOS SUGERIDOS PARA timeline:
 🌅 Amanecer/madrugada, 🚗 Transporte/manejo, 🏨 Hotel/check-in, 🍳 Desayuno
 ☕ Café, 🌋 Actividad/atracción, 🏊 Agua/playa, 🍽️ Comida/restaurante
 📸 Fotos/vistas, 🛒 Compras, 🌙 Noche, ✈️ Vuelo, 🎒 Caminata
+
+VUELOS (MUY IMPORTANTE - SIEMPRE INCLUIR):
+- Genera SIEMPRE al menos 2 vuelos: uno de ida (type: "outbound") y uno de regreso (type: "return")
+- Usa códigos IATA reales para los aeropuertos (SJU, SJO, JFK, MIA, etc.)
+- El vuelo de ida debe tener date = {startDate} (o un día antes si el viaje empieza temprano)
+- El vuelo de regreso debe tener date = {endDate}
+- arrivalDate solo es necesario si el vuelo llega al día siguiente (vuelos nocturnos largos)
+- Sugiere aerolíneas que realmente operan esa ruta (Copa, United, American, Delta, etc.)
+- Los precios deben ser estimaciones realistas para la ruta
+- Si la ruta típicamente requiere conexiones, puedes agregar vuelos tipo "connection"
+- type DEBE ser uno de: "outbound", "return", o "connection"
 
 IMPORTANTE:
 - Responde SOLO con JSON válido

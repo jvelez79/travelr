@@ -1,15 +1,23 @@
 "use client"
 
-import { Plane, Copy, Pencil, Trash2 } from "lucide-react"
-import type { FlightReservation } from "@/types/plan"
+import { Plane, Copy, Pencil, Trash2, PlaneTakeoff, PlaneLanding, ArrowLeftRight } from "lucide-react"
+import { cn } from "@/lib/utils"
+import type { FlightReservation, FlightType } from "@/types/plan"
 
 interface FlightCardProps {
   flight: FlightReservation
   onEdit?: (flight: FlightReservation) => void
   onDelete?: (id: string) => void
+  compact?: boolean
 }
 
-export function FlightCard({ flight, onEdit, onDelete }: FlightCardProps) {
+const FLIGHT_TYPE_CONFIG: Record<FlightType, { label: string; icon: typeof PlaneTakeoff; color: string }> = {
+  outbound: { label: "Ida", icon: PlaneTakeoff, color: "text-blue-500" },
+  return: { label: "Regreso", icon: PlaneLanding, color: "text-green-500" },
+  connection: { label: "Conexion", icon: ArrowLeftRight, color: "text-amber-500" },
+}
+
+export function FlightCard({ flight, onEdit, onDelete, compact = false }: FlightCardProps) {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
     return date.toLocaleDateString("es-ES", {
@@ -19,16 +27,59 @@ export function FlightCard({ flight, onEdit, onDelete }: FlightCardProps) {
     })
   }
 
+  const formatTime = (timeStr: string) => {
+    // Handle both "HH:mm" format and "5:27 AM" format
+    if (timeStr.includes(":") && !timeStr.includes(" ")) {
+      // "HH:mm" format - convert to 12h
+      const [hours, minutes] = timeStr.split(":").map(Number)
+      const ampm = hours >= 12 ? "PM" : "AM"
+      const hour12 = hours % 12 || 12
+      return `${hour12}:${minutes.toString().padStart(2, "0")} ${ampm}`
+    }
+    return timeStr
+  }
+
   const copyConfirmation = () => {
     if (flight.confirmationNumber) {
       navigator.clipboard.writeText(flight.confirmationNumber)
     }
   }
 
+  const typeConfig = flight.type ? FLIGHT_TYPE_CONFIG[flight.type] : FLIGHT_TYPE_CONFIG.outbound
+  const TypeIcon = typeConfig.icon
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 p-3 bg-card rounded-lg border border-border">
+        <div className={cn("p-2 rounded-lg bg-muted", typeConfig.color)}>
+          <TypeIcon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">{flight.origin}</span>
+            <Plane className="w-3 h-3 text-muted-foreground" />
+            <span className="font-semibold">{flight.destination}</span>
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {formatTime(flight.departureTime)} - {flight.airline}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-card rounded-xl border border-border p-5 hover:border-primary/30 transition-all group">
       <div className="flex items-start justify-between">
         <div className="flex-1">
+          {/* Type Badge */}
+          {flight.type && (
+            <div className={cn("inline-flex items-center gap-1.5 text-xs font-medium mb-3 px-2 py-1 rounded-full bg-muted", typeConfig.color)}>
+              <TypeIcon className="w-3 h-3" />
+              {typeConfig.label}
+            </div>
+          )}
+
           {/* Route */}
           <div className="flex items-center gap-4 mb-3">
             <div className="text-center">
@@ -48,8 +99,16 @@ export function FlightCard({ flight, onEdit, onDelete }: FlightCardProps) {
 
           {/* Date and Time */}
           <div className="space-y-1 text-sm">
-            <p className="text-muted-foreground">{formatDate(flight.date)}</p>
-            <p className="font-medium">{flight.departureTime} — {flight.arrivalTime}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-muted-foreground">{formatDate(flight.date)}</p>
+              {flight.arrivalDate && flight.arrivalDate !== flight.date && (
+                <>
+                  <span className="text-muted-foreground">→</span>
+                  <p className="text-muted-foreground">{formatDate(flight.arrivalDate)}</p>
+                </>
+              )}
+            </div>
+            <p className="font-medium">{formatTime(flight.departureTime)} — {formatTime(flight.arrivalTime)}</p>
             <p className="text-xs text-muted-foreground uppercase">{flight.airline}</p>
           </div>
 
@@ -59,7 +118,7 @@ export function FlightCard({ flight, onEdit, onDelete }: FlightCardProps) {
               {flight.confirmationNumber && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Confirmacion:</span>
-                  <span className="text-sm font-medium">{flight.confirmationNumber}</span>
+                  <span className="text-sm font-medium font-mono">{flight.confirmationNumber}</span>
                   <button
                     onClick={copyConfirmation}
                     className="p-1 rounded hover:bg-muted transition-colors"

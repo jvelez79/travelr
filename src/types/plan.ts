@@ -6,14 +6,19 @@ import type { AccommodationReservation, Accommodation } from './accommodation'
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
 export type TravelPace = 'relaxed' | 'moderate' | 'active'
 
+// Flight type for categorization
+export type FlightType = 'outbound' | 'return' | 'connection'
+
 // Flight reservation for Overview tab
 export interface FlightReservation {
   id: string
+  type: FlightType          // Type of flight (outbound/return/connection)
   origin: string            // Airport code "SJU"
   originCity: string        // "San Juan"
   destination: string       // Airport code "PTY"
   destinationCity: string   // "Panama City"
-  date: string              // ISO date
+  date: string              // ISO date (departure date)
+  arrivalDate?: string      // ISO date (if different from departure, e.g., overnight flights)
   departureTime: string     // "5:27 AM"
   arrivalTime: string       // "7:30 AM"
   airline: string           // "COPA AIRLINES CM 451"

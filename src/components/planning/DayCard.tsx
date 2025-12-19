@@ -2,7 +2,8 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import type { ItineraryDay, Activity, getNoteEmoji, TransportMethod, TravelInfo } from "@/types/plan"
+import { FlightBadge, getFlightsForDate } from "./overview/FlightBadge"
+import type { ItineraryDay, Activity, getNoteEmoji, TransportMethod, TravelInfo, FlightReservation } from "@/types/plan"
 
 // Build Google Maps directions URL
 function buildGoogleMapsUrl(from: string, to: string, method?: TransportMethod): string {
@@ -75,6 +76,7 @@ function TransportRow({ travelInfo, fromLocation, toLocation }: {
 
 interface DayCardProps {
   day: ItineraryDay
+  flights?: FlightReservation[]
   onRegenerateDay?: (dayNumber: number, feedback: string) => void
   isRegenerating?: boolean
 }
@@ -93,7 +95,7 @@ const noteEmojis: Record<string, string> = {
   tip: '💡',
 }
 
-export function DayCard({ day, onRegenerateDay, isRegenerating }: DayCardProps) {
+export function DayCard({ day, flights = [], onRegenerateDay, isRegenerating }: DayCardProps) {
   const [expanded, setExpanded] = useState(true)
 
   const formatDate = (dateStr: string) => {
@@ -107,6 +109,9 @@ export function DayCard({ day, onRegenerateDay, isRegenerating }: DayCardProps) 
   // Check if we have the new enhanced format
   const hasTimeline = day.timeline && day.timeline.length > 0
   const hasImportantNotes = day.importantNotes && day.importantNotes.length > 0
+
+  // Get flights for this day
+  const dayFlights = getFlightsForDate(flights, day.date)
 
   return (
     <div className="bg-card rounded-xl border border-border overflow-hidden">
@@ -133,6 +138,9 @@ export function DayCard({ day, onRegenerateDay, isRegenerating }: DayCardProps) 
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {dayFlights.length > 0 && (
+              <FlightBadge flights={dayFlights} />
+            )}
             {hasTimeline && (
               <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full">
                 {day.timeline.length} actividades

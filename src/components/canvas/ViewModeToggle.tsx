@@ -1,9 +1,9 @@
 "use client"
 
-import { List, Map, Building2 } from "lucide-react"
+import { List, Map, Building2, Plane } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export type ViewMode = "timeline" | "map" | "reservations"
+export type ViewMode = "timeline" | "map" | "reservations" | "flights"
 
 interface ViewModeToggleProps {
   value: ViewMode
@@ -24,7 +24,11 @@ export function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
         </TabsTrigger>
         <TabsTrigger value="reservations" className="gap-1.5">
           <Building2 className="size-4" />
-          <span className="hidden sm:inline">Reservaciones</span>
+          <span className="hidden sm:inline">Hospedaje</span>
+        </TabsTrigger>
+        <TabsTrigger value="flights" className="gap-1.5">
+          <Plane className="size-4" />
+          <span className="hidden sm:inline">Vuelos</span>
         </TabsTrigger>
       </TabsList>
     </Tabs>

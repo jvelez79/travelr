@@ -105,8 +105,51 @@ Genera JSON con esta estructura:
       "whyThisPlace": "Ubicación perfecta para visitar...",
       "amenities": ["WiFi", "Pool", "Parking"]
     }
+  ],
+  "flights": [
+    {
+      "id": "flight-outbound",
+      "type": "outbound",
+      "origin": "CODIGO_IATA_ORIGEN",
+      "originCity": "Ciudad de origen",
+      "destination": "CODIGO_IATA_DESTINO",
+      "destinationCity": "Ciudad de destino",
+      "date": "YYYY-MM-DD",
+      "arrivalDate": "YYYY-MM-DD",
+      "departureTime": "08:00",
+      "arrivalTime": "12:30",
+      "airline": "Aerolínea real que opera la ruta",
+      "confirmationNumber": null,
+      "notes": "Vuelo sugerido - confirmar disponibilidad",
+      "pricePerPerson": 350
+    },
+    {
+      "id": "flight-return",
+      "type": "return",
+      "origin": "CODIGO_IATA_DESTINO",
+      "originCity": "Ciudad de destino",
+      "destination": "CODIGO_IATA_ORIGEN",
+      "destinationCity": "Ciudad de origen",
+      "date": "YYYY-MM-DD",
+      "departureTime": "14:00",
+      "arrivalTime": "18:30",
+      "airline": "Aerolínea real que opera la ruta",
+      "confirmationNumber": null,
+      "notes": "Vuelo sugerido - confirmar disponibilidad",
+      "pricePerPerson": 350
+    }
   ]
 }
+
+VUELOS (OBLIGATORIO - SIEMPRE INCLUIR):
+- Genera SIEMPRE al menos 2 vuelos: uno de ida (type: "outbound") y uno de regreso (type: "return")
+- Usa códigos IATA reales para los aeropuertos (SJU, SJO, JFK, MIA, CDG, FCO, etc.)
+- El vuelo de ida debe tener date = fecha de inicio del viaje
+- El vuelo de regreso debe tener date = fecha de fin del viaje
+- arrivalDate: solo incluir si el vuelo llega al día siguiente (vuelos nocturnos/transoceánicos)
+- Sugiere aerolíneas que REALMENTE operan esa ruta (Copa, United, American, Delta, Iberia, etc.)
+- Los precios deben ser estimaciones realistas para rutas internacionales ($200-600 dependiendo distancia)
+- type DEBE ser: "outbound", "return", o "connection"
 
 IMPORTANTE:
 - dayTitles debe tener exactamente {totalDays} elementos

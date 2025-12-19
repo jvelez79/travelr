@@ -8,7 +8,7 @@ import {
   getCheckOutForDay,
 } from "@/lib/accommodation/utils"
 import type { AccommodationIndicatorInfo } from "@/lib/accommodation/utils"
-import type { GeneratedPlan, ItineraryDay, TimelineEntry } from "@/types/plan"
+import type { GeneratedPlan, ItineraryDay, TimelineEntry, FlightReservation } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 
@@ -44,6 +44,11 @@ export function ItineraryEditor({
   const accommodations = useMemo(() => {
     return plan.accommodations || []
   }, [plan.accommodations])
+
+  // Get flights from plan
+  const flights = useMemo(() => {
+    return plan.flights || []
+  }, [plan.flights])
 
   // Update a single day
   const updateDay = (dayNumber: number, updatedDay: ItineraryDay) => {
@@ -90,6 +95,7 @@ export function ItineraryEditor({
           <DayEditor
             key={day.day}
             day={day}
+            flights={flights}
             onUpdateDay={(updatedDay) => updateDay(day.day, updatedDay)}
             generationStatus={dayStatus}
             streamingTimeline={streamingTimeline}

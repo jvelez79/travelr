@@ -48,6 +48,16 @@ export function OverviewTab({ plan, onUpdatePlan }: OverviewTabProps) {
     })
   }
 
+  const handleUpdateFlight = (id: string, updates: Partial<FlightReservation>) => {
+    onUpdatePlan({
+      ...plan,
+      flights: (plan.flights || []).map((f) =>
+        f.id === id ? { ...f, ...updates } : f
+      ),
+      updatedAt: new Date().toISOString(),
+    })
+  }
+
   const handleAddPlace = (place: SavedPlace) => {
     onUpdatePlan({
       ...plan,
@@ -119,7 +129,12 @@ export function OverviewTab({ plan, onUpdatePlan }: OverviewTabProps) {
 
       <FlightsSection
         flights={plan.flights || []}
+        tripStartDate={plan.trip.startDate}
+        tripEndDate={plan.trip.endDate}
+        tripDestination={plan.trip.destination}
+        tripTravelers={plan.trip.travelers}
         onAddFlight={handleAddFlight}
+        onUpdateFlight={handleUpdateFlight}
         onDeleteFlight={handleDeleteFlight}
       />
 

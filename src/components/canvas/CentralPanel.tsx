@@ -6,6 +6,7 @@ import { ViewModeToggle, type ViewMode } from "./ViewModeToggle"
 import { ItineraryEditor } from "@/components/planning/editor"
 import { ItineraryMapView } from "@/components/planning/editor/ItineraryMapView"
 import { AccommodationsView } from "@/components/accommodations"
+import { FlightsView } from "@/components/flights"
 import type { GeneratedPlan, TimelineEntry } from "@/types/plan"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 
@@ -84,6 +85,9 @@ export function CentralPanel({
       )}
       {viewMode === "reservations" && (
         <AccommodationsView plan={plan} onUpdatePlan={onUpdatePlan} />
+      )}
+      {viewMode === "flights" && (
+        <FlightsView plan={plan} onUpdatePlan={onUpdatePlan} />
       )}
     </div>
   )

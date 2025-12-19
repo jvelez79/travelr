@@ -186,6 +186,7 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 | Agent | Role |
 |-------|------|
 | `business-advisor-agent` | Feature validation (GO/MAYBE/NO-GO) |
+| `feature-architect-agent` | Technical analysis and specification |
 | `full-stack-builder-agent` | Primary implementation |
 | `code-reviewer-agent` | Pragmatic code review |
 | `debugger-agent` | Bug investigation and fixes |
@@ -198,13 +199,14 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 ```
 ¿Qué agente uso?
 
-  ¿Validar idea?      → business-advisor-agent
-  ¿Implementar?       → full-stack-builder-agent
-  ¿Arreglar bug?      → debugger-agent
-  ¿Generar código UI? → ui-pattern-generator-agent
-  ¿Revisar código?    → code-reviewer-agent
-  ¿Revisar visual?    → design-system-reviewer-agent
-  ¿Evaluar UX/flujo?  → usability-analyst-agent
+  ¿Validar idea?           → business-advisor-agent
+  ¿Analizar/especificar?   → feature-architect-agent
+  ¿Implementar?            → full-stack-builder-agent
+  ¿Arreglar bug?           → debugger-agent
+  ¿Generar código UI?      → ui-pattern-generator-agent
+  ¿Revisar código?         → code-reviewer-agent
+  ¿Revisar visual?         → design-system-reviewer-agent
+  ¿Evaluar UX/flujo?       → usability-analyst-agent
 ```
 
 ### Commands (`.claude/commands/`)
@@ -216,12 +218,18 @@ Este proyecto usa un sistema de workflow optimizado para desarrollo solo con ski
 ### Workflow Phases
 
 ```
-1. VALIDATE (15 min)  → business-advisor-agent → GO/NO-GO
-2. PLAN (15-30 min)   → Define implementation checklist
-3. BUILD (2-4 hours)  → full-stack-builder-agent → Feature branch
-4. REVIEW (10 min)    → code-reviewer-agent → OK/FIXES
-5. SHIP              → Merge → Deploy → Monitor
+1. VALIDATE (15 min)    → business-advisor-agent → GO/NO-GO
+2. ANALYZE (30-60 min)  → feature-architect-agent → Technical Specification
+3. BUILD (2-4 hours)    → full-stack-builder-agent → Feature branch
+4. REVIEW (10 min)      → code-reviewer-agent → OK/FIXES
+5. SHIP                 → Merge → Deploy → Monitor
 ```
+
+**Why ANALYZE phase is critical:**
+- Prevents building features with missing pieces (UI without data, data without source)
+- Identifies all dependencies before implementation
+- Catches issues like "AI inventing data" instead of real API integration
+- Produces a concrete specification the builder can follow
 
 ### Key Reference Files
 
