@@ -1,6 +1,6 @@
 /**
  * Edge Function: generate-itinerary
- * Version: 2025-12-18 - Fix invokeSelf Authorization header
+ * Version: 2025-12-19 - Fix invokeSelf 504 timeout with fire-and-forget pattern
  *
  * Background generation of travel itineraries with chaining pattern.
  * Each invocation handles one step (summary or one day) then self-invokes for the next.
@@ -1585,20 +1585,34 @@ async function invokeSelf(
   // supabase.functions.invoke() doesn't pass the service key correctly in production
   const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-itinerary`
 
-  const response = await fetch(edgeFunctionUrl, {
+  console.log(`[invokeSelf] Firing async request for action=${action}, dayNumber=${dayNumber}`)
+
+  // FIRE AND FORGET pattern:
+  // We start the fetch but don't await the full response.
+  // This prevents 504 timeouts when the chained function takes longer than gateway timeout.
+  // The chained function runs independently and updates the database with its progress.
+  fetch(edgeFunctionUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${serviceKey}`,
     },
     body: JSON.stringify({ tripId, userId, action, dayNumber }),
+  }).then(response => {
+    if (!response.ok) {
+      // Log the error but don't throw - this runs after the parent function returns
+      response.text().then(errorText => {
+        console.error("[invokeSelf] Async invocation failed:", response.status, errorText)
+      })
+    } else {
+      console.log(`[invokeSelf] Async invocation accepted for action=${action}, dayNumber=${dayNumber}`)
+    }
+  }).catch(err => {
+    console.error("[invokeSelf] Fetch error:", err)
   })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error("[invokeSelf] Failed to invoke:", response.status, errorText)
-    throw new Error(`Failed to invoke self: ${response.status} ${errorText}`)
-  }
+  // Small delay to ensure the request is initiated before this function returns
+  await new Promise(resolve => setTimeout(resolve, 100))
 }
 
 function createInitialPlan(
