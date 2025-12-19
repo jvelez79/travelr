@@ -2,7 +2,7 @@
 
 export type AIProviderType = 'claude-cli' | 'anthropic' | 'openai'
 
-export interface AIMessage {
+interface AIMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
 }
@@ -43,7 +43,7 @@ export interface AIStreamChunk {
 }
 
 // Phase-specific AI request types
-export type PhaseContext =
+type PhaseContext =
   | 'investigation'
   | 'budget'
   | 'documentation'
@@ -53,7 +53,7 @@ export type PhaseContext =
   | 'itinerary'
   | 'packing'
 
-export interface TripContext {
+interface TripContext {
   destination: string
   origin: string
   startDate?: string

@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { calculateCostCents, getModelForProvider } from './pricing'
 import type { AIRequestLogInsert } from '@/types/database'
 
-export interface AILogData {
+interface AILogData {
   endpoint: string
   provider: string
   model?: string
@@ -105,7 +105,7 @@ export async function logAIRequest(data: AILogData): Promise<void> {
  * }
  * ```
  */
-export function createLogContext(
+function createLogContext(
   endpoint: string,
   userId?: string,
   tripId?: string,

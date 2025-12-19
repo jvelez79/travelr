@@ -344,7 +344,7 @@ Genera el día actualizado con esta estructura JSON:
 
 IMPORTANTE: Responde SOLO con JSON válido. NO uses bloques de código markdown. NO incluyas texto antes o después del JSON.`
 
-export const SUGGEST_ACTIVITIES_PROMPT = `Sugiere 3 actividades alternativas para {timeOfDay} del día {dayNumber} en {destination}.
+const SUGGEST_ACTIVITIES_PROMPT = `Sugiere 3 actividades alternativas para {timeOfDay} del día {dayNumber} en {destination}.
 
 Contexto:
 - Actividad actual: {currentActivity}

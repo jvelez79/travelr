@@ -107,7 +107,7 @@ function mapPriceLevel(priceLevel?: string): 1 | 2 | 3 | 4 | undefined {
 }
 
 // Get photo URL from photo reference
-export function getPhotoUrl(photoName: string, maxWidth: number = 800): string {
+function getPhotoUrl(photoName: string, maxWidth: number = 800): string {
   if (!GOOGLE_PLACES_API_KEY) return ""
   return `${API_BASE}/${photoName}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_PLACES_API_KEY}`
 }
@@ -195,7 +195,7 @@ const PLACES_FIELD_MASK = [
 /**
  * Search for places by category in a destination
  */
-export async function searchPlaces(
+async function searchPlaces(
   query: string,
   category: PlaceCategory,
   location: Coordinates,

@@ -52,14 +52,14 @@ export function createEmptyMetrics(): LinkingMetrics {
 /**
  * Calculate derived metrics
  */
-export interface DerivedMetrics {
+interface DerivedMetrics {
   linkRate: number // Percentage of items linked (any confidence)
   exactMatchRate: number // Percentage of exact matches
   fallbackSuccessRate: number // Percentage of fallbacks that succeeded
   healthScore: number // Overall health score (0-100)
 }
 
-export function calculateDerivedMetrics(metrics: LinkingMetrics): DerivedMetrics {
+function calculateDerivedMetrics(metrics: LinkingMetrics): DerivedMetrics {
   const totalItems = metrics.totalActivities + metrics.totalTimeline + metrics.totalMeals
   const linkedItems = metrics.linkedExact + metrics.linkedHigh + metrics.linkedLow
 
@@ -162,7 +162,7 @@ export function logLinkingMetrics(
 /**
  * Get a human-readable summary of metrics
  */
-export function getMetricsSummary(metrics: LinkingMetrics): string {
+function getMetricsSummary(metrics: LinkingMetrics): string {
   const derived = calculateDerivedMetrics(metrics)
   const totalItems = metrics.totalActivities + metrics.totalTimeline + metrics.totalMeals
   const linkedItems = metrics.linkedExact + metrics.linkedHigh + metrics.linkedLow

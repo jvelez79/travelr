@@ -16,9 +16,9 @@ import { parseAIResponse } from './utils'
 import { createMetricsCollector } from './metrics'
 
 // Progress phases for streaming
-export type GenerationPhase = 'connecting' | 'analyzing' | 'researching' | 'creating' | 'calculating' | 'parsing' | 'done' | 'error'
+type GenerationPhase = 'connecting' | 'analyzing' | 'researching' | 'creating' | 'calculating' | 'parsing' | 'done' | 'error'
 
-export interface GenerationProgress {
+interface GenerationProgress {
   phase: GenerationPhase
   content: string
   bytesReceived: number
@@ -79,7 +79,7 @@ export async function generateContextualQuestions(
 }
 
 // Generate the initial travel plan
-export async function generateInitialPlan(
+async function generateInitialPlan(
   options: GeneratePlanOptions
 ): Promise<GeneratedPlan> {
   const { trip, preferences } = options
@@ -175,7 +175,7 @@ function getPhaseFromContentLength(length: number): GenerationPhase {
 }
 
 // Generate the initial travel plan with streaming
-export async function generateInitialPlanStreaming(
+async function generateInitialPlanStreaming(
   options: GeneratePlanOptions,
   onProgress: (progress: GenerationProgress) => void
 ): Promise<GeneratedPlan> {
@@ -346,9 +346,9 @@ function buildPlanFromParsedData(
 }
 
 // Progressive generation phases
-export type ProgressivePhase = 'starting' | 'prefetching' | 'summary' | 'day' | 'enriching' | 'assembling' | 'done' | 'error'
+type ProgressivePhase = 'starting' | 'prefetching' | 'summary' | 'day' | 'enriching' | 'assembling' | 'done' | 'error'
 
-export interface ProgressiveProgress {
+interface ProgressiveProgress {
   phase: ProgressivePhase
   totalDays: number
   currentDay?: number
@@ -365,7 +365,7 @@ export interface ProgressiveProgress {
 
 // Generate plan progressively - shows content as each day is generated
 // Now with Google Places integration for real place linking
-export async function generatePlanProgressively(
+async function generatePlanProgressively(
   options: GeneratePlanOptions,
   onProgress: (progress: ProgressiveProgress) => void
 ): Promise<GeneratedPlan> {
@@ -603,7 +603,7 @@ function createMinimalDay(
 }
 
 // Regenerate a specific day
-export async function regenerateDay(
+async function regenerateDay(
   plan: GeneratedPlan,
   dayNumber: number,
   feedback: string
@@ -740,7 +740,7 @@ function createMinimalPlan(
 // These are called after the initial plan is displayed to load secondary data
 // ============================================================================
 
-export interface TripBasicsForBackground {
+interface TripBasicsForBackground {
   destination: string
   origin: string
   startDate: string
@@ -751,7 +751,7 @@ export interface TripBasicsForBackground {
 /**
  * Generate documents list in background
  */
-export async function generateDocuments(
+async function generateDocuments(
   trip: TripBasicsForBackground
 ): Promise<DocumentItem[]> {
   const response = await fetch('/api/ai/generate-documents', {
@@ -775,7 +775,7 @@ export async function generateDocuments(
 /**
  * Generate packing list in background
  */
-export async function generatePacking(
+async function generatePacking(
   trip: TripBasicsForBackground,
   activities: string[]
 ): Promise<PackingItem[]> {
@@ -800,7 +800,7 @@ export async function generatePacking(
 /**
  * Generate tips in background
  */
-export async function generateTips(
+async function generateTips(
   destination: string,
   itinerarySummary: string
 ): Promise<string[]> {
@@ -821,7 +821,7 @@ export async function generateTips(
 /**
  * Generate warnings in background
  */
-export async function generateWarnings(
+async function generateWarnings(
   destination: string,
   startDate: string,
   endDate: string
@@ -844,7 +844,7 @@ export async function generateWarnings(
 // NEW: Streaming-based plan generation for improved UX
 // ============================================================
 
-export interface PlanSummaryResult {
+interface PlanSummaryResult {
   summary: {
     title: string
     description: string
@@ -872,7 +872,7 @@ export interface PlanSummaryResult {
  * Generate only the plan summary (fast, ~10s)
  * Used for immediate redirect while days generate in background
  */
-export async function generatePlanSummaryOnly(
+async function generatePlanSummaryOnly(
   options: GeneratePlanOptions
 ): Promise<PlanSummaryResult> {
   const { trip, preferences } = options
@@ -943,7 +943,7 @@ export async function generatePlanSummaryOnly(
 /**
  * Create a partial plan with empty days (for immediate display)
  */
-export function createPartialPlanFromSummary(
+function createPartialPlanFromSummary(
   summaryResult: PlanSummaryResult
 ): GeneratedPlan {
   const { summary, dayTitles, accommodation, accommodations, trip, preferences } = summaryResult
@@ -990,7 +990,7 @@ export function createPartialPlanFromSummary(
   }
 }
 
-export interface DayStreamCallbacks {
+interface DayStreamCallbacks {
   onTimelineEntry: (entry: TimelineEntry) => void
   onComplete: (day: ItineraryDay) => void
   onError: (error: string) => void
@@ -1000,7 +1000,7 @@ export interface DayStreamCallbacks {
  * Generate a single day using SSE streaming
  * Timeline entries are sent as they're generated
  */
-export async function generateDayWithStreaming(
+async function generateDayWithStreaming(
   trip: TripBasics,
   preferences: TravelPreferences,
   dayNumber: number,

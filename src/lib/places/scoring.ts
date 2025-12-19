@@ -17,7 +17,7 @@ import type { Place, PlaceCategory } from '@/types/explore'
 // Badge Types
 // ============================================================================
 
-export type BadgeType =
+type BadgeType =
   | 'hidden-gem'
   | 'exceptionally-rated'
   | 'new-favorite'
@@ -118,7 +118,7 @@ const THRESHOLDS = {
  * Check if a place qualifies as a Hidden Gem
  * Criteria: High rating (≥4.5) with moderate reviews (30-300)
  */
-export function isHiddenGem(place: Place): boolean {
+function isHiddenGem(place: Place): boolean {
   const { minRating, minReviews, maxReviews } = THRESHOLDS.hiddenGem
   return (
     (place.rating ?? 0) >= minRating &&
@@ -131,7 +131,7 @@ export function isHiddenGem(place: Place): boolean {
  * Check if a place is exceptionally rated
  * Criteria: Very high rating (≥4.8) with significant sample (≥100)
  */
-export function isExceptionallyRated(place: Place): boolean {
+function isExceptionallyRated(place: Place): boolean {
   const { minRating, minReviews } = THRESHOLDS.exceptional
   return (
     (place.rating ?? 0) >= minRating && (place.reviewCount ?? 0) >= minReviews
@@ -141,7 +141,7 @@ export function isExceptionallyRated(place: Place): boolean {
 /**
  * Check if a place has insufficient data for reliable evaluation
  */
-export function hasInsufficientData(place: Place): boolean {
+function hasInsufficientData(place: Place): boolean {
   return (place.reviewCount ?? 0) < THRESHOLDS.insufficient.maxReviews
 }
 
@@ -202,7 +202,7 @@ export function getPlaceBadge(
  * Calculate a confidence score based on rating and sample size
  * Uses the principle: "4 stars with 100 reviews > 5 stars with 5 reviews"
  */
-export function calculateConfidenceScore(place: Place): number {
+function calculateConfidenceScore(place: Place): number {
   const rating = place.rating ?? 0
   const reviewCount = place.reviewCount ?? 0
 
@@ -218,7 +218,7 @@ export function calculateConfidenceScore(place: Place): number {
  * Calculate Hidden Gem score for discovery sorting
  * Favors high ratings with lower review counts
  */
-export function calculateHiddenGemScore(place: Place): number {
+function calculateHiddenGemScore(place: Place): number {
   const rating = place.rating ?? 0
   const reviewCount = place.reviewCount ?? 0
 
@@ -241,7 +241,7 @@ export function calculateHiddenGemScore(place: Place): number {
 /**
  * Calculate overall quality score for general sorting
  */
-export function calculateOverallScore(place: Place): number {
+function calculateOverallScore(place: Place): number {
   const rating = place.rating ?? 0
   const reviewCount = place.reviewCount ?? 0
 
@@ -262,7 +262,7 @@ export function calculateOverallScore(place: Place): number {
  * Generate contextual insights for a place
  * These explain WHY a place is special, not just show data
  */
-export function generateInsights(
+function generateInsights(
   place: Place,
   categoryRank?: number
 ): string[] {
@@ -349,7 +349,7 @@ export function sortByOverallQuality(places: Place[]): Place[] {
 /**
  * Sort places by confidence score
  */
-export function sortByConfidence(places: Place[]): Place[] {
+function sortByConfidence(places: Place[]): Place[] {
   return [...places].sort((a, b) => {
     const scoreA = calculateConfidenceScore(a)
     const scoreB = calculateConfidenceScore(b)
@@ -364,7 +364,7 @@ export function sortByConfidence(places: Place[]): Place[] {
 /**
  * Get the rank of a place within its category
  */
-export function getCategoryRank(
+function getCategoryRank(
   place: Place,
   allPlacesInCategory: Place[]
 ): number {
@@ -376,7 +376,7 @@ export function getCategoryRank(
 /**
  * Add ranking information to places
  */
-export function addCategoryRanking(
+function addCategoryRanking(
   places: Place[],
   category: PlaceCategory
 ): Map<string, number> {
@@ -398,7 +398,7 @@ export function addCategoryRanking(
 /**
  * Filter places to only show hidden gems
  */
-export function filterHiddenGems(places: Place[]): Place[] {
+function filterHiddenGems(places: Place[]): Place[] {
   return places.filter(isHiddenGem)
 }
 
@@ -412,7 +412,7 @@ export function filterByMinRating(places: Place[], minRating: number): Place[] {
 /**
  * Filter places by price level
  */
-export function filterByPriceLevel(
+function filterByPriceLevel(
   places: Place[],
   maxPrice: 1 | 2 | 3 | 4
 ): Place[] {

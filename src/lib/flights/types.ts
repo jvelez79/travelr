@@ -39,7 +39,7 @@ export interface ValidationResult {
 // Constants
 // ============================================================================
 
-export const CABIN_CLASSES = {
+const CABIN_CLASSES = {
   economy: 'economy',
   premium_economy: 'premium economy',
   business: 'business',

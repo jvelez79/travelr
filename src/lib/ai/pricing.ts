@@ -5,13 +5,13 @@
  * Used to calculate estimated costs for AI requests.
  */
 
-export interface TokenPricing {
+interface TokenPricing {
   inputPer1M: number // USD per 1M input tokens
   outputPer1M: number // USD per 1M output tokens
 }
 
 // Pricing in USD per 1M tokens (as of late 2024/early 2025)
-export const AI_PRICING: Record<string, TokenPricing> = {
+const AI_PRICING: Record<string, TokenPricing> = {
   // Anthropic Claude models
   'claude-sonnet-4-20250514': { inputPer1M: 3.0, outputPer1M: 15.0 },
   'claude-3-5-sonnet-20241022': { inputPer1M: 3.0, outputPer1M: 15.0 },

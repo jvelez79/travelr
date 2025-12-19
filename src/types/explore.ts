@@ -16,7 +16,7 @@ export type PlaceCategory =
   | 'wellness'
 
 // Category metadata for display
-export interface CategoryInfo {
+interface CategoryInfo {
   id: PlaceCategory
   label: string
   labelEn: string
@@ -25,7 +25,7 @@ export interface CategoryInfo {
 }
 
 // All available categories with metadata
-export const PLACE_CATEGORIES: CategoryInfo[] = [
+const PLACE_CATEGORIES: CategoryInfo[] = [
   { id: 'restaurants', label: 'Restaurantes', labelEn: 'Restaurants', icon: 'utensils', googleType: 'restaurant' },
   { id: 'attractions', label: 'Atracciones', labelEn: 'Attractions', icon: 'landmark', googleType: 'tourist_attraction' },
   { id: 'cafes', label: 'Cafés', labelEn: 'Cafes', icon: 'coffee', googleType: 'cafe' },
@@ -94,7 +94,7 @@ export interface Place {
 }
 
 // Destination type
-export interface Destination {
+interface Destination {
   id: string                     // Slug: "la-fortuna-costa-rica"
   name: string                   // "La Fortuna"
   fullName: string               // "La Fortuna, Costa Rica"
@@ -113,7 +113,7 @@ export interface Destination {
 }
 
 // Search result for destination autocomplete
-export interface DestinationSearchResult {
+interface DestinationSearchResult {
   placeId: string                // Google Place ID
   name: string
   fullName: string
@@ -123,7 +123,7 @@ export interface DestinationSearchResult {
 }
 
 // API response for places list
-export interface PlacesResponse {
+interface PlacesResponse {
   places: Place[]
   total: number
   nextPageToken?: string
@@ -132,13 +132,13 @@ export interface PlacesResponse {
 }
 
 // Destination detail response
-export interface DestinationResponse {
+interface DestinationResponse {
   destination: Destination
   featuredPlaces: Place[]
 }
 
 // Add to trip payload
-export interface AddToTripPayload {
+interface AddToTripPayload {
   place: {
     id: string
     name: string
@@ -152,7 +152,7 @@ export interface AddToTripPayload {
 }
 
 // Map marker for display
-export interface MapMarker {
+interface MapMarker {
   id: string
   position: Coordinates
   title: string
@@ -161,18 +161,18 @@ export interface MapMarker {
 }
 
 // Helper: Get category info by id
-export function getCategoryInfo(id: PlaceCategory): CategoryInfo | undefined {
+function getCategoryInfo(id: PlaceCategory): CategoryInfo | undefined {
   return PLACE_CATEGORIES.find(c => c.id === id)
 }
 
 // Helper: Get price level string
-export function getPriceLevelString(level?: number): string {
+function getPriceLevelString(level?: number): string {
   if (!level) return ''
   return '$'.repeat(level)
 }
 
 // Helper: Create slug from destination name
-export function createDestinationSlug(name: string, country: string): string {
+function createDestinationSlug(name: string, country: string): string {
   const combined = `${name} ${country}`
   return combined
     .toLowerCase()
@@ -252,7 +252,7 @@ export interface ExploreModalProps {
   initialSearchQuery?: string
 }
 
-export interface ExploreFilters {
+interface ExploreFilters {
   location: string
   category: PlaceCategory | 'all'
   minRating: number | null      // 4, 4.5, etc.
@@ -261,7 +261,7 @@ export interface ExploreFilters {
   searchQuery: string
 }
 
-export const DEFAULT_EXPLORE_FILTERS: ExploreFilters = {
+const DEFAULT_EXPLORE_FILTERS: ExploreFilters = {
   location: '',
   category: 'all',
   minRating: null,

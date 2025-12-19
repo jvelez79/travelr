@@ -10,9 +10,9 @@ import type { Coordinates } from "@/types/explore"
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY || ""
 const API_BASE = "https://places.googleapis.com/v1"
 
-export type DestinationType = "country" | "region" | "city" | "neighborhood"
+type DestinationType = "country" | "region" | "city" | "neighborhood"
 
-export interface DestinationAnalysis {
+interface DestinationAnalysis {
   type: DestinationType
   suggestedRadius: number // meters
   shouldMultiFetch: boolean
@@ -220,7 +220,7 @@ export async function getMainCitiesInDestination(
  * Combine and deduplicate results from multiple city searches
  * Removes duplicates based on place ID
  */
-export function combineAndDeduplicateResults<T extends { id: string }>(
+function combineAndDeduplicateResults<T extends { id: string }>(
   results: T[][],
   categoriesCount: number
 ): Map<string, T[]> {

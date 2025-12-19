@@ -6,7 +6,7 @@
  * Extract JSON from AI response content.
  * Handles markdown code blocks that Claude often adds around JSON.
  */
-export function extractJSON(content: string): string | null {
+function extractJSON(content: string): string | null {
   let text = content.trim()
 
   // Remove markdown code blocks if present (```json or ```)

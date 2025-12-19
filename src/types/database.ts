@@ -928,7 +928,7 @@ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export type Tables<
+type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
@@ -957,7 +957,7 @@ export type Tables<
       : never
     : never
 
-export type TablesInsert<
+type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -982,7 +982,7 @@ export type TablesInsert<
       : never
     : never
 
-export type TablesUpdate<
+type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1007,7 +1007,7 @@ export type TablesUpdate<
       : never
     : never
 
-export type Enums<
+type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1024,7 +1024,7 @@ export type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
-export type CompositeTypes<
+type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1041,7 +1041,7 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-export const Constants = {
+const Constants = {
   graphql_public: {
     Enums: {},
   },
@@ -1063,26 +1063,26 @@ export const Constants = {
 export type Trip = Database['public']['Tables']['trips']['Row']
 export type Plan = Database['public']['Tables']['plans']['Row']
 export type GenerationState = Database['public']['Tables']['generation_states']['Row']
-export type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
-export type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
+type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
+type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
 
 // Insert types
 export type TripInsert = Database['public']['Tables']['trips']['Insert']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
-export type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
-export type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
+type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
+type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
 export type AIRequestLogInsert = Database['public']['Tables']['ai_request_logs']['Insert']
 
 // Update types
 export type TripUpdate = Database['public']['Tables']['trips']['Update']
-export type PlanUpdate = Database['public']['Tables']['plans']['Update']
-export type GenerationStateUpdate = Database['public']['Tables']['generation_states']['Update']
-export type DirectionsCacheUpdate = Database['public']['Tables']['directions_cache']['Update']
-export type AIRequestLogUpdate = Database['public']['Tables']['ai_request_logs']['Update']
+type PlanUpdate = Database['public']['Tables']['plans']['Update']
+type GenerationStateUpdate = Database['public']['Tables']['generation_states']['Update']
+type DirectionsCacheUpdate = Database['public']['Tables']['directions_cache']['Update']
+type AIRequestLogUpdate = Database['public']['Tables']['ai_request_logs']['Update']
 
 // Domain enums
 export type TripStatus = 'planning' | 'draft' | 'completed'
-export type TripMode = 'guided' | 'manual'
+type TripMode = 'guided' | 'manual'
 export type GenerationStatus =
   | 'idle'
   | 'generating_summary'

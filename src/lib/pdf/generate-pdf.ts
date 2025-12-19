@@ -9,7 +9,7 @@ import { TravelrPDFDocument } from './components/PDFDocument'
 import { generateStaticMapUrl } from './utils/static-map'
 import { getDestinationImage } from './utils/destination-image'
 
-export interface GeneratePDFOptions {
+interface GeneratePDFOptions {
   includeMap?: boolean
   includeHeroImage?: boolean
 }

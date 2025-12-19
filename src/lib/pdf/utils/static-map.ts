@@ -90,7 +90,7 @@ export function generateStaticMapUrl(
 /**
  * Generate a simple location map for a single point
  */
-export function generateLocationMapUrl(
+function generateLocationMapUrl(
   lat: number,
   lng: number,
   options: {

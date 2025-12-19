@@ -101,7 +101,7 @@ export async function getDestinationImage(plan: GeneratedPlan): Promise<string |
 /**
  * Get multiple destination images for variety
  */
-export async function getDestinationImages(
+async function getDestinationImages(
   plan: GeneratedPlan,
   maxImages: number = 5
 ): Promise<string[]> {

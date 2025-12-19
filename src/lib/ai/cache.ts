@@ -16,7 +16,7 @@ const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
  * Generate a cache key from trip parameters
  * Uses a simple hash of the key parameters
  */
-export function generateCacheKey(
+function generateCacheKey(
   destination: string,
   startDate: string,
   endDate: string,
@@ -110,7 +110,7 @@ export function cachePlan(
 /**
  * Clear expired cache entries
  */
-export function clearExpiredCache(): void {
+function clearExpiredCache(): void {
   if (typeof window === 'undefined') return
 
   const now = new Date()
@@ -143,7 +143,7 @@ export function clearExpiredCache(): void {
 /**
  * Clear all cached plans
  */
-export function clearAllCache(): void {
+function clearAllCache(): void {
   if (typeof window === 'undefined') return
 
   const keysToRemove: string[] = []
@@ -162,7 +162,7 @@ export function clearAllCache(): void {
 /**
  * Get cache statistics
  */
-export function getCacheStats(): { count: number; totalSize: number } {
+function getCacheStats(): { count: number; totalSize: number } {
   if (typeof window === 'undefined') return { count: 0, totalSize: 0 }
 
   let count = 0

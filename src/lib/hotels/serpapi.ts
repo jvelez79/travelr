@@ -83,7 +83,7 @@ export async function searchHotels(
 // Get Hotel Details
 // ============================================================================
 
-export interface HotelDetailsParams {
+interface HotelDetailsParams {
   checkIn?: string
   checkOut?: string
   adults?: number

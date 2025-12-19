@@ -16,7 +16,7 @@ interface ActivityItemProps {
   isDragging?: boolean
 }
 
-export function ActivityItem({ activity, onEdit, onDelete, isDragging }: ActivityItemProps) {
+function ActivityItem({ activity, onEdit, onDelete, isDragging }: ActivityItemProps) {
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [showCarousel, setShowCarousel] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })

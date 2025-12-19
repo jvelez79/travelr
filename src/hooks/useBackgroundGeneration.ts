@@ -16,9 +16,9 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 // Types
 // ============================================
 
-export type GenerationStatus = DbGenerationStatus
+type GenerationStatus = DbGenerationStatus
 
-export interface BackgroundGenerationState {
+interface BackgroundGenerationState {
   tripId: string
   status: GenerationStatus
   currentDay: number | null
@@ -29,14 +29,14 @@ export interface BackgroundGenerationState {
   retryCount: number
 }
 
-export interface GenerationProgress {
+interface GenerationProgress {
   completed: number
   total: number
   currentDay: number | null
   percentage: number
 }
 
-export interface UseBackgroundGenerationOptions {
+interface UseBackgroundGenerationOptions {
   tripId: string | null
   onDayComplete?: (dayNumber: number) => void
   onAllComplete?: () => void

@@ -24,7 +24,7 @@ const BATCH_DELAY_MS = 200
  * Extract coordinates from a timeline activity
  * Returns null if coordinates are not available
  */
-export function getActivityCoordinates(activity: TimelineEntry): Coordinates | null {
+function getActivityCoordinates(activity: TimelineEntry): Coordinates | null {
   if (activity.placeData?.coordinates) {
     return activity.placeData.coordinates
   }
@@ -73,7 +73,7 @@ export function suggestTransportMode(distanceMeters: number): TransportMethod {
  * - Either activity doesn't have coordinates
  * - Activities are too close (< 100m - same location)
  */
-export function shouldCalculateTransport(
+function shouldCalculateTransport(
   fromActivity: TimelineEntry,
   toActivity: TimelineEntry
 ): boolean {
@@ -267,7 +267,7 @@ export async function calculateTransportForTimeline(
  *
  * Useful when a single activity is edited without recalculating the entire timeline
  */
-export async function updateTransportForActivity(
+async function updateTransportForActivity(
   timeline: TimelineEntry[],
   activityIndex: number
 ): Promise<TimelineEntry[]> {

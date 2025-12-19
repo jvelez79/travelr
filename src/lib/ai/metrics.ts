@@ -4,7 +4,7 @@
  * Provides timing metrics for AI operations to identify optimization opportunities.
  */
 
-export interface StepMetrics {
+interface StepMetrics {
   step: string
   startedAt: number
   completedAt: number
@@ -33,14 +33,14 @@ function formatDuration(ms: number): string {
 /**
  * Log the start of a step
  */
-export function logStepStart(step: string): void {
+function logStepStart(step: string): void {
   console.log(`[AI] → Starting ${step}...`)
 }
 
 /**
  * Log the completion of a step
  */
-export function logStepComplete(step: string, durationMs: number, metadata?: StepMetrics['metadata']): void {
+function logStepComplete(step: string, durationMs: number, metadata?: StepMetrics['metadata']): void {
   const tokenInfo = metadata?.inputTokens || metadata?.outputTokens
     ? ` (tokens: ${metadata.inputTokens ?? 0}/${metadata.outputTokens ?? 0})`
     : ''
@@ -50,7 +50,7 @@ export function logStepComplete(step: string, durationMs: number, metadata?: Ste
 /**
  * Log an error in a step
  */
-export function logStepError(step: string, durationMs: number, error: string): void {
+function logStepError(step: string, durationMs: number, error: string): void {
   console.error(`[AI] ✗ ${step} failed after ${formatDuration(durationMs)}: ${error}`)
 }
 
@@ -62,7 +62,7 @@ export function logStepError(step: string, durationMs: number, error: string): v
  *   return await generateDay(1)
  * })
  */
-export async function withMetrics<T>(
+async function withMetrics<T>(
   step: string,
   fn: () => Promise<T>,
   extractMetadata?: (result: T) => StepMetrics['metadata']
@@ -114,21 +114,21 @@ export async function withMetrics<T>(
 /**
  * Get all accumulated metrics for the session
  */
-export function getSessionMetrics(): StepMetrics[] {
+function getSessionMetrics(): StepMetrics[] {
   return [...sessionMetrics]
 }
 
 /**
  * Clear accumulated metrics
  */
-export function clearSessionMetrics(): void {
+function clearSessionMetrics(): void {
   sessionMetrics.length = 0
 }
 
 /**
  * Log a summary of all metrics
  */
-export function logMetricsSummary(): void {
+function logMetricsSummary(): void {
   if (sessionMetrics.length === 0) {
     console.log('[AI] No metrics recorded')
     return

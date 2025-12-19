@@ -225,7 +225,7 @@ export class HotelSearchError extends Error {
 // Constants
 // ============================================================================
 
-export const COMMON_AMENITIES = [
+const COMMON_AMENITIES = [
   "Free WiFi",
   "Pool",
   "Parking",
@@ -243,7 +243,7 @@ export const COMMON_AMENITIES = [
   "Laundry",
 ] as const
 
-export const HOTEL_TYPES = [
+const HOTEL_TYPES = [
   "Hotel",
   "Resort",
   "Hostel",
@@ -252,7 +252,7 @@ export const HOTEL_TYPES = [
   "Vacation rental",
 ] as const
 
-export const CURRENCIES = [
+const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar" },
   { code: "EUR", symbol: "€", name: "Euro" },
   { code: "GBP", symbol: "£", name: "British Pound" },

@@ -8,7 +8,7 @@
 /**
  * Unified type of accommodation
  */
-export type AccommodationType =
+type AccommodationType =
   | 'hotel'
   | 'airbnb'
   | 'hostel'
@@ -20,7 +20,7 @@ export type AccommodationType =
 /**
  * Origin of the accommodation - how it was created
  */
-export type AccommodationOrigin = 'ai_suggestion' | 'user_added'
+type AccommodationOrigin = 'ai_suggestion' | 'user_added'
 
 /**
  * Status in the accommodation lifecycle
@@ -35,7 +35,7 @@ export type AccommodationMatchConfidence = 'exact' | 'high' | 'low' | 'none'
 /**
  * Source of the accommodation - how it was added to the system
  */
-export type AccommodationSource =
+type AccommodationSource =
   | 'email_forward'    // User forwarded confirmation email
   | 'receipt_upload'   // User uploaded PDF/image
   | 'gmail_sync'       // Auto-synced from Gmail (future)
@@ -63,7 +63,7 @@ export interface AccommodationPlaceData {
 /**
  * Booking link from OTA providers (via SerpAPI or direct)
  */
-export interface BookingLink {
+interface BookingLink {
   provider: string           // "Booking.com", "Expedia", "Hotels.com", etc.
   price: number
   currency: string
@@ -156,12 +156,12 @@ export type AccommodationReservationType =
 /**
  * Reservation status
  */
-export type ReservationStatus = 'confirmed' | 'pending' | 'cancelled'
+type ReservationStatus = 'confirmed' | 'pending' | 'cancelled'
 
 /**
  * Source of the reservation - how it was added to the system
  */
-export type ReservationSource =
+type ReservationSource =
   | 'email_forward'    // User forwarded confirmation email
   | 'receipt_upload'   // User uploaded PDF/image
   | 'gmail_sync'       // Auto-synced from Gmail (future)
@@ -268,7 +268,7 @@ export interface ExtractedAccommodationData {
 /**
  * Form data for manual accommodation entry
  */
-export interface AccommodationFormData {
+interface AccommodationFormData {
   name: string
   type: AccommodationReservationType
   address?: string
@@ -360,7 +360,7 @@ export function getSourceDisplayName(source: ReservationSource): string {
 /**
  * Helper: Get icon name for reservation source
  */
-export function getSourceIcon(source: ReservationSource): string {
+function getSourceIcon(source: ReservationSource): string {
   const icons: Record<ReservationSource, string> = {
     email_forward: 'mail-forward',
     receipt_upload: 'upload',
@@ -378,7 +378,7 @@ export function getSourceIcon(source: ReservationSource): string {
 /**
  * Create a new AI-generated accommodation suggestion
  */
-export function createAISuggestion(data: {
+function createAISuggestion(data: {
   name: string
   type: AccommodationType
   area: string
@@ -462,7 +462,7 @@ export function createUserAccommodation(data: {
 /**
  * Get display name for accommodation status
  */
-export function getStatusDisplayName(status: AccommodationStatus): string {
+function getStatusDisplayName(status: AccommodationStatus): string {
   const names: Record<AccommodationStatus, string> = {
     suggested: 'Sugerencia AI',
     pending: 'Pendiente',
@@ -475,7 +475,7 @@ export function getStatusDisplayName(status: AccommodationStatus): string {
 /**
  * Get status color class (for badges)
  */
-export function getStatusColorClass(status: AccommodationStatus): string {
+function getStatusColorClass(status: AccommodationStatus): string {
   const colors: Record<AccommodationStatus, string> = {
     suggested: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
     pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300',
@@ -503,7 +503,7 @@ export function getAccommodationSourceDisplayName(source: AccommodationSource): 
 /**
  * Get icon name for accommodation source
  */
-export function getAccommodationSourceIcon(source: AccommodationSource): string {
+function getAccommodationSourceIcon(source: AccommodationSource): string {
   const icons: Record<AccommodationSource, string> = {
     email_forward: 'mail-forward',
     receipt_upload: 'upload',
@@ -519,7 +519,7 @@ export function getAccommodationSourceIcon(source: AccommodationSource): string 
  * Check if an accommodation covers a specific date
  * Returns true if the date is within the stay (after checkIn, before or equal to checkOut)
  */
-export function accommodationCoversDate(accommodation: Accommodation, date: string): boolean {
+function accommodationCoversDate(accommodation: Accommodation, date: string): boolean {
   return date > accommodation.checkIn && date <= accommodation.checkOut
 }
 
@@ -527,7 +527,7 @@ export function accommodationCoversDate(accommodation: Accommodation, date: stri
  * Get the accommodation for a specific day with priority logic
  * Priority: confirmed > pending > suggested
  */
-export function getAccommodationForDate(
+function getAccommodationForDate(
   date: string,
   accommodations: Accommodation[]
 ): Accommodation | null {

@@ -65,7 +65,7 @@ function levenshteinDistance(a: string, b: string): number {
  * Calculate similarity score between two strings (0-1)
  * Uses Levenshtein distance normalized by max length
  */
-export function calculateSimilarity(a: string, b: string): number {
+function calculateSimilarity(a: string, b: string): number {
   const normA = normalizePlaceName(a)
   const normB = normalizePlaceName(b)
 

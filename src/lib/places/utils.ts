@@ -4,7 +4,7 @@ import type { SavedPlace } from '@/types/plan'
 /**
  * Converts a Place (from Google Places) to SavedPlace (for saving)
  */
-export function createSavedPlaceFromPlace(place: Place): SavedPlace {
+function createSavedPlaceFromPlace(place: Place): SavedPlace {
   return {
     id: `saved-${place.id}-${Date.now()}`,
     name: place.name,
@@ -89,7 +89,7 @@ export function getGoogleMapsUrl(place: SavedPlace): string {
 /**
  * Gets Google Search URL for a place
  */
-export function getGoogleSearchUrl(place: SavedPlace): string {
+function getGoogleSearchUrl(place: SavedPlace): string {
   const searchTerms = [place.name]
   if (place.location?.city) searchTerms.push(place.location.city)
   if (place.location?.country) searchTerms.push(place.location.country)
@@ -100,7 +100,7 @@ export function getGoogleSearchUrl(place: SavedPlace): string {
 /**
  * Gets directions URL from origin to a saved place
  */
-export function getDirectionsUrl(
+function getDirectionsUrl(
   place: SavedPlace,
   origin?: { lat: number; lng: number } | string,
   travelMode: 'driving' | 'walking' | 'transit' = 'driving'
@@ -130,7 +130,7 @@ export function getDirectionsUrl(
  * Migrates old format SavedPlaces to new format
  * Should be called when loading a plan
  */
-export function migrateSavedPlaces(places: SavedPlace[]): SavedPlace[] {
+function migrateSavedPlaces(places: SavedPlace[]): SavedPlace[] {
   return places.map((place) => {
     // If already has new format, return without changes
     if (place.sourceInfo || place.location) {
@@ -155,7 +155,7 @@ export function migrateSavedPlaces(places: SavedPlace[]): SavedPlace[] {
 /**
  * Checks if a place has complete data (not just migrated)
  */
-export function hasCompleteData(place: SavedPlace): boolean {
+function hasCompleteData(place: SavedPlace): boolean {
   return !!(
     place.location?.lat &&
     place.location?.lng &&

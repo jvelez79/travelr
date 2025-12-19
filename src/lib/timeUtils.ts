@@ -166,7 +166,7 @@ export function formatDuration(minutes: number): string {
  * Parse duration string to minutes
  * Handles formats like "30", "30 min", "1h", "1h 30m", "1.5 horas"
  */
-export function parseDuration(durationStr: string): number | null {
+function parseDuration(durationStr: string): number | null {
   if (!durationStr) return null
 
   const str = durationStr.trim().toLowerCase()

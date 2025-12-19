@@ -401,7 +401,7 @@ interface HotelSearchState {
 const STORAGE_KEY = "travelr-hotel-search"
 const MAX_RECENT_SEARCHES = 5
 
-export function useHotelLocalStorage() {
+function useHotelLocalStorage() {
   const [state, setState] = useState<HotelSearchState>(() => {
     if (typeof window === "undefined") {
       return { recentSearches: [], favorites: [] }

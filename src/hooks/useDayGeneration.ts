@@ -59,7 +59,7 @@ interface UseDayGenerationOptions {
 const GENERATION_STATE_KEY = (tripId: string) => `generation-state-${tripId}`
 
 /** @deprecated Use Supabase state instead */
-export function saveGenerationState(state: GenerationSessionState): void {
+function saveGenerationState(state: GenerationSessionState): void {
   console.warn('[useDayGeneration] saveGenerationState is deprecated - state is now managed server-side')
 }
 
@@ -75,7 +75,7 @@ export function loadGenerationState(tripId: string): GenerationSessionState | nu
 }
 
 /** @deprecated Use Supabase state instead */
-export function clearGenerationState(tripId: string): void {
+function clearGenerationState(tripId: string): void {
   try {
     localStorage.removeItem(GENERATION_STATE_KEY(tripId))
   } catch {
@@ -84,19 +84,19 @@ export function clearGenerationState(tripId: string): void {
 }
 
 /** @deprecated */
-export async function syncGenerationStateToSupabase(): Promise<boolean> {
+async function syncGenerationStateToSupabase(): Promise<boolean> {
   console.warn('[useDayGeneration] syncGenerationStateToSupabase is deprecated')
   return true
 }
 
 /** @deprecated */
-export async function loadGenerationStateFromSupabase(): Promise<GenerationSessionState | null> {
+async function loadGenerationStateFromSupabase(): Promise<GenerationSessionState | null> {
   console.warn('[useDayGeneration] loadGenerationStateFromSupabase is deprecated')
   return null
 }
 
 /** @deprecated */
-export async function clearGenerationStateEverywhere(tripId: string): Promise<void> {
+async function clearGenerationStateEverywhere(tripId: string): Promise<void> {
   clearGenerationState(tripId)
 }
 

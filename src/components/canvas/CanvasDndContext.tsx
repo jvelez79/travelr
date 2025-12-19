@@ -17,20 +17,20 @@ import type { Place } from "@/types/explore"
 import type { TimelineEntry } from "@/types/plan"
 
 // Drag data types
-export type DragItemType = "place" | "timeline-activity"
+type DragItemType = "place" | "timeline-activity"
 
-export interface PlaceDragData {
+interface PlaceDragData {
   type: "place"
   place: Place
 }
 
-export interface TimelineActivityDragData {
+interface TimelineActivityDragData {
   type: "timeline-activity"
   activity: TimelineEntry
   dayNumber: number
 }
 
-export type DragData = PlaceDragData | TimelineActivityDragData
+type DragData = PlaceDragData | TimelineActivityDragData
 
 // Context for accessing drag state
 interface CanvasDndContextValue {
@@ -40,7 +40,7 @@ interface CanvasDndContextValue {
 
 const CanvasDndReactContext = createContext<CanvasDndContextValue | null>(null)
 
-export function useCanvasDnd() {
+function useCanvasDnd() {
   const context = useContext(CanvasDndReactContext)
   if (!context) {
     throw new Error("useCanvasDnd must be used within CanvasDndProvider")

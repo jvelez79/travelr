@@ -37,6 +37,6 @@ export function getAIProvider(): AIProvider {
 /**
  * Clear the cached provider (useful for testing or config changes)
  */
-export function clearProviderCache(): void {
+function clearProviderCache(): void {
   cachedProvider = null
 }

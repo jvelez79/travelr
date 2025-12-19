@@ -87,7 +87,7 @@ export function getAccommodationForDay(
  * Gets all accommodations that apply to a specific day
  * Useful for showing alternatives or conflicts
  */
-export function getAllAccommodationsForDay(
+function getAllAccommodationsForDay(
   dayDate: string,
   dayNumber: number,
   accommodations: Accommodation[]
@@ -121,7 +121,7 @@ export function getAllAccommodationsForDay(
 /**
  * Checks if an accommodation has valid coordinates for transport calculation
  */
-export function hasAccommodationCoordinates(
+function hasAccommodationCoordinates(
   accommodation: Accommodation | null
 ): boolean {
   return !!(
@@ -133,7 +133,7 @@ export function hasAccommodationCoordinates(
 /**
  * Get coordinates from an accommodation (for transport calculation)
  */
-export function getAccommodationCoordinates(
+function getAccommodationCoordinates(
   accommodation: Accommodation | null
 ): { lat: number; lng: number } | null {
   if (!accommodation?.placeData?.coordinates) {
@@ -145,7 +145,7 @@ export function getAccommodationCoordinates(
 /**
  * Check if there's a gap in accommodation coverage between trip dates
  */
-export function hasAccommodationGap(
+function hasAccommodationGap(
   startDate: string,
   endDate: string,
   accommodations: Accommodation[]

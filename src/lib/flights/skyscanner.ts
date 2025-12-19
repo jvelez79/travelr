@@ -102,7 +102,7 @@ export function validateFlightSearchParams(params: FlightSearchParams): Validati
  * https://www.skyscanner.com/transport/flights/sju/sjo/250307/250313/
  * ?adults=2&adultsv2=2&cabinclass=economy&children=0&ref=home
  */
-export function buildSkyscannerDeeplink(params: FlightSearchParams): string {
+function buildSkyscannerDeeplink(params: FlightSearchParams): string {
   // Validate params
   const validation = validateFlightSearchParams(params)
   if (!validation.isValid) {

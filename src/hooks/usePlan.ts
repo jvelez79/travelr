@@ -9,7 +9,7 @@ import type { Plan, PlanInsert, Json } from '@/types/database'
 // Types
 // ============================================
 
-export interface PlanData {
+interface PlanData {
   [key: string]: unknown
 }
 
@@ -171,7 +171,7 @@ export function useSavePlan() {
 // useDeletePlan - Eliminar plan
 // ============================================
 
-export function useDeletePlan() {
+function useDeletePlan() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const { user } = useAuth()

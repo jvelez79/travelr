@@ -185,7 +185,7 @@ export function useDestinationSearch(): UseDestinationSearchResult {
 /**
  * Hook to get destination info by place ID
  */
-export function useDestinationInfo(placeId: string | null) {
+function useDestinationInfo(placeId: string | null) {
   const [info, setInfo] = useState<{
     name: string
     fullName: string

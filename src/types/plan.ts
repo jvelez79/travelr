@@ -28,7 +28,7 @@ export interface FlightReservation {
 }
 
 // Location for saved places
-export interface SavedPlaceLocation {
+interface SavedPlaceLocation {
   lat: number
   lng: number
   address?: string
@@ -37,7 +37,7 @@ export interface SavedPlaceLocation {
 }
 
 // Source info for saved places (extensible for TripAdvisor, etc.)
-export interface PlaceSourceInfo {
+interface PlaceSourceInfo {
   source: 'google' | 'tripadvisor' | 'manual'
   sourceId?: string           // Google Place ID, TripAdvisor ID, etc.
   googleMapsUrl?: string      // Direct URL to open in Google Maps
@@ -121,7 +121,7 @@ export interface TravelInfo {
 }
 
 // Match confidence for Google Places linking
-export type MatchConfidence = 'exact' | 'high' | 'low' | 'none'
+type MatchConfidence = 'exact' | 'high' | 'low' | 'none'
 
 // Place data embedded in timeline/activity items (from Google Places)
 export interface PlaceData {
@@ -189,7 +189,7 @@ export interface ImportantNote {
 }
 
 // Day summary statistics (like "Resumen del Día")
-export interface DaySummary {
+interface DaySummary {
   duration: string           // "15 horas (6:00 AM - 9:00 PM)"
   drivingTotal?: {
     distance: string         // "145 km"
@@ -211,7 +211,7 @@ export interface DaySummary {
 }
 
 // Meal plan for the day
-export interface MealPlan {
+interface MealPlan {
   breakfast?: {
     suggestion: string
     priceRange?: string      // "$8-12/pp"
@@ -279,7 +279,7 @@ export interface AccommodationSuggestion {
 }
 
 // Budget breakdown
-export interface BudgetBreakdown {
+interface BudgetBreakdown {
   flights: number
   accommodation: number
   activities: number
@@ -323,7 +323,7 @@ export interface PackingItem {
 }
 
 // Status for background-generated sections
-export type BackgroundSectionStatus = 'idle' | 'loading' | 'success' | 'error'
+type BackgroundSectionStatus = 'idle' | 'loading' | 'success' | 'error'
 
 // The complete generated plan
 export interface GeneratedPlan {
@@ -408,7 +408,7 @@ export interface GeneratedPlan {
 }
 
 // Partial plan for regeneration
-export interface PartialPlanUpdate {
+interface PartialPlanUpdate {
   section: 'itinerary' | 'accommodation' | 'budget' | 'documents' | 'packing'
   dayNumber?: number         // If updating a specific day
   data: Partial<GeneratedPlan>
@@ -439,7 +439,7 @@ export interface ContextualQuestion {
 // Generation Session State (for persisting generation progress)
 // ============================================================
 
-export type GenerationStatus =
+type GenerationStatus =
   | 'idle'                    // Not started
   | 'generating_summary'      // Generating plan summary
   | 'ready_to_generate'       // Summary done, ready to generate days
@@ -449,7 +449,7 @@ export type GenerationStatus =
   | 'error'                   // Fatal error
 
 // Retry information for failed days
-export interface DayRetryInfo {
+interface DayRetryInfo {
   dayNumber: number
   attempts: number
   lastError?: string
@@ -457,7 +457,7 @@ export interface DayRetryInfo {
 }
 
 // Summary result stored in generation state (matches PlanSummaryResult in agent.ts)
-export interface StoredSummaryResult {
+interface StoredSummaryResult {
   summary: {
     title: string
     description: string
@@ -506,7 +506,7 @@ export interface GenerationSessionState {
 }
 
 // Helper: Create initial generation state
-export function createInitialGenerationState(tripId: string): GenerationSessionState {
+function createInitialGenerationState(tripId: string): GenerationSessionState {
   return {
     tripId,
     status: 'idle',
@@ -524,7 +524,7 @@ export function createInitialGenerationState(tripId: string): GenerationSessionS
 }
 
 // Helper: Get emoji for note category
-export function getNoteEmoji(category: NoteCategory): string {
+function getNoteEmoji(category: NoteCategory): string {
   const emojis: Record<NoteCategory, string> = {
     time: '⏰',
     transport: '🚗',

@@ -10,7 +10,7 @@ import { MapPage } from './MapPage'
 import { DayPage } from './DayPage'
 import { BudgetPage } from './BudgetPage'
 
-export interface PDFDocumentProps {
+interface PDFDocumentProps {
   plan: GeneratedPlan
   heroImage?: string | null
   staticMapUrl?: string | null

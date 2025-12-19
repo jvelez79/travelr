@@ -5,16 +5,16 @@ import { parseTime, formatTime, estimateDuration } from "./timeUtils"
 
 // Constants
 export const PIXELS_PER_HOUR = 60 // 1px = 1 minute
-export const START_HOUR = 6 // 6:00 AM
-export const END_HOUR = 22 // 10:00 PM
-export const TOTAL_HOURS = END_HOUR - START_HOUR // 16 hours
+const START_HOUR = 6 // 6:00 AM
+const END_HOUR = 22 // 10:00 PM
+const TOTAL_HOURS = END_HOUR - START_HOUR // 16 hours
 export const TOTAL_HEIGHT = TOTAL_HOURS * PIXELS_PER_HOUR // 960px
-export const SNAP_INTERVAL = 15 // 15-minute snapping
+const SNAP_INTERVAL = 15 // 15-minute snapping
 
 /**
  * Convert time string to pixel position from top of timeline
  */
-export function timeToPixels(time: string): number {
+function timeToPixels(time: string): number {
   const minutes = parseTime(time)
   if (minutes === null) return 0
 
@@ -43,7 +43,7 @@ export function pixelsToTime(pixels: number): string {
 /**
  * Snap minutes to nearest interval (default 15 min)
  */
-export function snapToInterval(minutes: number, interval: number = SNAP_INTERVAL): number {
+function snapToInterval(minutes: number, interval: number = SNAP_INTERVAL): number {
   return Math.round(minutes / interval) * interval
 }
 
@@ -57,7 +57,7 @@ export function snapPixelsToInterval(pixels: number, interval: number = SNAP_INT
 /**
  * Get activity bounds in minutes from midnight
  */
-export function getActivityBounds(activity: TimelineEntry): { start: number; end: number } {
+function getActivityBounds(activity: TimelineEntry): { start: number; end: number } {
   const startMinutes = parseTime(activity.time) ?? START_HOUR * 60
   const duration = activity.durationMinutes ?? estimateDuration(activity.icon)
   const endMinutes = startMinutes + duration
@@ -82,7 +82,7 @@ export function getActivityPixelBounds(activity: TimelineEntry): { top: number; 
 /**
  * Check if two activities overlap
  */
-export function activitiesOverlap(a: TimelineEntry, b: TimelineEntry): boolean {
+function activitiesOverlap(a: TimelineEntry, b: TimelineEntry): boolean {
   const boundsA = getActivityBounds(a)
   const boundsB = getActivityBounds(b)
 
@@ -93,7 +93,7 @@ export function activitiesOverlap(a: TimelineEntry, b: TimelineEntry): boolean {
 /**
  * Conflict map: activityId -> array of conflicting activity IDs
  */
-export type ConflictMap = Map<string, string[]>
+type ConflictMap = Map<string, string[]>
 
 /**
  * Detect all conflicts between activities
@@ -150,7 +150,7 @@ export function getHourLabels(): Array<{ hour: number; label: string; top: numbe
 /**
  * Update activity time based on drop position
  */
-export function updateActivityTime(activity: TimelineEntry, newTopPixels: number): TimelineEntry {
+function updateActivityTime(activity: TimelineEntry, newTopPixels: number): TimelineEntry {
   // Snap to 15-minute intervals
   const snappedPixels = snapPixelsToInterval(newTopPixels)
   const newTime = pixelsToTime(snappedPixels)

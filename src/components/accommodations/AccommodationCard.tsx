@@ -20,7 +20,7 @@ interface AccommodationCardProps {
   onDelete?: (reservation: AccommodationReservation) => void
 }
 
-export function AccommodationCard({
+function AccommodationCard({
   reservation,
   onClick,
   onEdit,

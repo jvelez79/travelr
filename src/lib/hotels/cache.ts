@@ -12,7 +12,7 @@ const CACHE_DURATION = 60 * 60 // 1 hour in seconds
 /**
  * Generate a stable cache key from search parameters
  */
-export function generateCacheKey(params: HotelSearchParams): string {
+function generateCacheKey(params: HotelSearchParams): string {
   const normalized = {
     destination: params.destination.toLowerCase().trim(),
     checkIn: params.checkIn,
@@ -31,7 +31,7 @@ export function generateCacheKey(params: HotelSearchParams): string {
  * Create a cached version of the search function
  * Uses Next.js unstable_cache for server-side caching
  */
-export function createCachedSearch<T extends (...args: any[]) => Promise<HotelSearchResult>>(
+function createCachedSearch<T extends (...args: any[]) => Promise<HotelSearchResult>>(
   searchFn: T
 ) {
   return async (params: HotelSearchParams): Promise<HotelSearchResult> => {
@@ -55,7 +55,7 @@ export function createCachedSearch<T extends (...args: any[]) => Promise<HotelSe
  * Client-side cache using localStorage
  * Useful for saving recent searches and reducing API calls
  */
-export class ClientCache {
+class ClientCache {
   private static readonly PREFIX = "travelr-hotel-cache:"
   private static readonly MAX_AGE = 60 * 60 * 1000 // 1 hour in ms
 
@@ -210,7 +210,7 @@ export class ClientCache {
 /**
  * Cache statistics for monitoring
  */
-export interface CacheStats {
+interface CacheStats {
   hits: number
   misses: number
   hitRate: number
@@ -219,7 +219,7 @@ export interface CacheStats {
 /**
  * Simple in-memory cache stats tracker
  */
-export class CacheStatsTracker {
+class CacheStatsTracker {
   private static hits = 0
   private static misses = 0
 

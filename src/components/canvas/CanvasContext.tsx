@@ -6,7 +6,7 @@ import type { Accommodation } from "@/types/accommodation"
 import type { PlaceCategory } from "@/types/explore"
 
 // Right panel state types
-export type RightPanelState =
+type RightPanelState =
   | { type: 'empty' }
   | { type: 'activity'; activity: TimelineEntry; dayNumber: number }
   | { type: 'search'; dayNumber: number; timeSlot?: string; replaceActivityId?: string; preselectedCategory?: PlaceCategory }
@@ -15,7 +15,7 @@ export type RightPanelState =
   | { type: 'accommodation'; accommodation: Accommodation }
 
 // Explore modal state type
-export interface ExploreModalState {
+interface ExploreModalState {
   isOpen: boolean
   dayNumber: number
   dayLocation: string
