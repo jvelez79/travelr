@@ -17,7 +17,7 @@ RED := \033[0;31m
 BLUE := \033[0;34m
 NC := \033[0m # No Color
 
-.PHONY: help up down restart supabase functions dev logs logs-functions logs-next status db-reset db-migrate deploy deploy-db deploy-functions secrets clean
+.PHONY: help up down restart supabase functions dev logs logs-functions logs-next status db-reset db-migrate deploy deploy-db deploy-functions deploy-vercel secrets secrets-list clean lint typecheck build-check validate validate-env lint-fix
 
 # =============================================================================
 # AYUDA
@@ -47,11 +47,21 @@ help: ## Muestra esta ayuda
 	@echo "  make db-migrate      Aplica migraciones pendientes"
 	@echo "  make db-diff         Genera migración desde cambios en DB"
 	@echo ""
+	@echo "$(GREEN)Validaciones:$(NC)"
+	@echo "  make lint            Ejecuta linting"
+	@echo "  make lint-fix        Ejecuta linting con auto-fix"
+	@echo "  make typecheck       Verifica tipos TypeScript"
+	@echo "  make build-check     Verifica que el build compila"
+	@echo "  make validate        Ejecuta todas las validaciones de código"
+	@echo "  make validate-env    Valida variables de entorno para prod"
+	@echo ""
 	@echo "$(GREEN)Producción:$(NC)"
-	@echo "  make deploy          Deploy completo (db + functions)"
+	@echo "  make deploy          $(YELLOW)Deploy completo$(NC) (validate + env + supabase + vercel)"
 	@echo "  make deploy-db       Solo push de migraciones"
 	@echo "  make deploy-functions Solo deploy de Edge Functions"
+	@echo "  make deploy-vercel   Solo deploy a Vercel"
 	@echo "  make secrets         Configura secretos en producción"
+	@echo "  make secrets-list    Lista secretos en producción"
 	@echo ""
 	@echo "$(GREEN)Utilidades:$(NC)"
 	@echo "  make clean           Limpia archivos temporales y logs"
@@ -188,11 +198,45 @@ db-diff: ## Genera migración desde cambios en la DB
 	@echo "$(GREEN)Migración generada$(NC)"
 
 # =============================================================================
+# VALIDACIONES
+# =============================================================================
+
+lint: ## Ejecuta linting
+	@echo "$(YELLOW)Ejecutando linting...$(NC)"
+	@npm run lint
+	@echo "$(GREEN)Linting OK$(NC)"
+
+lint-fix: ## Ejecuta linting con auto-fix
+	@echo "$(YELLOW)Ejecutando linting con auto-fix...$(NC)"
+	@npm run lint:fix
+	@echo "$(GREEN)Linting fix completado$(NC)"
+
+typecheck: ## Verifica tipos TypeScript
+	@echo "$(YELLOW)Verificando tipos TypeScript...$(NC)"
+	@npm run typecheck
+	@echo "$(GREEN)TypeScript OK$(NC)"
+
+build-check: ## Verifica que el build compila
+	@echo "$(YELLOW)Verificando build...$(NC)"
+	@npm run build
+	@echo "$(GREEN)Build OK$(NC)"
+
+validate: lint typecheck build-check ## Ejecuta todas las validaciones de código
+	@echo "$(GREEN)Todas las validaciones de código pasaron$(NC)"
+
+validate-env: ## Valida variables de entorno para producción
+	@echo "$(YELLOW)Validando variables de entorno...$(NC)"
+	@./scripts/validate-env.sh
+	@echo "$(GREEN)Variables de entorno OK$(NC)"
+
+# =============================================================================
 # PRODUCCIÓN
 # =============================================================================
 
-deploy: secrets deploy-db deploy-functions ## Deploy completo (secrets + db + functions)
-	@echo "$(GREEN)Deploy completo finalizado$(NC)"
+deploy: validate validate-env secrets deploy-db deploy-functions deploy-vercel ## Deploy completo (validaciones + supabase + vercel)
+	@echo "$(GREEN)═══════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  Deploy completo finalizado$(NC)"
+	@echo "$(GREEN)═══════════════════════════════════════════$(NC)"
 
 deploy-db: ## Push de migraciones a producción (usa proyecto vinculado)
 	@echo "$(YELLOW)Pusheando migraciones a producción...$(NC)"
@@ -216,6 +260,11 @@ secrets: ## Configura secretos en producción
 
 secrets-list: ## Lista los secretos en producción
 	@$(SUPABASE) secrets list --project-ref $(PROJECT_REF)
+
+deploy-vercel: ## Deploy a Vercel producción
+	@echo "$(YELLOW)Deployando a Vercel...$(NC)"
+	@vercel --prod
+	@echo "$(GREEN)Deploy a Vercel completado$(NC)"
 
 # =============================================================================
 # UTILIDADES

@@ -225,7 +225,7 @@ export class HotelSearchError extends Error {
 // Constants
 // ============================================================================
 
-const COMMON_AMENITIES = [
+export const COMMON_AMENITIES = [
   "Free WiFi",
   "Pool",
   "Parking",
@@ -243,7 +243,7 @@ const COMMON_AMENITIES = [
   "Laundry",
 ] as const
 
-const HOTEL_TYPES = [
+export const HOTEL_TYPES = [
   "Hotel",
   "Resort",
   "Hostel",

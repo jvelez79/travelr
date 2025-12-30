@@ -4,7 +4,7 @@ import type { SavedPlace } from '@/types/plan'
 /**
  * Converts a Place (from Google Places) to SavedPlace (for saving)
  */
-function createSavedPlaceFromPlace(place: Place): SavedPlace {
+export function createSavedPlaceFromPlace(place: Place): SavedPlace {
   return {
     id: `saved-${place.id}-${Date.now()}`,
     name: place.name,

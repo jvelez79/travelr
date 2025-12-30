@@ -2,6 +2,7 @@
 
 import type { PlaceCategory, AccessibilityOptions, ServingOptions } from './explore'
 import type { AccommodationReservation, Accommodation } from './accommodation'
+import type { FlightSource, FlightSourceData } from '@/lib/flights/types'
 
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
 export type TravelPace = 'relaxed' | 'moderate' | 'active'
@@ -25,6 +26,8 @@ export interface FlightReservation {
   confirmationNumber?: string
   notes?: string
   pricePerPerson?: number
+  source?: FlightSource     // How was this flight added
+  sourceData?: FlightSourceData // Metadata about the source
 }
 
 // Location for saved places

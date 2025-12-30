@@ -1,7 +1,5 @@
-export { OverviewTab } from './OverviewTab'
 export { ReservationsHeader } from './ReservationsHeader'
 export { NotesSection } from './NotesSection'
-export { FlightsSection } from './FlightsSection'
 export { FlightCard } from './FlightCard'
 export { FlightBadge, getFlightsForDate } from './FlightBadge'
 export { LodgingSection } from './LodgingSection'

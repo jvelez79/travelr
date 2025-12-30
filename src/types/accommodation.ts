@@ -8,7 +8,7 @@
 /**
  * Unified type of accommodation
  */
-type AccommodationType =
+export type AccommodationType =
   | 'hotel'
   | 'airbnb'
   | 'hostel'
@@ -63,7 +63,7 @@ export interface AccommodationPlaceData {
 /**
  * Booking link from OTA providers (via SerpAPI or direct)
  */
-interface BookingLink {
+export interface BookingLink {
   provider: string           // "Booking.com", "Expedia", "Hotels.com", etc.
   price: number
   currency: string

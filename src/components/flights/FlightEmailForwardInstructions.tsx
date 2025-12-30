@@ -1,19 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { Copy, Check, Mail, ArrowRight, Clock, AlertCircle } from "lucide-react"
+import { Copy, Check, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
-interface EmailForwardInstructionsProps {
+interface FlightEmailForwardInstructionsProps {
   tripId: string
   inboundDomain?: string
 }
 
-export function EmailForwardInstructions({
+export function FlightEmailForwardInstructions({
   tripId,
   inboundDomain = "inbound.travelr.app",
-}: EmailForwardInstructionsProps) {
+}: FlightEmailForwardInstructionsProps) {
   const [copied, setCopied] = useState(false)
 
   // Use full tripId to ensure proper matching in webhook
@@ -65,7 +65,7 @@ export function EmailForwardInstructions({
             </div>
             <div className="flex-1">
               <p className="text-sm">
-                Busca el email de confirmación de tu reserva (Booking.com, Expedia, Airbnb, etc.)
+                Busca el email de confirmación de tu vuelo (de la aerolínea o agencia de viajes)
               </p>
             </div>
           </div>
@@ -85,23 +85,23 @@ export function EmailForwardInstructions({
             </div>
             <div className="flex-1">
               <p className="text-sm">
-                En segundos extraemos la información y aparece en tu lista de alojamientos
+                En segundos extraemos la información y aparece en tu lista de vuelos
               </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Supported Platforms */}
+      {/* Supported Airlines */}
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">Plataformas soportadas:</p>
+        <p className="text-sm text-muted-foreground">Compatible con todas las aerolíneas:</p>
         <div className="flex flex-wrap gap-2">
-          {["Booking.com", "Expedia", "Airbnb", "Hotels.com", "Agoda", "VRBO"].map((platform) => (
+          {["American", "Delta", "United", "COPA", "Avianca", "Southwest", "JetBlue", "Spirit"].map((airline) => (
             <span
-              key={platform}
+              key={airline}
               className="px-2 py-1 bg-muted text-muted-foreground text-xs rounded-full"
             >
-              {platform}
+              {airline}
             </span>
           ))}
         </div>
@@ -114,7 +114,7 @@ export function EmailForwardInstructions({
             <Clock className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
             <p className="text-xs text-blue-800">
               El procesamiento toma unos segundos. Si no aparece en 1 minuto, intenta
-              subiendo el PDF directamente.
+              subiendo el PDF/imagen directamente.
             </p>
           </div>
         </CardContent>

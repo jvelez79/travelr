@@ -15,13 +15,16 @@ import {
 } from "@/components/ui/select"
 import { X, Search, ExternalLink, Info } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AirportAutocomplete } from "@/components/shared/AirportAutocomplete"
+import { findAirportByCity } from "@/lib/flights/airports"
 import { openSkyscannerSearch, validateFlightSearchParams } from "@/lib/flights"
 import type { FlightSearchParams } from "@/lib/flights/types"
 
 interface FlightSearchModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  destination: string
+  tripOrigin?: string // City name from trip origin
+  destination: string // City name from trip destination
   startDate: string
   endDate: string
   travelers: number
@@ -30,6 +33,7 @@ interface FlightSearchModalProps {
 export function FlightSearchModal({
   open,
   onOpenChange,
+  tripOrigin,
   destination,
   startDate,
   endDate,
@@ -45,11 +49,29 @@ export function FlightSearchModal({
   const [cabinClass, setCabinClass] = useState<'economy' | 'premium_economy' | 'business' | 'first'>('economy')
   const [validationErrors, setValidationErrors] = useState<string[]>([])
 
-  // Reset form when modal opens
+  // Reset form and pre-fill when modal opens
   useEffect(() => {
     if (open) {
-      setOrigin("")
-      setDest("")
+      // Pre-fill origin from trip origin
+      let prefillOrigin = ""
+      if (tripOrigin) {
+        const originAirport = findAirportByCity(tripOrigin)
+        if (originAirport) {
+          prefillOrigin = originAirport.iata
+        }
+      }
+
+      // Pre-fill destination from trip destination
+      let prefillDest = ""
+      if (destination) {
+        const destAirport = findAirportByCity(destination)
+        if (destAirport) {
+          prefillDest = destAirport.iata
+        }
+      }
+
+      setOrigin(prefillOrigin)
+      setDest(prefillDest)
       setOutboundDate(startDate)
       setInboundDate(endDate)
       setAdults(travelers)
@@ -57,7 +79,7 @@ export function FlightSearchModal({
       setCabinClass('economy')
       setValidationErrors([])
     }
-  }, [open, startDate, endDate, travelers])
+  }, [open, tripOrigin, destination, startDate, endDate, travelers])
 
   const handleSearch = () => {
     // Build params
@@ -86,12 +108,6 @@ export function FlightSearchModal({
 
     // Close modal
     onOpenChange(false)
-  }
-
-  // Format IATA code input (uppercase, max 3 chars)
-  const handleIATAInput = (value: string, setter: (val: string) => void) => {
-    const formatted = value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 3)
-    setter(formatted)
   }
 
   return (
@@ -136,36 +152,26 @@ export function FlightSearchModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="origin" className="text-sm font-medium">
-                Origen (código IATA)
+                Origen
               </Label>
-              <Input
+              <AirportAutocomplete
                 id="origin"
-                placeholder="SJU"
                 value={origin}
-                onChange={(e) => handleIATAInput(e.target.value, setOrigin)}
-                maxLength={3}
-                className="uppercase font-mono"
+                onChange={(iata) => setOrigin(iata)}
+                placeholder="Buscar ciudad o aeropuerto..."
               />
-              <p className="text-xs text-muted-foreground">
-                Ej: SJU (San Juan)
-              </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="destination" className="text-sm font-medium">
-                Destino (código IATA)
+                Destino
               </Label>
-              <Input
+              <AirportAutocomplete
                 id="destination"
-                placeholder="SJO"
                 value={dest}
-                onChange={(e) => handleIATAInput(e.target.value, setDest)}
-                maxLength={3}
-                className="uppercase font-mono"
+                onChange={(iata) => setDest(iata)}
+                placeholder="Buscar ciudad o aeropuerto..."
               />
-              <p className="text-xs text-muted-foreground">
-                Ej: SJO (San José)
-              </p>
             </div>
           </div>
 

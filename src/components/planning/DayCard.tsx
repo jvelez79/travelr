@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { FlightBadge, getFlightsForDate } from "./overview/FlightBadge"
-import type { ItineraryDay, Activity, getNoteEmoji, TransportMethod, TravelInfo, FlightReservation } from "@/types/plan"
+import type { ItineraryDay, Activity, TransportMethod, TravelInfo, FlightReservation } from "@/types/plan"
 
 // Build Google Maps directions URL
 function buildGoogleMapsUrl(from: string, to: string, method?: TransportMethod): string {

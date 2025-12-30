@@ -162,7 +162,7 @@ export function useAuth() {
 // Utility Hook - Get user ID safely
 // ============================================
 
-function useUserId(): string | null {
+export function useUserId(): string | null {
   const { user } = useAuth()
   return user?.id ?? null
 }

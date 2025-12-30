@@ -24,15 +24,21 @@ function isValidISODate(date: string): boolean {
 }
 
 /**
- * Convert ISO date (YYYY-MM-DD) to Skyscanner format (YYMMDD)
- * Example: "2025-03-07" → "250307"
+ * Convert ISO date (YYYY-MM-DD) to Skyscanner format
+ * Returns { yearMonth: "2512", day: "19" } for query parameters
+ * Example: "2025-12-19" → { yearMonth: "2512", day: "19" }
+ *
+ * Note: We parse the string directly instead of using Date object
+ * to avoid timezone issues that can shift the day by -1
  */
-function formatDateForSkyscanner(isoDate: string): string {
-  const date = new Date(isoDate)
-  const year = date.getFullYear().toString().slice(-2)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}${month}${day}`
+function formatDateForSkyscanner(isoDate: string): { yearMonth: string; day: string } {
+  // Parse ISO date string directly: "YYYY-MM-DD"
+  const [yearFull, month, day] = isoDate.split('-')
+  const year = yearFull.slice(-2)
+  return {
+    yearMonth: `${year}${month}`,
+    day: day
+  }
 }
 
 /**
@@ -94,13 +100,12 @@ export function validateFlightSearchParams(params: FlightSearchParams): Validati
  * Build Skyscanner deeplink URL for flight search
  *
  * URL Format:
- * https://www.skyscanner.com/transport/flights/{origin}/{destination}/{outboundDate}/{inboundDate}/
- * ?adults={adults}&children={children}&adultsv2={adults}&childrenv2={childrenAges}&infants=0
- * &cabinclass=economy&preferdirects=false&outboundaltsenabled=false&inboundaltsenabled=false&ref=home
+ * https://www.skyscanner.com/transporte/vuelos/{origin}/{destination}/
+ * ?adults={adults}&oym={YYMM}&selectedoday={DD}&iym={YYMM}&selectediday={DD}...
  *
  * Example:
- * https://www.skyscanner.com/transport/flights/sju/sjo/250307/250313/
- * ?adults=2&adultsv2=2&cabinclass=economy&children=0&ref=home
+ * https://www.skyscanner.com/transporte/vuelos/sju/gua/
+ * ?adults=2&adultsv2=2&cabinclass=economy&children=0&oym=2512&selectedoday=19&iym=2601&selectediday=01
  */
 function buildSkyscannerDeeplink(params: FlightSearchParams): string {
   // Validate params
@@ -113,15 +118,8 @@ function buildSkyscannerDeeplink(params: FlightSearchParams): string {
   const origin = params.origin.toLowerCase()
   const destination = params.destination.toLowerCase()
 
-  // Format dates
-  const outboundDate = formatDateForSkyscanner(params.outboundDate)
-  const inboundDate = params.inboundDate
-    ? formatDateForSkyscanner(params.inboundDate)
-    : '' // Empty for one-way
-
-  // Build base URL
-  const basePath = `${SKYSCANNER_BASE_URL}/${origin}/${destination}/${outboundDate}`
-  const pathWithReturn = inboundDate ? `${basePath}/${inboundDate}/` : `${basePath}/`
+  // Build base URL (without dates in path)
+  const basePath = `${SKYSCANNER_BASE_URL}/${origin}/${destination}/`
 
   // Build query parameters
   const queryParams = new URLSearchParams()
@@ -139,7 +137,19 @@ function buildSkyscannerDeeplink(params: FlightSearchParams): string {
   queryParams.append('inboundaltsenabled', 'false')
   queryParams.append('ref', 'home')
 
-  return `${pathWithReturn}?${queryParams.toString()}`
+  // Add outbound date as query params
+  const outbound = formatDateForSkyscanner(params.outboundDate)
+  queryParams.append('oym', outbound.yearMonth)
+  queryParams.append('selectedoday', outbound.day)
+
+  // Add inbound date as query params (if round trip)
+  if (params.inboundDate) {
+    const inbound = formatDateForSkyscanner(params.inboundDate)
+    queryParams.append('iym', inbound.yearMonth)
+    queryParams.append('selectediday', inbound.day)
+  }
+
+  return `${basePath}?${queryParams.toString()}`
 }
 
 /**

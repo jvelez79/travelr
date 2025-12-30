@@ -74,54 +74,68 @@ export function FlightCard({ flight, onEdit, onDelete, compact = false }: Flight
         <div className="flex-1">
           {/* Type Badge */}
           {flight.type && (
-            <div className={cn("inline-flex items-center gap-1.5 text-xs font-medium mb-3 px-2 py-1 rounded-full bg-muted", typeConfig.color)}>
-              <TypeIcon className="w-3 h-3" />
-              {typeConfig.label}
+            <div className={cn(
+              "inline-flex items-center gap-1.5 text-xs font-medium mb-4 px-2.5 py-1 rounded-full",
+              flight.type === 'outbound' && "bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400",
+              flight.type === 'return' && "bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400",
+              flight.type === 'connection' && "bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400"
+            )}>
+              <TypeIcon className="w-3.5 h-3.5" />
+              <span>{typeConfig.label}</span>
             </div>
           )}
 
           {/* Route */}
-          <div className="flex items-center gap-4 mb-3">
+          <div className="flex items-center gap-4 pb-4 mb-4 border-b border-border">
             <div className="text-center">
-              <p className="text-2xl font-bold">{flight.origin}</p>
-              <p className="text-xs text-muted-foreground">{flight.originCity}</p>
+              <p className="text-xl font-bold tracking-tight">{flight.origin}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{flight.originCity}</p>
             </div>
-            <div className="flex-1 flex items-center gap-2 px-2">
+            <div className="flex-1 flex items-center gap-2 px-3">
               <div className="flex-1 h-px bg-border" />
-              <Plane className="w-4 h-4 text-muted-foreground" />
+              <Plane className="w-4 h-4 text-muted-foreground rotate-90" />
               <div className="flex-1 h-px bg-border" />
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{flight.destination}</p>
-              <p className="text-xs text-muted-foreground">{flight.destinationCity}</p>
+              <p className="text-xl font-bold tracking-tight">{flight.destination}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{flight.destinationCity}</p>
             </div>
           </div>
 
           {/* Date and Time */}
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center gap-2">
-              <p className="text-muted-foreground">{formatDate(flight.date)}</p>
+          <div className="space-y-2 text-sm mb-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span>{formatDate(flight.date)}</span>
               {flight.arrivalDate && flight.arrivalDate !== flight.date && (
                 <>
-                  <span className="text-muted-foreground">→</span>
-                  <p className="text-muted-foreground">{formatDate(flight.arrivalDate)}</p>
+                  <span>→</span>
+                  <span>{formatDate(flight.arrivalDate)}</span>
                 </>
               )}
             </div>
-            <p className="font-medium">{formatTime(flight.departureTime)} — {formatTime(flight.arrivalTime)}</p>
-            <p className="text-xs text-muted-foreground uppercase">{flight.airline}</p>
+            <div className="flex items-center gap-3">
+              <p className="font-semibold text-base text-foreground">
+                {formatTime(flight.departureTime)} — {formatTime(flight.arrivalTime)}
+              </p>
+              <span className="text-muted-foreground">•</span>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                {flight.airline}
+              </p>
+            </div>
           </div>
 
-          {/* Confirmation and Notes */}
-          <div className="mt-4 pt-4 border-t border-border flex items-start justify-between gap-4">
-            <div className="space-y-2 flex-1">
+          {/* Confirmation and Price */}
+          <div className="flex items-end justify-between gap-4 pt-4 border-t border-border">
+            <div className="space-y-2 flex-1 min-w-0">
               {flight.confirmationNumber && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Confirmacion:</span>
-                  <span className="text-sm font-medium font-mono">{flight.confirmationNumber}</span>
+                  <span className="text-xs text-muted-foreground">Confirmación:</span>
+                  <code className="text-sm font-medium font-mono px-2 py-0.5 bg-muted/50 rounded">
+                    {flight.confirmationNumber}
+                  </code>
                   <button
                     onClick={copyConfirmation}
-                    className="p-1 rounded hover:bg-muted transition-colors"
+                    className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0"
                     title="Copiar"
                   >
                     <Copy className="w-3 h-3 text-muted-foreground" />
@@ -129,15 +143,17 @@ export function FlightCard({ flight, onEdit, onDelete, compact = false }: Flight
                 </div>
               )}
               {flight.notes && (
-                <p className="text-xs text-muted-foreground">{flight.notes}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2">{flight.notes}</p>
               )}
             </div>
             {flight.pricePerPerson && (
-              <div className="text-right">
-                <p className="text-lg font-semibold text-primary">
-                  ${flight.pricePerPerson.toFixed(2)}
+              <div className="text-right flex-shrink-0">
+                <p className="text-2xl font-bold text-primary">
+                  ${flight.pricePerPerson.toFixed(0)}
                 </p>
-                <p className="text-[10px] text-muted-foreground">por persona</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  por persona
+                </p>
               </div>
             )}
           </div>
