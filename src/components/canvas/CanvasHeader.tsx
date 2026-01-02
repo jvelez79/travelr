@@ -22,6 +22,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ExportPDFButton } from "@/components/export/ExportPDFButton"
 import { useAuth } from "@/contexts/AuthContext"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 import type { GeneratedPlan } from "@/types/plan"
 
 interface Trip {
@@ -117,6 +118,9 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
       {/* Right side - Actions */}
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-1">
+          {/* Theme toggle - Desktop only */}
+          {isDesktop && <ThemeToggle />}
+
           {/* Help button - Desktop only */}
           {isDesktop && (
             <Tooltip>

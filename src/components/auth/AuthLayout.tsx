@@ -11,10 +11,10 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-400 via-teal-500 to-teal-700 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-primary/80 via-primary to-primary/90 dark:from-primary/20 dark:via-background dark:to-primary/10 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Card contenedor */}
       <div className="w-full max-w-md relative z-10">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-card rounded-2xl shadow-2xl dark:shadow-primary/5 p-8 border border-border">
           {/* Header unificado: Logo + Tagline + Título */}
           <div className="flex flex-col items-center mb-8">
             <Logo size="lg" />
@@ -38,10 +38,10 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 
       {/* Decoración adicional sutil */}
       <div className="absolute top-1/4 left-10 opacity-20">
-        <div className="w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+        <div className="w-32 h-32 rounded-full bg-primary-foreground/10 dark:bg-primary/20 blur-2xl" />
       </div>
       <div className="absolute bottom-1/4 right-20 opacity-20">
-        <div className="w-48 h-48 rounded-full bg-white/10 blur-3xl" />
+        <div className="w-48 h-48 rounded-full bg-primary-foreground/10 dark:bg-primary/20 blur-3xl" />
       </div>
     </div>
   )
