@@ -447,7 +447,7 @@ function CanvasLayoutInner({
         setShowHotelSearch(open)
         if (!open) setSearchAccommodation(null)
       }}
-      destination={plan.trip.destination}
+      destination={searchAccommodation?.placeData?.city || searchAccommodation?.area || plan.trip.destination}
       checkIn={searchAccommodation?.checkIn || plan.trip.startDate}
       checkOut={searchAccommodation?.checkOut || plan.trip.endDate}
       adults={plan.trip.travelers}

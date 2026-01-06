@@ -454,7 +454,7 @@ export function PlaceDetailPanel({
                 <>
                   {/* Photo grid */}
                   <div className="grid grid-cols-2 gap-2">
-                    {place.images.slice(0, 6).map((image, idx) => (
+                    {place.images.slice(0, 10).map((image, idx) => (
                       <div
                         key={idx}
                         className={`relative rounded-lg overflow-hidden ${

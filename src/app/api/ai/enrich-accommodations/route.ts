@@ -167,6 +167,8 @@ function enrichAccommodation(
       lng: bestMatch.place.location.lng,
     },
     address: bestMatch.place.location.address,
+    city: bestMatch.place.location.city,       // Ciudad de Google Places
+    country: bestMatch.place.location.country, // País de Google Places
     images: bestMatch.place.images?.slice(0, 3),
     googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${bestMatch.place.id}`,
     website: undefined, // Not available in list response

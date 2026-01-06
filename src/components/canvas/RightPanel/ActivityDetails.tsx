@@ -246,7 +246,7 @@ export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: Act
                   Fotos
                 </h5>
                 <div className="grid grid-cols-2 gap-2">
-                  {placeData.images.slice(0, 2).map((img, i) => (
+                  {placeData.images.slice(0, 10).map((img, i) => (
                     <img
                       key={i}
                       src={img}

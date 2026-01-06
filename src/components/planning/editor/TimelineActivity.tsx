@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
@@ -9,6 +9,7 @@ import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { getActivityPixelBounds } from "@/lib/timelineUtils"
 import { PlaceHoverCard } from "./PlaceHoverCard"
 import { ImageCarousel } from "@/components/ui/ImageCarousel"
+import { usePlacePhotos } from "@/hooks/usePlacePhotos"
 
 interface TimelineActivityProps {
   activity: TimelineEntry
@@ -28,7 +29,9 @@ export function TimelineActivity({
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [showCarousel, setShowCarousel] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [carouselImages, setCarouselImages] = useState<string[]>([])
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const { photos, isLoading, loadPhotos } = usePlacePhotos()
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: activity.id,
@@ -40,6 +43,25 @@ export function TimelineActivity({
 
   // Check if this activity is linked to a Google Place
   const hasPlaceLink = Boolean(activity.placeId && activity.placeData)
+
+  // Update carousel images when photos are loaded
+  useEffect(() => {
+    if (photos.length > 0) {
+      setCarouselImages(photos)
+    }
+  }, [photos])
+
+  // Handle opening carousel with lazy loading
+  const handleOpenCarousel = async () => {
+    const existingImages = activity.placeData?.images || []
+    setCarouselImages(existingImages)
+    setShowCarousel(true)
+
+    // If we have few photos and a placeId, try to load more
+    if (existingImages.length <= 3 && activity.placeId) {
+      await loadPhotos(activity.placeId, existingImages)
+    }
+  }
 
   // Handle hover with delay to prevent flickering
   const handleMouseEnter = (e: React.MouseEvent) => {
@@ -120,7 +142,7 @@ export function TimelineActivity({
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                setShowCarousel(true)
+                handleOpenCarousel()
               }}
               className="flex-shrink-0 w-6 h-6 rounded overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all"
               aria-label="Ver fotos"
@@ -214,11 +236,12 @@ export function TimelineActivity({
       </div>
 
       {/* Image Carousel Modal */}
-      {showCarousel && activity.placeData?.images && activity.placeData.images.length > 0 && (
+      {showCarousel && carouselImages.length > 0 && (
         <ImageCarousel
-          images={activity.placeData.images}
+          images={carouselImages}
           title={activity.activity}
           onClose={() => setShowCarousel(false)}
+          isLoading={isLoading}
         />
       )}
     </div>

@@ -1053,7 +1053,7 @@ function convertToPlaceData(p: Record<string, unknown>): PlaceData {
       lng: location.lng as number,
     } : undefined,
     address: (location?.address || p.address) as string | undefined,
-    images: (p.images as string[] | undefined)?.slice(0, 2),
+    images: (p.images as string[] | undefined)?.slice(0, 10),
     googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${p.id}`,
     openingHours: p.openingHours as string[] | undefined,
   }

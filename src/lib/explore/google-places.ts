@@ -421,6 +421,46 @@ export async function getPlaceDetails(placeId: string): Promise<Place | null> {
 }
 
 /**
+ * Get photos for a specific place (for lazy loading)
+ * Only fetches photos field to minimize API cost
+ */
+export async function getPlacePhotos(placeId: string): Promise<string[]> {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn("Google Places API key not configured")
+    return []
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/places/${placeId}`, {
+      headers: {
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": "photos",
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("Google Places API error fetching photos:", error)
+      return []
+    }
+
+    const data = await response.json()
+
+    if (!data.photos || data.photos.length === 0) {
+      return []
+    }
+
+    // Convert photo references to URLs (max 10)
+    return data.photos
+      .slice(0, 10)
+      .map((photo: { name: string }) => getPhotoUrl(photo.name))
+  } catch (error) {
+    console.error("Error getting place photos:", error)
+    return []
+  }
+}
+
+/**
  * Get autocomplete suggestions for destinations
  */
 export async function autocompleteDestination(
@@ -590,6 +630,9 @@ export async function searchNearbyDestinations(
 
 // Transform Google Place to our Place type
 function transformGooglePlace(place: GooglePlace, category: PlaceCategory): Place {
+  // DEBUG: Log how many photos Google returns
+  console.log(`[PHOTOS DEBUG] ${place.displayName?.text}: ${place.photos?.length || 0} fotos de Google`)
+
   const city = place.addressComponents?.find(
     (c) => c.types?.includes("locality") || c.types?.includes("administrative_area_level_2")
   )?.longText || ""

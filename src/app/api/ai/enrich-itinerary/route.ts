@@ -222,6 +222,9 @@ function buildPlacesMap(fullPlaces: PrefetchedPlaces): Map<string, Place> {
  * Convert Place to PlaceData (embedded format)
  */
 function placeToPlaceData(place: Place): PlaceData {
+  // DEBUG: Log how many photos we receive
+  console.log(`[ENRICH DEBUG] ${place.name}: ${place.images?.length || 0} fotos recibidas`)
+
   return {
     name: place.name,
     category: place.category,
@@ -233,7 +236,7 @@ function placeToPlaceData(place: Place): PlaceData {
       lng: place.location.lng,
     },
     address: place.location.address,
-    images: place.images?.slice(0, 2), // Max 2 for compact display
+    images: place.images?.slice(0, 10), // Max 10 for gallery display
     googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.id}`,
     phone: undefined, // Not available in list response
     website: undefined, // Not available in list response

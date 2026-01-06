@@ -52,6 +52,8 @@ export interface AccommodationPlaceData {
   reviewCount?: number
   coordinates: { lat: number; lng: number }
   address?: string
+  city?: string         // Ciudad extraída de Google Places addressComponents
+  country?: string      // País extraído de Google Places addressComponents
   images?: string[]
   googleMapsUrl?: string
   website?: string
