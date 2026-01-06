@@ -158,11 +158,3 @@ export function useAuth() {
   return context
 }
 
-// ============================================
-// Utility Hook - Get user ID safely
-// ============================================
-
-export function useUserId(): string | null {
-  const { user } = useAuth()
-  return user?.id ?? null
-}

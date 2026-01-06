@@ -348,7 +348,7 @@ export function createReservationFromExtracted(
 /**
  * Helper: Get display name for reservation source
  */
-export function getSourceDisplayName(source: ReservationSource): string {
+function getSourceDisplayName(source: ReservationSource): string {
   const names: Record<ReservationSource, string> = {
     email_forward: 'Email Forward',
     receipt_upload: 'Uploaded Receipt',

@@ -1069,7 +1069,7 @@ type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
 // Insert types
 export type TripInsert = Database['public']['Tables']['trips']['Insert']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
-export type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
+type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
 type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
 export type AIRequestLogInsert = Database['public']['Tables']['ai_request_logs']['Insert']
 

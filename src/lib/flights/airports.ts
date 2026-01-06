@@ -16,7 +16,7 @@ export interface Airport {
  * Curated list of ~400 major airports worldwide
  * Prioritized: Americas, Europe, major international hubs
  */
-export const AIRPORTS: Airport[] = [
+const AIRPORTS: Airport[] = [
   // ============================================
   // CARIBBEAN & PUERTO RICO
   // ============================================
@@ -612,10 +612,3 @@ export function formatAirport(airport: Airport): string {
   return `${airport.iata} - ${airport.city}, ${airport.country}`
 }
 
-/**
- * Format airport for short display
- * e.g., "SJU (San Juan)"
- */
-export function formatAirportShort(airport: Airport): string {
-  return `${airport.iata} (${airport.city})`
-}
