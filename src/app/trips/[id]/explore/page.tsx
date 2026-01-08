@@ -51,7 +51,7 @@ export default function ExplorePage() {
   const router = useRouter()
   const tripId = params.id as string
 
-  const { user } = useAuth()
+  useAuth() // Ensures user is authenticated
   const { trip, loading: tripLoading } = useTrip(tripId)
   const { items: thingsToDoItems, refetch: refetchThingsToDo } = useThingsToDo(tripId)
   const { addItem, loading: addingItem } = useAddToThingsToDo()
@@ -165,7 +165,7 @@ export default function ExplorePage() {
         </div>
         <div className="text-center">
           <h1 className="text-xl font-semibold mb-2">Trip not found</h1>
-          <p className="text-muted-foreground">The trip you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">The trip you&apos;re looking for doesn&apos;t exist.</p>
         </div>
         <Link href="/">
           <Button>Back to Home</Button>
