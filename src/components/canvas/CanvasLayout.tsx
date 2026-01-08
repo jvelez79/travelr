@@ -20,6 +20,7 @@ import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGene
 import type { Place, PlaceCategory } from "@/types/explore"
 import type { HotelResult } from "@/lib/hotels/types"
 import type { Accommodation } from "@/types/accommodation"
+import type { ThingsToDoItem } from "@/hooks/useThingsToDo"
 
 /**
  * Extract city name from a location string like "7av. Norte 18B, Antigua Guatemala"
@@ -296,6 +297,67 @@ function CanvasLayoutInner({
     setShowHotelSearch(true)
   }, [])
 
+  // Handle adding a Things To Do item to a specific day
+  const handleAddThingsToDoToDay = useCallback(async (item: ThingsToDoItem, dayNumber: number) => {
+    const { place_data, category } = item
+
+    // Get icon based on category
+    const categoryIconMap: Record<string, string> = {
+      attractions: "🎯",
+      food_drink: "🍽️",
+      tours: "🗺️",
+      activities: "🎯",
+    }
+    const icon = category ? categoryIconMap[category] || "🎯" : "🎯"
+
+    const newActivity: TimelineEntry = {
+      id: `ttd-${item.id}-${Date.now()}`,
+      time: "Por definir",
+      activity: place_data.name,
+      location: place_data.formatted_address || plan.trip.destination,
+      icon,
+      notes: "",
+      placeId: item.google_place_id,
+      placeData: {
+        name: place_data.name,
+        category: (category as PlaceCategory) || 'attractions',
+        rating: place_data.rating,
+        reviewCount: place_data.user_ratings_total,
+        coordinates: place_data.geometry?.location ?? { lat: 0, lng: 0 },
+        address: place_data.formatted_address,
+        images: place_data.photos?.map(p => p.photo_reference).filter(Boolean) || [],
+        googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${item.google_place_id}`,
+        openingHours: place_data.opening_hours?.weekday_text,
+      },
+      matchConfidence: 'exact',
+      durationMinutes: category === 'food_drink' ? 90 : 120,
+    }
+
+    // Update itinerary with recalculated timeline
+    const updatedItinerary = plan.itinerary.map(d => {
+      if (d.day !== dayNumber) return d
+      const newTimeline = recalculateTimeline([...d.timeline, newActivity])
+      return { ...d, timeline: newTimeline }
+    })
+
+    // Update plan immediately
+    onUpdatePlan({ ...plan, itinerary: updatedItinerary })
+
+    // Calculate transport in background
+    const dayToUpdate = updatedItinerary.find(d => d.day === dayNumber)
+    if (dayToUpdate && dayToUpdate.timeline.length >= 2) {
+      try {
+        const timelineWithTransport = await calculateTransportForTimeline(dayToUpdate.timeline)
+        const finalItinerary = updatedItinerary.map(d =>
+          d.day === dayNumber ? { ...d, timeline: timelineWithTransport } : d
+        )
+        onUpdatePlan({ ...plan, itinerary: finalItinerary })
+      } catch (error) {
+        console.error('Error calculating transport:', error)
+      }
+    }
+  }, [plan, onUpdatePlan])
+
   // Handle adding a hotel from the search modal
   const handleHotelAddToPlan = useCallback((hotel: HotelResult) => {
     const checkIn = searchAccommodation?.checkIn || plan.trip.startDate
@@ -372,13 +434,21 @@ function CanvasLayoutInner({
         {/* Left Sidebar - Desktop: visible, Mobile/Tablet: Sheet */}
         {isDesktop ? (
           <aside className="w-60 border-r border-border bg-card shrink-0 overflow-y-auto">
-            <LeftSidebar plan={plan} />
+            <LeftSidebar
+              plan={plan}
+              tripId={trip.id}
+              onAddThingsToDoToDay={handleAddThingsToDoToDay}
+            />
           </aside>
         ) : (
           <Sheet open={isSidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetContent side="left" className="w-72 p-0">
               <SheetTitle className="sr-only">Navegación del viaje</SheetTitle>
-              <LeftSidebar plan={plan} />
+              <LeftSidebar
+                plan={plan}
+                tripId={trip.id}
+                onAddThingsToDoToDay={handleAddThingsToDoToDay}
+              />
             </SheetContent>
           </Sheet>
         )}

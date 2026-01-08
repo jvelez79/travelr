@@ -289,6 +289,41 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_things_to_do: {
+        Row: {
+          id: string
+          trip_id: string
+          google_place_id: string
+          place_data: Json
+          category: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          trip_id: string
+          google_place_id: string
+          place_data: Json
+          category?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          trip_id?: string
+          google_place_id?: string
+          place_data?: Json
+          category?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_things_to_do_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1065,6 +1100,7 @@ export type Plan = Database['public']['Tables']['plans']['Row']
 export type GenerationState = Database['public']['Tables']['generation_states']['Row']
 type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
 type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
+export type TripThingsToDo = Database['public']['Tables']['trip_things_to_do']['Row']
 
 // Insert types
 export type TripInsert = Database['public']['Tables']['trips']['Insert']
@@ -1072,6 +1108,7 @@ export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
 type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
 export type AIRequestLogInsert = Database['public']['Tables']['ai_request_logs']['Insert']
+export type TripThingsToDoInsert = Database['public']['Tables']['trip_things_to_do']['Insert']
 
 // Update types
 export type TripUpdate = Database['public']['Tables']['trips']['Update']

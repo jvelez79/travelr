@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
 import { useCanvasContext } from "./CanvasContext"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
-import { HelpCircle, MoreVertical, RefreshCw, X, Menu, LogOut, User, Sparkles } from "lucide-react"
+import { HelpCircle, MoreVertical, RefreshCw, X, Menu, LogOut, User, Sparkles, Compass } from "lucide-react"
+import Link from "next/link"
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +25,7 @@ import { ExportPDFButton } from "@/components/export/ExportPDFButton"
 import { useAuth } from "@/contexts/AuthContext"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import type { GeneratedPlan } from "@/types/plan"
+import { parseLocalDate } from "@/lib/date-utils"
 
 interface Trip {
   id: string
@@ -84,8 +86,8 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
 
   const formatDateRange = () => {
     if (!trip.startDate || !trip.endDate) return "Fechas por definir"
-    const start = new Date(trip.startDate).toLocaleDateString("es", { day: "numeric", month: "short" })
-    const end = new Date(trip.endDate).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })
+    const start = parseLocalDate(trip.startDate).toLocaleDateString("es", { day: "numeric", month: "short" })
+    const end = parseLocalDate(trip.endDate).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" })
     return `${start} - ${end}`
   }
 
@@ -118,6 +120,19 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
       {/* Right side - Actions */}
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-1">
+          {/* Explore button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <Link href={`/trips/${trip.id}/explore`}>
+                  <Compass className="h-4 w-4" />
+                  <span className="hidden sm:inline">Explore</span>
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Discover things to do</TooltipContent>
+          </Tooltip>
+
           {/* Theme toggle - Desktop only */}
           {isDesktop && <ThemeToggle />}
 

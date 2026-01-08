@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { searchPlacesByCategory, searchPlacesByText, getPlaceDetails } from "@/lib/explore/google-places"
+import { searchPlacesByCategory, searchPlacesByText, getPlaceDetails, searchPlacesByDestinationAndType } from "@/lib/explore/google-places"
 import type { PlaceCategory } from "@/types/explore"
 
 // Cache places for 1 hour
@@ -44,6 +44,26 @@ export async function GET(request: NextRequest) {
       { error: "Missing required parameter: destination" },
       { status: 400 }
     )
+  }
+
+  // Simple search by type (for Explore page - doesn't require coordinates)
+  const googleType = searchParams.get("googleType")
+  if (googleType) {
+    try {
+      const places = await searchPlacesByDestinationAndType(destination, googleType)
+      return NextResponse.json({
+        places,
+        count: places.length,
+        destination,
+        googleType,
+      })
+    } catch (error) {
+      console.error("Error searching places by type:", error)
+      return NextResponse.json(
+        { error: "Failed to search places" },
+        { status: 500 }
+      )
+    }
   }
 
   if (lat === 0 && lng === 0) {

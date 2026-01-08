@@ -706,3 +706,58 @@ function inferCategory(primaryType?: string): PlaceCategory {
 
   return "attractions"
 }
+
+/**
+ * Simple search for places by destination name and Google type
+ * Uses text search without requiring coordinates (for Explore page)
+ */
+export async function searchPlacesByDestinationAndType(
+  destination: string,
+  googleType: string,
+  maxResults: number = 20
+): Promise<Place[]> {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn("Google Places API key not configured")
+    return []
+  }
+
+  try {
+    // Build a search query combining destination and type
+    const query = `${googleType.replace(/_/g, " ")} in ${destination}`
+
+    const response = await fetch(`${API_BASE}/places:searchText`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": PLACES_FIELD_MASK,
+      },
+      body: JSON.stringify({
+        textQuery: query,
+        languageCode: "es",
+        maxResultCount: maxResults,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("Google Places API error:", error)
+      return []
+    }
+
+    const data: TextSearchResponse = await response.json()
+
+    if (!data.places) {
+      return []
+    }
+
+    // Transform to our Place type and infer category
+    return data.places.map((place) => {
+      const category = inferCategory(place.primaryTypeDisplayName?.text || googleType)
+      return transformGooglePlace(place, category)
+    })
+  } catch (error) {
+    console.error("Error searching places:", error)
+    return []
+  }
+}
