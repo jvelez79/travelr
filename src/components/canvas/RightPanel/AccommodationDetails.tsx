@@ -22,6 +22,7 @@ import { useCanvasContext } from "../CanvasContext"
 import { Button } from "@/components/ui/button"
 import type { Accommodation, AccommodationStatus } from "@/types/accommodation"
 import { cn } from "@/lib/utils"
+import { formatDateWithWeekday } from "@/lib/date-utils"
 
 // Map common amenities to icons
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
@@ -84,15 +85,6 @@ export function AccommodationDetails({
   const isSuggestion = accommodation.status === 'suggested'
   const isPending = accommodation.status === 'pending'
   const isConfirmed = accommodation.status === 'confirmed'
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("es", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    })
-  }
 
   const getAccommodationTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -256,7 +248,7 @@ export function AccommodationDetails({
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
-              {formatDate(accommodation.checkIn)}
+              {formatDateWithWeekday(accommodation.checkIn)}
             </p>
             {accommodation.checkInTime && (
               <p className="text-xs text-muted-foreground">{accommodation.checkInTime}</p>
@@ -270,7 +262,7 @@ export function AccommodationDetails({
               </span>
             </div>
             <p className="text-sm font-medium text-foreground">
-              {formatDate(accommodation.checkOut)}
+              {formatDateWithWeekday(accommodation.checkOut)}
             </p>
             {accommodation.checkOutTime && (
               <p className="text-xs text-muted-foreground">{accommodation.checkOutTime}</p>

@@ -6,22 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { UnifiedAccommodationCard } from "./UnifiedAccommodationCard"
 import { AddAccommodationModal } from "./AddAccommodationModal"
+import { EditAccommodationModal } from "./EditAccommodationModal"
 import { HotelSearchModal } from "@/components/hotels/HotelSearchModal"
 import type { GeneratedPlan } from "@/types/plan"
 import type { Accommodation, AccommodationReservation } from "@/types/accommodation"
 import { calculateNights, createUserAccommodation, findAccommodationGaps } from "@/types/accommodation"
 import type { HotelResult } from "@/lib/hotels/types"
 import { cn } from "@/lib/utils"
+import { formatDateShort } from "@/lib/date-utils"
 
 interface AccommodationsViewProps {
   plan: GeneratedPlan
   onUpdatePlan: (plan: GeneratedPlan) => void
-}
-
-// Helper to format dates for display
-function formatDateShort(isoDate: string): string {
-  const date = new Date(isoDate)
-  return date.toLocaleDateString("es", { day: "numeric", month: "short" })
 }
 
 // Helper to migrate legacy AccommodationReservation to Accommodation
@@ -67,6 +63,7 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
   const [showAddModal, setShowAddModal] = useState(false)
   const [showHotelSearch, setShowHotelSearch] = useState(false)
   const [replacingAccommodation, setReplacingAccommodation] = useState<Accommodation | null>(null)
+  const [editingAccommodation, setEditingAccommodation] = useState<Accommodation | null>(null)
 
   // Unify all accommodations - migrate legacy reservations if needed
   const legacyReservations = plan.accommodationReservations || []
@@ -123,8 +120,15 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
   }
 
   const handleEdit = (accommodation: Accommodation) => {
-    // TODO: Open edit modal
-    console.log("Edit accommodation:", accommodation)
+    setEditingAccommodation(accommodation)
+  }
+
+  const handleSaveEdit = (updated: Accommodation) => {
+    const newList = allAccommodations.map(a =>
+      a.id === updated.id ? updated : a
+    )
+    updateAccommodations(newList)
+    setEditingAccommodation(null)
   }
 
   const handleDelete = (accommodation: Accommodation) => {
@@ -480,6 +484,14 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
         checkOut={replacingAccommodation?.checkOut || plan.trip.endDate}
         adults={plan.trip.travelers}
         onAddToPlan={handleHotelAddToPlan}
+      />
+
+      {/* Edit Accommodation Modal */}
+      <EditAccommodationModal
+        accommodation={editingAccommodation}
+        open={!!editingAccommodation}
+        onClose={() => setEditingAccommodation(null)}
+        onSave={handleSaveEdit}
       />
     </div>
   )

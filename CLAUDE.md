@@ -41,7 +41,6 @@ travelr/
 - [Design System](docs/07-design-system.md) - Colores, tipografía, patrones canvas
 
 ### Features
-- [Explore Feature](docs/08-explore-feature.md) - Descubrimiento de destinos
 - [Google Places](docs/09-google-places.md) - Integración completa
 - [Roadmap](docs/10-roadmap.md) - Fases de implementación
 

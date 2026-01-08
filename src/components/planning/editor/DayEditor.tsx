@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import { useDroppable } from "@dnd-kit/core"
-import { Hotel, CheckCircle, Clock, Sparkles, LogOut, AlertTriangle, ChevronRight } from "lucide-react"
+import { Hotel, CheckCircle, Clock, Sparkles, LogOut, AlertTriangle, ChevronRight, Map } from "lucide-react"
 import { ActivityListItem } from "./ActivityListItem"
 import { ActivityEditor } from "./ActivityEditor"
 import { DayTimelineModal } from "./DayTimelineModal"
+import { DayMapModal } from "./DayMapModal"
 import { TransportBlock } from "./TransportBlock"
 import { FlightBadge, getFlightsForDate } from "@/components/planning/overview/FlightBadge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,6 +14,7 @@ import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
 import { useAccommodationTransport } from "@/hooks/useAccommodationTransport"
 import { cn } from "@/lib/utils"
+import { parseLocalDate } from "@/lib/date-utils"
 import type { ItineraryDay, TimelineEntry, FlightReservation } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 import type { AccommodationIndicatorInfo } from "@/lib/accommodation/utils"
@@ -59,6 +61,7 @@ export function DayEditor({
   const [editorMode, setEditorMode] = useState<"edit" | "create">("edit")
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isTimelineOpen, setIsTimelineOpen] = useState(false)
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false)
   const [isCalculatingTransport, setIsCalculatingTransport] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
 
@@ -86,10 +89,16 @@ export function DayEditor({
   const isPending = generationStatus === 'pending'
   const hasError = generationStatus === 'error'
 
+  // Check if there are activities or accommodation with coordinates for map
+  const hasActivitiesWithCoordinates = displayTimeline.some(
+    (a) => a.placeData?.coordinates?.lat && a.placeData?.coordinates?.lng
+  ) || (accommodationIndicator?.accommodation?.placeData?.coordinates?.lat &&
+        accommodationIndicator?.accommodation?.placeData?.coordinates?.lng)
+
   // Format date
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Fecha por definir"
-    const date = new Date(dateStr)
+    const date = parseLocalDate(dateStr)
     if (isNaN(date.getTime())) return "Fecha por definir"
     return date.toLocaleDateString("es", {
       weekday: "long",
@@ -294,6 +303,20 @@ export function DayEditor({
               </svg>
               Rutas
             </span>
+          )}
+
+          {/* Map Button - Show day route on map */}
+          {hasActivitiesWithCoordinates && !isGenerating && !isPending && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsMapModalOpen(true)
+              }}
+              title="Ver mapa del día"
+              className="opacity-0 group-hover/day:opacity-100 transition-opacity duration-200 inline-flex items-center justify-center w-8 h-8 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10"
+            >
+              <Map className="w-4 h-4" />
+            </button>
           )}
 
           {/* Regenerate Day Button - Always visible on hover (subtle) */}
@@ -696,6 +719,14 @@ export function DayEditor({
         isOpen={isTimelineOpen}
         onClose={() => setIsTimelineOpen(false)}
         onUpdateDay={onUpdateDay}
+      />
+
+      {/* Day Map Modal */}
+      <DayMapModal
+        day={day}
+        accommodation={accommodationIndicator?.accommodation}
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
       />
     </div>
   )

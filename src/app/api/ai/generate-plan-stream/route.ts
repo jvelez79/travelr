@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder()
 
     // Track usage for logging
-    let totalUsage = { inputTokens: 0, outputTokens: 0 }
+    const totalUsage = { inputTokens: 0, outputTokens: 0 }
     const providerName = ai.name
     const model = getModelForProvider(ai.name)
     const metadata = { destination: trip.destination, streaming: true }

@@ -109,7 +109,7 @@ export class AnthropicProvider implements AIProvider {
 
     const decoder = new TextDecoder()
     let buffer = ''
-    let usage = { inputTokens: 0, outputTokens: 0 }
+    const usage = { inputTokens: 0, outputTokens: 0 }
 
     try {
       while (true) {

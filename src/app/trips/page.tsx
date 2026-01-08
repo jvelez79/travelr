@@ -7,20 +7,12 @@ import { Logo } from "@/components/Logo"
 import { AdminLink } from "@/components/AdminLink"
 import { useTrips, useDeleteTrip } from "@/hooks/useTrips"
 import type { Trip, TripStatus } from "@/types/database"
-
-function formatDate(dateString: string): string {
-  if (!dateString) return ""
-  const date = new Date(dateString)
-  return date.toLocaleDateString("es-ES", {
-    day: "numeric",
-    month: "short",
-  })
-}
+import { formatDateShort, formatDateRange as formatRange } from "@/lib/date-utils"
 
 function formatDateRange(startDate: string, endDate: string): string {
   if (!startDate && !endDate) return "Fechas por definir"
-  if (!endDate) return `Desde ${formatDate(startDate)}`
-  return `${formatDate(startDate)} - ${formatDate(endDate)}`
+  if (!endDate) return `Desde ${formatDateShort(startDate)}`
+  return formatRange(startDate, endDate)
 }
 
 function calculateDays(startDate: string, endDate: string): number | null {

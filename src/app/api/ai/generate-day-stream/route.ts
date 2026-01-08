@@ -154,7 +154,7 @@ async function streamDayGeneration(
   let fullContent = ''
   let lastSentIndex = 0
   let timelineEntries: unknown[] = []
-  let totalUsage = { inputTokens: 0, outputTokens: 0 }
+  const totalUsage = { inputTokens: 0, outputTokens: 0 }
   const providerName = ai.name
   const model = getModelForProvider(ai.name)
 
@@ -380,14 +380,14 @@ function repairAndParse(jsonStr: string, dayNumber: number) {
     let repaired = jsonStr.replace(/,\s*([}\]])/g, '$1')
 
     // Close unclosed brackets
-    let openBraces = (repaired.match(/{/g) || []).length
+    const openBraces = (repaired.match(/{/g) || []).length
     let closeBraces = (repaired.match(/}/g) || []).length
     while (closeBraces < openBraces) {
       repaired += '}'
       closeBraces++
     }
 
-    let openBrackets = (repaired.match(/\[/g) || []).length
+    const openBrackets = (repaired.match(/\[/g) || []).length
     let closeBrackets = (repaired.match(/\]/g) || []).length
     while (closeBrackets < openBrackets) {
       repaired += ']'

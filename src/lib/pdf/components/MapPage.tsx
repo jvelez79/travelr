@@ -7,6 +7,7 @@ import { Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer'
 import type { GeneratedPlan } from '@/types/plan'
 import { colors, styles as baseStyles, spacing } from './shared/styles'
 import { extractTravelBases } from '../utils/static-map'
+import { parseLocalDate } from '@/lib/date-utils'
 
 const styles = StyleSheet.create({
   page: {
@@ -159,7 +160,7 @@ interface MapPageProps {
 }
 
 function formatShortDate(dateString: string): string {
-  const date = new Date(dateString)
+  const date = parseLocalDate(dateString)
   return date.toLocaleDateString('es-ES', {
     weekday: 'short',
     day: 'numeric',

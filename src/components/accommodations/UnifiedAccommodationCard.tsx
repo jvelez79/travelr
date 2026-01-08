@@ -28,6 +28,7 @@ import {
 import type { Accommodation, AccommodationStatus } from "@/types/accommodation"
 import { getAccommodationSourceDisplayName } from "@/types/accommodation"
 import { cn } from "@/lib/utils"
+import { formatDateShort } from "@/lib/date-utils"
 
 interface UnifiedAccommodationCardProps {
   accommodation: Accommodation
@@ -88,14 +89,6 @@ export function UnifiedAccommodationCard({
   const isSuggestion = status === "suggested"
   const isPending = status === "pending"
   const isConfirmed = status === "confirmed"
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "short",
-    })
-  }
 
   const formatCurrency = (amount: number | undefined, currency: string) => {
     if (!amount) return null
@@ -265,7 +258,7 @@ export function UnifiedAccommodationCard({
           <div className="flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
             <span>
-              {formatDate(accommodation.checkIn)} - {formatDate(accommodation.checkOut)}
+              {formatDateShort(accommodation.checkIn)} - {formatDateShort(accommodation.checkOut)}
             </span>
           </div>
           <span className="text-muted-foreground">

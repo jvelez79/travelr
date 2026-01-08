@@ -3,6 +3,7 @@
 import { Plane, Copy, Pencil, Trash2, PlaneTakeoff, PlaneLanding, ArrowLeftRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FlightReservation, FlightType } from "@/types/plan"
+import { formatDateWithWeekday } from "@/lib/date-utils"
 
 interface FlightCardProps {
   flight: FlightReservation
@@ -18,14 +19,6 @@ const FLIGHT_TYPE_CONFIG: Record<FlightType, { label: string; icon: typeof Plane
 }
 
 export function FlightCard({ flight, onEdit, onDelete, compact = false }: FlightCardProps) {
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString("es-ES", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    })
-  }
 
   const formatTime = (timeStr: string) => {
     // Handle both "HH:mm" format and "5:27 AM" format
@@ -105,11 +98,11 @@ export function FlightCard({ flight, onEdit, onDelete, compact = false }: Flight
           {/* Date and Time */}
           <div className="space-y-2 text-sm mb-4">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <span>{formatDate(flight.date)}</span>
+              <span>{formatDateWithWeekday(flight.date)}</span>
               {flight.arrivalDate && flight.arrivalDate !== flight.date && (
                 <>
                   <span>→</span>
-                  <span>{formatDate(flight.arrivalDate)}</span>
+                  <span>{formatDateWithWeekday(flight.arrivalDate)}</span>
                 </>
               )}
             </div>

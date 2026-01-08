@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { useCanvasContext } from "../CanvasContext"
 import { EmptyState } from "./EmptyState"
 import { ActivityDetails } from "./ActivityDetails"
 import { AccommodationDetails } from "./AccommodationDetails"
 import { PlaceSearch } from "./PlaceSearch"
 import { ActivityEditorInPanel } from "./ActivityEditorInPanel"
+import { EditAccommodationModal } from "@/components/accommodations/EditAccommodationModal"
 import type { GeneratedPlan } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 
@@ -18,6 +19,7 @@ interface RightPanelProps {
 
 export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanelProps) {
   const { rightPanelState, openCustomActivityEditor, clearRightPanel } = useCanvasContext()
+  const [editingAccommodation, setEditingAccommodation] = useState<Accommodation | null>(null)
 
   // Accommodation action handlers
   const updateAccommodations = useCallback((newAccommodations: Accommodation[]) => {
@@ -60,9 +62,16 @@ export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanel
   }, [onOpenHotelSearch])
 
   const handleEditAccommodation = useCallback((accommodation: Accommodation) => {
-    // TODO: Open edit modal
-    console.log("Edit accommodation:", accommodation)
+    setEditingAccommodation(accommodation)
   }, [])
+
+  const handleSaveAccommodationEdit = useCallback((updated: Accommodation) => {
+    const newList = (plan.accommodations || []).map(a =>
+      a.id === updated.id ? updated : a
+    )
+    updateAccommodations(newList)
+    setEditingAccommodation(null)
+  }, [plan.accommodations, updateAccommodations])
 
   return (
     <div className="h-full bg-card">
@@ -115,6 +124,14 @@ export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanel
       {rightPanelState.type === 'ai' && (
         <AISuggestionsPlaceholder dayNumber={rightPanelState.dayNumber} />
       )}
+
+      {/* Edit Accommodation Modal */}
+      <EditAccommodationModal
+        accommodation={editingAccommodation}
+        open={!!editingAccommodation}
+        onClose={() => setEditingAccommodation(null)}
+        onSave={handleSaveAccommodationEdit}
+      />
     </div>
   )
 }

@@ -2,6 +2,7 @@
 
 import { DayTimeline } from "./DayTimeline"
 import type { ItineraryDay } from "@/types/plan"
+import { parseLocalDate } from "@/lib/date-utils"
 
 interface DayTimelineModalProps {
   day: ItineraryDay
@@ -16,7 +17,7 @@ export function DayTimelineModal({ day, isOpen, onClose, onUpdateDay }: DayTimel
   // Format date
   const formatDate = (dateStr: string) => {
     try {
-      const date = new Date(dateStr)
+      const date = parseLocalDate(dateStr)
       return date.toLocaleDateString("es", {
         weekday: "long",
         day: "numeric",
