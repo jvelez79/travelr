@@ -7,7 +7,6 @@ import type {
   ContextualQuestion,
   TimelineEntry,
   ImportantNote,
-  AccommodationSuggestion,
   DocumentItem,
   PackingItem,
 } from '@/types/plan'
@@ -143,14 +142,16 @@ async function generateInitialPlan(
         id: note.id || crypto.randomUUID(),
       })) || [],
     })),
-    accommodation: {
-      type: preferences.accommodationType,
-      suggestions: parsed.accommodation?.suggestions?.map((acc: { id?: string }, idx: number) => ({
-        ...acc,
-        id: acc.id || `acc-${idx + 1}`,
-      })) || [],
-      totalCost: parsed.accommodation?.totalCost || 0,
-    },
+    // Unified accommodations array
+    accommodations: ((parsed.accommodations as Partial<Accommodation>[] | undefined) || []).map((acc, idx) => ({
+      ...acc,
+      id: acc.id || crypto.randomUUID(),
+      origin: 'ai_suggestion' as const,
+      status: 'suggested' as const,
+      currency: acc.currency || 'USD',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })) as Accommodation[],
     // Background sections - will be generated after initial load
     documentsStatus: 'idle',
     packingStatus: 'idle',
@@ -324,14 +325,16 @@ function buildPlanFromParsedData(
         id: note.id || crypto.randomUUID(),
       })) || [],
     })),
-    accommodation: {
-      type: preferences.accommodationType,
-      suggestions: (parsed.accommodation as { suggestions?: Omit<AccommodationSuggestion, 'id'> & { id?: string }[] })?.suggestions?.map((acc, idx) => ({
-        ...acc,
-        id: acc.id || `acc-${idx + 1}`,
-      })) as AccommodationSuggestion[] || [],
-      totalCost: (parsed.accommodation as { totalCost?: number })?.totalCost || 0,
-    },
+    // Unified accommodations array
+    accommodations: ((parsed.accommodations as Partial<Accommodation>[] | undefined) || []).map((acc, idx) => ({
+      ...acc,
+      id: acc.id || crypto.randomUUID(),
+      origin: 'ai_suggestion' as const,
+      status: 'suggested' as const,
+      currency: acc.currency || 'USD',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    })) as Accommodation[],
     // Background sections - will be generated after initial load
     documentsStatus: 'idle',
     packingStatus: 'idle',
@@ -423,14 +426,16 @@ async function generatePlanProgressively(
         totalNights: totalDays - 1,
         totalDriving: summaryParsed.summary?.totalDriving,
       },
-      accommodation: {
-        type: preferences.accommodationType,
-        suggestions: summaryParsed.accommodation?.suggestions?.map((acc: { id?: string }, idx: number) => ({
-          ...acc,
-          id: acc.id || `acc-${idx + 1}`,
-        })) || [],
-        totalCost: summaryParsed.accommodation?.totalCost || 0,
-      },
+      // Unified accommodations array
+      accommodations: (summaryParsed.accommodations || []).map((acc: Partial<Accommodation>, idx: number) => ({
+        ...acc,
+        id: acc.id || crypto.randomUUID(),
+        origin: 'ai_suggestion' as const,
+        status: 'suggested' as const,
+        currency: acc.currency || 'USD',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })) as Accommodation[],
       // Background sections - will be generated after initial load
       documentsStatus: 'idle',
       packingStatus: 'idle',
@@ -717,11 +722,8 @@ function createMinimalPlan(
       totalNights: totalDays - 1,
     },
     itinerary,
-    accommodation: {
-      type: preferences.accommodationType,
-      suggestions: [],
-      totalCost: 0,
-    },
+    // Unified accommodations array (empty for minimal plan)
+    accommodations: [],
     // Background sections - will be generated after initial load
     documentsStatus: 'idle',
     packingStatus: 'idle',
@@ -857,13 +859,8 @@ interface PlanSummaryResult {
     }
   }
   dayTitles: string[]
-  accommodation: {
-    type: string
-    suggestions: AccommodationSuggestion[]
-    totalCost: number
-  }
-  // NEW: Unified accommodations array
-  accommodations?: Accommodation[]
+  // Unified accommodations array (consolidated field)
+  accommodations: Accommodation[]
   trip: TripBasics
   preferences: TravelPreferences
 }
@@ -925,15 +922,7 @@ async function generatePlanSummaryOnly(
       totalDriving: summaryParsed.summary?.totalDriving,
     },
     dayTitles: summaryParsed.dayTitles || [],
-    accommodation: {
-      type: preferences.accommodationType,
-      suggestions: summaryParsed.accommodation?.suggestions?.map((acc: { id?: string }, idx: number) => ({
-        ...acc,
-        id: acc.id || `acc-${idx + 1}`,
-      })) || [],
-      totalCost: summaryParsed.accommodation?.totalCost || 0,
-    },
-    // Include unified accommodations array
+    // Unified accommodations array (consolidated field)
     accommodations,
     trip,
     preferences,
@@ -946,7 +935,7 @@ async function generatePlanSummaryOnly(
 function createPartialPlanFromSummary(
   summaryResult: PlanSummaryResult
 ): GeneratedPlan {
-  const { summary, dayTitles, accommodation, accommodations, trip, preferences } = summaryResult
+  const { summary, dayTitles, accommodations, trip, preferences } = summaryResult
   const startDate = new Date(trip.startDate)
 
   // Create placeholder days
@@ -974,8 +963,7 @@ function createPartialPlanFromSummary(
     trip,
     preferences,
     summary,
-    accommodation: accommodation as GeneratedPlan['accommodation'],
-    // Include unified accommodations array (new format)
+    // Unified accommodations array (consolidated field)
     accommodations: accommodations || [],
     itinerary,
     documentsStatus: 'idle',

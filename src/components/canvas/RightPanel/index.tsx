@@ -28,7 +28,6 @@ export function RightPanel({ tripId, plan, onUpdatePlan, onOpenHotelSearch }: Ri
     onUpdatePlan({
       ...plan,
       accommodations: newAccommodations,
-      accommodationReservations: undefined, // Clear legacy field
     })
   }, [plan, onUpdatePlan])
 

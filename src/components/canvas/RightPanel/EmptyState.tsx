@@ -1,5 +1,7 @@
 "use client"
 
+import { MapPin, Calendar, Users, Sparkles, Compass, Map } from "lucide-react"
+import { parseLocalDate } from "@/lib/date-utils"
 import type { GeneratedPlan } from "@/types/plan"
 
 interface EmptyStateProps {
@@ -11,113 +13,140 @@ export function EmptyState({ plan }: EmptyStateProps) {
     (sum, day) => sum + day.timeline.length,
     0
   )
+  const totalDays = plan.itinerary.length
+  const daysWithActivities = plan.itinerary.filter(d => d.timeline.length > 0).length
+  const daysToExplore = totalDays - daysWithActivities
 
-  const confirmedCount = plan.itinerary.reduce(
-    (sum, day) => sum + day.timeline.filter(a => a.placeData).length,
-    0
-  )
+  // Format date range
+  const formatDateRange = () => {
+    const start = parseLocalDate(plan.trip.startDate)
+    const end = parseLocalDate(plan.trip.endDate)
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return ""
+    return `${start.toLocaleDateString("es", { day: "numeric", month: "short" })} - ${end.toLocaleDateString("es", { day: "numeric", month: "short" })}`
+  }
+
+  // Get contextual suggestions based on trip state
+  const getSuggestions = () => {
+    if (daysWithActivities === 0) {
+      return [
+        { icon: Compass, text: "Explora lugares populares", action: "explore" },
+        { icon: Sparkles, text: "Genera un itinerario con AI", action: "generate" },
+      ]
+    }
+    if (daysToExplore > 0) {
+      return [
+        { icon: Map, text: `${daysToExplore} días por planear`, action: "plan" },
+        { icon: Sparkles, text: "Sugerencias para hoy", action: "suggest" },
+      ]
+    }
+    return [
+      { icon: Sparkles, text: "Optimizar rutas del viaje", action: "optimize" },
+    ]
+  }
 
   return (
-    <div className="p-5 space-y-6">
-      {/* Header with gradient accent */}
-      <div className="relative">
-        <div className="absolute -top-5 -left-5 -right-5 h-24 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-b-3xl" />
-        <div className="relative pt-2">
-          <h3 className="text-lg font-semibold text-foreground tracking-tight">
-            {plan.summary.title}
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-            {plan.summary.description}
-          </p>
+    <div className="p-4 space-y-4">
+      {/* Trip Header - Compact */}
+      <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent">
+        <h3 className="text-base font-semibold text-foreground tracking-tight">
+          {plan.summary.title || `Viaje a ${plan.trip.destination}`}
+        </h3>
+
+        {/* Trip Meta - Inline */}
+        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="w-3 h-3" />
+            {plan.trip.destination}
+          </span>
+          <span className="text-border">·</span>
+          <span className="inline-flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            {formatDateRange()}
+          </span>
+          {plan.trip.travelers > 1 && (
+            <>
+              <span className="text-border">·</span>
+              <span className="inline-flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {plan.trip.travelers}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Stats - Refined Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="relative overflow-hidden bg-gradient-to-br from-muted/80 to-muted/40 rounded-xl p-4 border border-border/50">
-          <div className="relative">
-            <div className="text-3xl font-bold text-foreground tracking-tight">{totalActivities}</div>
-            <div className="text-xs font-medium text-muted-foreground mt-0.5">Actividades</div>
+      {/* Progress - Positive Framing */}
+      <div className="p-4 rounded-xl bg-muted/30">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+            <span className="text-xl font-bold text-primary">{daysWithActivities}</span>
           </div>
-          <div className="absolute -right-2 -bottom-2 w-12 h-12 rounded-full bg-foreground/5" />
-        </div>
-        <div className="relative overflow-hidden bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-4 border border-primary/20">
-          <div className="relative">
-            <div className="text-3xl font-bold text-primary tracking-tight">{confirmedCount}</div>
-            <div className="text-xs font-medium text-primary/70 mt-0.5">Confirmadas</div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">
+              {daysWithActivities === 0
+                ? "Listo para comenzar"
+                : daysWithActivities === totalDays
+                  ? "Viaje completamente planeado"
+                  : `${daysWithActivities} de ${totalDays} días planeados`
+              }
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {totalActivities > 0
+                ? `${totalActivities} actividades agregadas`
+                : "Agrega actividades para comenzar"
+              }
+            </p>
           </div>
-          <div className="absolute -right-2 -bottom-2 w-12 h-12 rounded-full bg-primary/10" />
         </div>
+
+        {/* Subtle progress bar */}
+        {daysWithActivities > 0 && daysWithActivities < totalDays && (
+          <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary/60 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(daysWithActivities / totalDays) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Highlights - Editorial Style */}
-      {plan.summary.highlights && plan.summary.highlights.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
-            Highlights
-          </h4>
-          <ul className="space-y-2.5">
-            {plan.summary.highlights.map((highlight, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm group">
-                <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary mt-2 group-hover:scale-125 transition-transform" />
-                <span className="text-foreground/90 leading-relaxed">{highlight}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* Contextual Suggestions */}
+      <div className="space-y-2">
+        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+          Siguiente paso
+        </h4>
+        {getSuggestions().map((suggestion, i) => (
+          <button
+            key={i}
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 group"
+          >
+            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <suggestion.icon className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-sm font-medium text-foreground">{suggestion.text}</span>
+            <svg className="w-4 h-4 ml-auto text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        ))}
+      </div>
 
-      {/* Tips - Card Style */}
+      {/* Quick Tips - More visual */}
       {plan.tips && plan.tips.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
-            Consejos
-          </h4>
-          <div className="space-y-2">
-            {plan.tips.slice(0, 3).map((tip, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/20 transition-colors"
-              >
-                <span className="flex-shrink-0 text-base">💡</span>
-                <span className="text-sm text-foreground/80 leading-relaxed">{tip}</span>
-              </div>
-            ))}
+        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
+          <div className="flex items-start gap-2">
+            <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              {plan.tips[0]}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Warnings */}
-      {plan.warnings && plan.warnings.length > 0 && (
-        <div className="space-y-3">
-          <h4 className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">
-            Advertencias
-          </h4>
-          <div className="space-y-2">
-            {plan.warnings.slice(0, 2).map((warning, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-3 p-3 rounded-xl bg-orange-500/5 border border-orange-500/10"
-              >
-                <span className="flex-shrink-0 text-base">⚠️</span>
-                <span className="text-sm text-foreground/80 leading-relaxed">{warning}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Help text - Subtle */}
-      <div className="pt-4">
-        <div className="flex items-center justify-center gap-2 p-3 rounded-xl bg-muted/30 border border-dashed border-border/50">
-          <svg className="w-4 h-4 text-muted-foreground/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59" />
-          </svg>
-          <p className="text-xs text-muted-foreground/60">
-            Clic en una actividad para ver detalles
-          </p>
-        </div>
-      </div>
+      {/* Subtle hint */}
+      <p className="text-[11px] text-muted-foreground/50 text-center pt-2">
+        Haz clic en una actividad para ver detalles
+      </p>
     </div>
   )
 }

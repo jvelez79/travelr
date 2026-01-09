@@ -1,7 +1,7 @@
 // Types for AI-generated travel plans
 
 import type { PlaceCategory, AccessibilityOptions, ServingOptions } from './explore'
-import type { AccommodationReservation, Accommodation } from './accommodation'
+import type { Accommodation } from './accommodation'
 import type { FlightSource, FlightSourceData } from '@/lib/flights/types'
 
 export type TravelStyle = 'budget' | 'comfort' | 'luxury'
@@ -363,12 +363,9 @@ export interface GeneratedPlan {
 
   // Main sections (generated initially)
   itinerary: ItineraryDay[]
-  // @deprecated Use accommodations[] instead for unified accommodation management
-  accommodation: {
-    type: AccommodationType
-    suggestions: AccommodationSuggestion[]
-    totalCost: number
-  }
+
+  // Unified accommodations array - contains both AI suggestions and user-added accommodations
+  accommodations?: Accommodation[]
 
   // Budget - calculated systematically (not AI generated)
   budget?: BudgetBreakdown
@@ -393,14 +390,6 @@ export interface GeneratedPlan {
   // Overview tab data
   flights?: FlightReservation[]
   savedPlaces?: SavedPlace[]
-
-  // Confirmed accommodation reservations (separate from AI suggestions)
-  // @deprecated Use accommodations[] instead
-  accommodationReservations?: AccommodationReservation[]
-
-  // UNIFIED accommodations array (NEW)
-  // Contains both AI suggestions and user-added accommodations
-  accommodations?: Accommodation[]
 
   // AI metadata
   aiGenerated: {
@@ -473,11 +462,7 @@ interface StoredSummaryResult {
     }
   }
   dayTitles: string[]
-  accommodation: {
-    type: string
-    suggestions: AccommodationSuggestion[]
-    totalCost: number
-  }
+  accommodations: Accommodation[]
   trip: {
     destination: string
     origin: string

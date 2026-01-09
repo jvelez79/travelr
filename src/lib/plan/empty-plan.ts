@@ -122,11 +122,8 @@ export function createEmptyPlan(trip: TripData): GeneratedPlan {
 
     itinerary,
 
-    accommodation: {
-      type: "mixed",
-      suggestions: [],
-      totalCost: 0,
-    },
+    // Unified accommodations array (empty for manual planning)
+    accommodations: [],
 
     budget: {
       flights: 0,

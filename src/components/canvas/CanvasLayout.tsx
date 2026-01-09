@@ -418,7 +418,6 @@ function CanvasLayoutInner({
     onUpdatePlan({
       ...plan,
       accommodations: updated,
-      accommodationReservations: undefined,
     })
 
     // Close modal and clear state

@@ -19,6 +19,7 @@ interface UseChatStreamingOptions {
 export function useChatStreaming() {
   const eventSourceRef = useRef<EventSource | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const isStreamingRef = useRef(false)
 
   /**
    * Start streaming a chat message
@@ -28,10 +29,19 @@ export function useChatStreaming() {
     body: Record<string, unknown>,
     options: UseChatStreamingOptions
   ) => {
-    // Cancel any existing stream
+    // Prevent multiple concurrent streams - ignore if already streaming
+    if (isStreamingRef.current) {
+      console.log('[useChatStreaming] Stream already in progress, ignoring request')
+      return
+    }
+
+    // Cancel any existing stream (shouldn't happen due to guard above)
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
+
+    // Mark as streaming
+    isStreamingRef.current = true
 
     // Create new abort controller
     abortControllerRef.current = new AbortController()
@@ -124,6 +134,7 @@ export function useChatStreaming() {
         options.onError(error instanceof Error ? error.message : 'Unknown error')
       }
     } finally {
+      isStreamingRef.current = false
       abortControllerRef.current = null
     }
   }, [])
@@ -132,6 +143,8 @@ export function useChatStreaming() {
    * Cancel active stream
    */
   const cancelStream = useCallback(() => {
+    isStreamingRef.current = false
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
       abortControllerRef.current = null

@@ -9,7 +9,7 @@ import { AddAccommodationModal } from "./AddAccommodationModal"
 import { EditAccommodationModal } from "./EditAccommodationModal"
 import { HotelSearchModal } from "@/components/hotels/HotelSearchModal"
 import type { GeneratedPlan } from "@/types/plan"
-import type { Accommodation, AccommodationReservation } from "@/types/accommodation"
+import type { Accommodation } from "@/types/accommodation"
 import { calculateNights, createUserAccommodation, findAccommodationGaps } from "@/types/accommodation"
 import type { HotelResult } from "@/lib/hotels/types"
 import { cn } from "@/lib/utils"
@@ -20,64 +20,14 @@ interface AccommodationsViewProps {
   onUpdatePlan: (plan: GeneratedPlan) => void
 }
 
-// Helper to migrate legacy AccommodationReservation to Accommodation
-function migrateReservationToAccommodation(reservation: AccommodationReservation): Accommodation {
-  const now = new Date().toISOString()
-  return {
-    id: reservation.id,
-    name: reservation.name,
-    type: reservation.type,
-    area: reservation.city || '',
-    checkIn: reservation.checkIn,
-    checkOut: reservation.checkOut,
-    checkInTime: reservation.checkInTime,
-    checkOutTime: reservation.checkOutTime,
-    nights: reservation.nights,
-    pricePerNight: reservation.pricePerNight,
-    totalPrice: reservation.totalPrice,
-    currency: reservation.currency,
-    googlePlaceId: undefined,
-    placeData: reservation.location ? {
-      name: reservation.name,
-      coordinates: { lat: reservation.location.lat, lng: reservation.location.lng },
-      address: reservation.address,
-    } : undefined,
-    origin: 'user_added',
-    status: reservation.status === 'cancelled' ? 'cancelled' : reservation.status === 'confirmed' ? 'confirmed' : 'pending',
-    confirmationNumber: reservation.confirmationNumber,
-    bookingPlatform: reservation.bookingPlatform,
-    bookingUrl: reservation.bookingUrl,
-    amenities: reservation.amenities,
-    source: reservation.source === 'email_forward' ? 'email_forward'
-      : reservation.source === 'receipt_upload' ? 'receipt_upload'
-      : reservation.source === 'gmail_sync' ? 'gmail_sync'
-      : reservation.source === 'manual_entry' ? 'manual_entry'
-      : 'hotel_search',
-    notes: reservation.notes,
-    createdAt: reservation.createdAt,
-    updatedAt: now,
-  }
-}
-
 export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewProps) {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showHotelSearch, setShowHotelSearch] = useState(false)
   const [replacingAccommodation, setReplacingAccommodation] = useState<Accommodation | null>(null)
   const [editingAccommodation, setEditingAccommodation] = useState<Accommodation | null>(null)
 
-  // Unify all accommodations - migrate legacy reservations if needed
-  const legacyReservations = plan.accommodationReservations || []
-  const unifiedAccommodations = plan.accommodations || []
-
-  // Migrate legacy reservations to unified model (for display purposes)
-  const migratedReservations = legacyReservations.map(migrateReservationToAccommodation)
-
-  // Combine: unified first, then migrated (avoid duplicates by id)
-  const existingIds = new Set(unifiedAccommodations.map(a => a.id))
-  const allAccommodations = [
-    ...unifiedAccommodations,
-    ...migratedReservations.filter(a => !existingIds.has(a.id))
-  ]
+  // Get accommodations from plan (unified field)
+  const allAccommodations = plan.accommodations || []
 
   // Sort by check-in date
   const sortedAccommodations = [...allAccommodations].sort((a, b) =>
@@ -109,8 +59,6 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
     onUpdatePlan({
       ...plan,
       accommodations: newAccommodations,
-      // Clear legacy field when using unified
-      accommodationReservations: undefined,
     })
   }
 
@@ -231,10 +179,9 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
     setReplacingAccommodation(null)
   }
 
-  // For AddAccommodationModal legacy support
-  const handleAddReservation = (reservation: AccommodationReservation) => {
-    const migrated = migrateReservationToAccommodation(reservation)
-    const updated = [...allAccommodations, migrated]
+  // Handle adding new accommodation
+  const handleAddAccommodation = (accommodation: Accommodation) => {
+    const updated = [...allAccommodations, accommodation]
     updateAccommodations(updated)
   }
 
@@ -468,7 +415,7 @@ export function AccommodationsView({ plan, onUpdatePlan }: AccommodationsViewPro
         tripId={plan.id}
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
-        onAddReservation={handleAddReservation}
+        onAddAccommodation={handleAddAccommodation}
         onOpenHotelSearch={handleOpenHotelSearch}
       />
 

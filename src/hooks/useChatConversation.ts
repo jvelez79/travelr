@@ -27,6 +27,8 @@ interface UseChatConversationReturn {
   sendMessage: (content: string) => Promise<void>
   clearHistory: () => Promise<void>
   conversationId: string | null
+  canContinue: boolean
+  continueConversation: () => Promise<void>
 }
 
 export function useChatConversation({
@@ -38,11 +40,20 @@ export function useChatConversation({
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null)
+  const [canContinue, setCanContinue] = useState(false)
+
+  // Ref to track conversationId and avoid closure issues
+  const conversationIdRef = useRef<string | null>(initialConversationId || null)
 
   const { user } = useAuth()
   const supabase = createClient()
   const abortControllerRef = useRef<AbortController | null>(null)
   const { startStream, cancelStream } = useChatStreaming()
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    conversationIdRef.current = conversationId
+  }, [conversationId])
 
   // Load conversation history
   const loadHistory = useCallback(async () => {
@@ -83,10 +94,90 @@ export function useChatConversation({
     }
   }, [user, conversationId, supabase])
 
-  // Load history on mount or when conversationId changes
+  // Load history for a specific conversation (avoids closure issues)
+  const loadHistoryForConversation = useCallback(async (convId: string) => {
+    if (!user || !convId) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('agent_messages')
+        .select('*')
+        .eq('conversation_id', convId)
+        .order('created_at', { ascending: true })
+
+      if (fetchError) throw fetchError
+
+      const chatMessages: ChatMessage[] = (data || []).map((msg) => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+        timestamp: msg.created_at,
+        toolCalls: msg.tool_calls ? (msg.tool_calls as unknown as ToolCall[]) : undefined,
+        isStreaming: false,
+      }))
+
+      setMessages(chatMessages)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Error loading messages'))
+    } finally {
+      setLoading(false)
+    }
+  }, [user, supabase])
+
+  // Find existing conversation for trip (if no conversationId provided)
+  const findExistingConversation = useCallback(async () => {
+    if (!user || !tripId || conversationId) return
+
+    try {
+      // Look for the most recent conversation for this trip
+      const { data, error: fetchError } = await supabase
+        .from('agent_conversations')
+        .select('id')
+        .eq('trip_id', tripId)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (fetchError) {
+        console.error('[useChatConversation] Error finding conversation:', fetchError)
+        setLoading(false)
+        return
+      }
+
+      if (data) {
+        console.log('[useChatConversation] Found existing conversation:', data.id)
+        setConversationId(data.id)
+        conversationIdRef.current = data.id
+        // Load history will be triggered by the conversationId change
+      } else {
+        console.log('[useChatConversation] No existing conversation found for trip')
+        setLoading(false)
+      }
+    } catch (err) {
+      console.error('[useChatConversation] Error:', err)
+      setLoading(false)
+    }
+  }, [user, tripId, conversationId, supabase])
+
+  // On mount: find existing conversation or set loading to false
   useEffect(() => {
-    loadHistory()
-  }, [loadHistory])
+    if (!conversationId) {
+      findExistingConversation()
+    }
+  }, [findExistingConversation, conversationId])
+
+  // Load history when conversationId changes
+  useEffect(() => {
+    if (conversationId) {
+      loadHistory()
+    }
+  }, [conversationId, loadHistory])
 
   // Create or get conversation
   const ensureConversation = useCallback(async (): Promise<string> => {
@@ -108,6 +199,7 @@ export function useChatConversation({
     if (insertError) throw insertError
 
     setConversationId(data.id)
+    conversationIdRef.current = data.id
     return data.id
   }, [conversationId, user, tripId, supabase])
 
@@ -170,7 +262,7 @@ export function useChatConversation({
             console.log('[chat] Tool result:', toolName, result)
             // Optionally show tool result in UI
           },
-          onDone: (data?: any) => {
+          onDone: (data?: { conversationId?: string; toolCallsCount?: number; canContinue?: boolean }) => {
             console.log('[chat] Stream completed', data)
             // Mark assistant message as complete
             setMessages(prev =>
@@ -182,10 +274,23 @@ export function useChatConversation({
             )
             setIsStreaming(false)
 
-            // Reload history to sync with DB
-            setTimeout(() => {
-              loadHistory()
-            }, 500)
+            // Update continuation state
+            setCanContinue(data?.canContinue || false)
+
+            // Use conversationId from done event (guaranteed to be correct)
+            const finalConvId = data?.conversationId || conversationIdRef.current
+            if (finalConvId) {
+              // Update state if we got a new conversationId
+              if (data?.conversationId && data.conversationId !== conversationIdRef.current) {
+                setConversationId(data.conversationId)
+                conversationIdRef.current = data.conversationId
+              }
+
+              // Reload history with the known conversationId
+              setTimeout(() => {
+                loadHistoryForConversation(finalConvId)
+              }, 500)
+            }
           },
           onError: (errorMsg: string) => {
             console.error('[chat] Stream error:', errorMsg)
@@ -212,7 +317,7 @@ export function useChatConversation({
       }
       setIsStreaming(false)
     }
-  }, [user, tripId, ensureConversation, loadHistory, startStream])
+  }, [user, tripId, ensureConversation, loadHistoryForConversation, startStream])
 
   // Clear conversation history
   const clearHistory = useCallback(async () => {
@@ -233,6 +338,13 @@ export function useChatConversation({
     }
   }, [conversationId, supabase])
 
+  // Continue conversation when step limit was hit
+  const continueConversation = useCallback(async () => {
+    if (!canContinue) return
+    setCanContinue(false) // Reset before sending
+    await sendMessage('Continúa donde te quedaste.')
+  }, [canContinue, sendMessage])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -251,5 +363,7 @@ export function useChatConversation({
     sendMessage,
     clearHistory,
     conversationId,
+    canContinue,
+    continueConversation,
   }
 }

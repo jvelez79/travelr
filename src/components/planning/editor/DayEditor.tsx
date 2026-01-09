@@ -56,7 +56,9 @@ export function DayEditor({
   checkOutAccommodation,
   onAccommodationClick,
 }: DayEditorProps) {
-  const [expanded, setExpanded] = useState(true)
+  // Auto-collapse days without activities
+  const hasActivities = day.timeline.length > 0
+  const [expanded, setExpanded] = useState(hasActivities)
   const [editingActivity, setEditingActivity] = useState<TimelineEntry | null>(null)
   const [editorMode, setEditorMode] = useState<"edit" | "create">("edit")
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -192,51 +194,102 @@ export function DayEditor({
     <div
       ref={handleRef}
       className={cn(
-        "group/day rounded-2xl bg-card border-2 shadow-sm hover:shadow-md transition-all duration-300",
+        "group/day rounded-xl bg-card border transition-all duration-200",
         // Normal state
-        !isOver && "border-border/60",
-        // Drop target state - highlight when dragging over
-        isOver && "border-primary border-dashed bg-primary/5 shadow-lg ring-2 ring-primary/20",
+        !isOver && "border-border/60 hover:border-border",
+        // Collapsed empty state
+        !expanded && !hasActivities && "opacity-70 hover:opacity-100",
+        // Drop target state
+        isOver && "border-primary border-dashed bg-primary/5 ring-1 ring-primary/20",
         // Generation states
-        isGenerating && "border-primary/40 bg-gradient-to-br from-primary/5 to-transparent",
+        isGenerating && "border-primary/40",
         isPending && "opacity-50",
-        hasError && "border-destructive/40 bg-destructive/5"
+        hasError && "border-destructive/40"
       )}
     >
-      {/* Day Header - Editorial Style */}
+      {/* Day Header - Modern Visual Style */}
       <div
-        className="flex items-center gap-5 p-5 cursor-pointer select-none"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Day Number - Large Editorial Style */}
+        {/* Day Date Block */}
         <div className={cn(
-          "relative flex-shrink-0 w-16 h-16 rounded-2xl flex flex-col items-center justify-center transition-all duration-300",
+          "flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
           isGenerating
-            ? "bg-gradient-to-br from-primary/30 to-primary/10"
-            : "bg-gradient-to-br from-primary/15 to-primary/5 group-hover/day:from-primary/20 group-hover/day:to-primary/10"
+            ? "bg-primary/20"
+            : hasActivities
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted/60"
         )}>
-          {isGenerating ? (
-            <svg className="w-7 h-7 text-primary animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-          ) : (
-            <>
-              <span className="text-[10px] uppercase tracking-widest text-primary/70 font-medium">Día</span>
-              <span className="text-2xl font-bold text-primary -mt-0.5">{day.day}</span>
-            </>
+          <span className={cn(
+            "text-[10px] font-medium uppercase",
+            hasActivities && !isGenerating ? "text-primary-foreground/80" : "text-muted-foreground"
+          )}>
+            {formatDate(day.date).split(' ')[0]?.slice(0, 3)}
+          </span>
+          <span className={cn(
+            "text-lg font-bold leading-none",
+            hasActivities && !isGenerating ? "text-primary-foreground" : "text-foreground"
+          )}>
+            {formatDate(day.date).split(' ')[1] || day.day}
+          </span>
+        </div>
+
+        {/* Day Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-sm font-medium transition-colors",
+              hasActivities ? "text-foreground" : "text-muted-foreground"
+            )}>
+              {formatDate(day.date).split(',').slice(1).join(',').trim() || `Día ${day.day}`}
+            </span>
+            {day.title && day.title !== `Día ${day.day}` && (
+              <span className="text-xs text-muted-foreground/70 truncate">
+                · {day.title}
+              </span>
+            )}
+          </div>
+          {/* Activity summary when collapsed */}
+          {!expanded && hasActivities && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+              {displayTimeline.length} {displayTimeline.length === 1 ? 'actividad' : 'actividades'}
+              {displayTimeline[0]?.location && ` · ${displayTimeline[0].location}`}
+            </p>
           )}
         </div>
 
-        {/* Title & Date - Refined Typography */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-foreground tracking-tight truncate">
-            {day.title}
-          </h3>
-          <p className="text-sm text-muted-foreground/80 mt-0.5 capitalize">
-            {formatDate(day.date)}
-          </p>
-        </div>
+        {/* Activity Thumbnails Preview (when collapsed) */}
+        {!expanded && hasActivities && !isGenerating && (
+          <div className="hidden sm:flex items-center -space-x-2">
+            {displayTimeline.slice(0, 4).map((activity, i) => (
+              <div
+                key={activity.id}
+                className="w-8 h-8 rounded-lg bg-muted overflow-hidden ring-2 ring-card"
+                style={{ zIndex: 4 - i }}
+              >
+                {activity.placeData?.images?.[0] ? (
+                  <img
+                    src={activity.placeData.images[0]}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : activity.icon ? (
+                  <div className="w-full h-full flex items-center justify-center bg-muted text-sm">
+                    {activity.icon}
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-primary/10" />
+                )}
+              </div>
+            ))}
+            {displayTimeline.length > 4 && (
+              <div className="w-8 h-8 rounded-lg bg-muted ring-2 ring-card flex items-center justify-center">
+                <span className="text-xs font-medium text-muted-foreground">+{displayTimeline.length - 4}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Status Badges - Refined */}
         <div className="flex items-center gap-2.5">
@@ -393,11 +446,11 @@ export function DayEditor({
       {/* Expanded Content */}
       {expanded && (
         <div className={cn(
-          "px-5 pb-5 pt-0",
+          "px-4 pb-4 pt-0",
           isGenerating && "pointer-events-none"
         )}>
           {/* Divider line */}
-          <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-4" />
+          <div className="h-px bg-border/40 mb-3" />
 
           {/* Accommodation Context Panel - Where you're staying tonight */}
           {accommodationIndicator ? (
@@ -476,16 +529,7 @@ export function DayEditor({
                 "opacity-0 -translate-x-1 group-hover/acc:opacity-100 group-hover/acc:translate-x-0"
               )} />
             </button>
-          ) : (
-            // No accommodation for this night - show warning
-            <div className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-4 bg-muted/30 border-l-4 border-l-muted-foreground/30">
-              <AlertTriangle className="w-5 h-5 text-muted-foreground/70 flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">Sin alojamiento</p>
-                <p className="text-xs text-muted-foreground/70">No hay hotel reservado para esta noche</p>
-              </div>
-            </div>
-          )}
+          ) : null}
 
           {/* Activities List with Transport */}
           <div className="space-y-0.5">
@@ -630,74 +674,48 @@ export function DayEditor({
             )}
           </div>
 
-          {/* Add Activity Button - Refined */}
+          {/* Add Activity Button - Minimal */}
           {!isGenerating && !isPending && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
-                // Use canvas callback if available, otherwise fallback to modal
                 if (onAddActivityClick) {
                   onAddActivityClick()
                 } else {
                   handleAddActivity()
                 }
               }}
-              className="group/add w-full mt-4 py-3 px-4 rounded-xl border-2 border-dashed border-border/60 hover:border-primary/50 bg-transparent hover:bg-primary/5 text-sm text-muted-foreground hover:text-primary transition-all duration-200 flex items-center justify-center gap-2.5"
+              className="group/add w-full mt-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-primary transition-all duration-200 flex items-center justify-center gap-2 hover:bg-muted/30"
             >
-              <div className="w-6 h-6 rounded-full bg-muted group-hover/add:bg-primary/20 flex items-center justify-center transition-colors">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
+              <svg className="w-4 h-4 transition-transform group-hover/add:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
               <span className="font-medium">Añadir actividad</span>
             </button>
           )}
 
-          {/* Day Summary & Actions Footer */}
-          {!isGenerating && !isPending && (
-            <div className="mt-5 pt-4 border-t border-border/50 flex items-center justify-between">
-              {/* Summary Stats */}
-              <div className="flex flex-wrap items-center gap-3">
-                {day.summary?.duration && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {day.summary.duration}
-                  </span>
-                )}
-                {day.summary?.drivingTotal && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                    </svg>
-                    {day.summary.drivingTotal.distance}
-                  </span>
-                )}
-                {day.summary?.estimatedBudget && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    ${day.summary.estimatedBudget.min}-${day.summary.estimatedBudget.max}
-                  </span>
-                )}
-              </div>
-
-              {/* Edit Timeline Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsTimelineOpen(true)
-                }}
-                disabled={isGenerating || isPending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all disabled:opacity-50"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Editar horarios
-              </button>
+          {/* Day Summary - Only show if there's meaningful data (not placeholder values) */}
+          {!isGenerating && !isPending && hasActivities && (
+            (day.summary?.duration && day.summary.duration !== "Por definir") ||
+            day.summary?.drivingTotal
+          ) && (
+            <div className="mt-3 pt-3 border-t border-border/30 flex items-center gap-4">
+              {day.summary?.duration && day.summary.duration !== "Por definir" && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {day.summary.duration}
+                </span>
+              )}
+              {day.summary?.drivingTotal && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/70">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                  </svg>
+                  {day.summary.drivingTotal.distance}
+                </span>
+              )}
             </div>
           )}
 

@@ -5,7 +5,7 @@ import {
   buildEmailExtractionPrompt,
   parseExtractionResponse,
 } from "@/lib/ai/prompts-accommodation"
-import { createReservationFromExtracted } from "@/types/accommodation"
+import { createAccommodationFromExtracted } from "@/types/accommodation"
 
 const DEFAULT_MODEL = "claude-sonnet-4-20250514"
 
@@ -210,24 +210,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       })
     }
 
-    // Create the reservation (status: pending for user confirmation)
-    const reservation = createReservationFromExtracted(
-      tripId,
+    // Create the accommodation (status: pending for user confirmation)
+    const accommodation = createAccommodationFromExtracted(
       extractedData,
       "email_forward"
     )
 
-    // Store the raw email reference
-    reservation.sourceData = {
-      ...reservation.sourceData,
-      rawEmailId: payload.messageId,
-    }
+    // Store the raw email reference in notes
+    accommodation.notes = `Email ID: ${payload.messageId}`
 
-    console.log("Successfully extracted reservation:", {
-      name: reservation.name,
-      checkIn: reservation.checkIn,
-      checkOut: reservation.checkOut,
-      confirmationNumber: reservation.confirmationNumber,
+    console.log("Successfully extracted accommodation:", {
+      name: accommodation.name,
+      checkIn: accommodation.checkIn,
+      checkOut: accommodation.checkOut,
+      confirmationNumber: accommodation.confirmationNumber,
     })
 
     // TODO: Store the reservation in database (Supabase)
@@ -240,7 +236,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       tripId,
-      reservation,
+      accommodation,
       message: "Accommodation extracted successfully",
     })
   } catch (error) {

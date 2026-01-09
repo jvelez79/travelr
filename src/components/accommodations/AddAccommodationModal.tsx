@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ReceiptUploader } from "@/components/shared/ReceiptUploader"
 import { ExtractedDataConfirmation } from "./ExtractedDataConfirmation"
 import { EmailForwardInstructions } from "./EmailForwardInstructions"
-import type { ExtractedAccommodationData, AccommodationReservation } from "@/types/accommodation"
-import { createReservationFromExtracted } from "@/types/accommodation"
+import type { ExtractedAccommodationData, Accommodation } from "@/types/accommodation"
+import { createAccommodationFromExtracted } from "@/types/accommodation"
 
 type ModalStep = "select" | "upload" | "confirm" | "email"
 
@@ -16,7 +16,7 @@ interface AddAccommodationModalProps {
   tripId: string
   open: boolean
   onClose: () => void
-  onAddReservation: (reservation: AccommodationReservation) => void
+  onAddAccommodation: (accommodation: Accommodation) => void
   onOpenHotelSearch?: () => void
 }
 
@@ -24,7 +24,7 @@ export function AddAccommodationModal({
   tripId,
   open,
   onClose,
-  onAddReservation,
+  onAddAccommodation,
   onOpenHotelSearch,
 }: AddAccommodationModalProps) {
   const [step, setStep] = useState<ModalStep>("select")
@@ -80,16 +80,16 @@ export function AddAccommodationModal({
     setIsSubmitting(true)
 
     try {
-      const reservation = createReservationFromExtracted(tripId, data, "receipt_upload")
-      onAddReservation(reservation)
+      const accommodation = createAccommodationFromExtracted(data, "receipt_upload")
+      onAddAccommodation(accommodation)
       handleClose()
     } catch (error) {
-      console.error("Error creating reservation:", error)
-      setExtractError("Error al crear la reservación")
+      console.error("Error creating accommodation:", error)
+      setExtractError("Error al crear el alojamiento")
     } finally {
       setIsSubmitting(false)
     }
-  }, [tripId, onAddReservation, handleClose])
+  }, [onAddAccommodation, handleClose])
 
   const handleHotelSearch = useCallback(() => {
     handleClose()

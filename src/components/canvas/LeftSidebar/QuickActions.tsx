@@ -52,21 +52,21 @@ export function QuickActions({ plan, onUpdatePlan }: QuickActionsProps) {
 
   return (
     <>
-      <div className="px-3 py-4">
-        <h3 className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-widest mb-2 px-2">
-          Más opciones
-        </h3>
-        <div className="space-y-0.5">
+      {/* Compact action buttons - minimal pill style */}
+      <div className="px-3 py-2">
+        <div className="flex items-center gap-1.5">
           {actions.map((action) => (
             <button
               key={action.id}
               onClick={() => setActiveModal(action.id)}
-              className="group w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left hover:bg-muted/50 transition-colors text-[13px] text-foreground"
+              className="group flex-1 flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg hover:bg-muted/60 transition-all duration-200"
             >
-              <span className="w-8 h-8 rounded-md bg-muted/40 group-hover:bg-muted/60 flex items-center justify-center text-muted-foreground group-hover:text-foreground transition-colors">
+              <span className="text-muted-foreground group-hover:text-foreground transition-colors">
                 {action.icon}
               </span>
-              <span className="font-medium">{action.label}</span>
+              <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                {action.label}
+              </span>
             </button>
           ))}
         </div>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import type { ExtractedAccommodationData, AccommodationReservationType } from "@/types/accommodation"
+import type { ExtractedAccommodationData, AccommodationType } from "@/types/accommodation"
 
 interface ExtractedDataConfirmationProps {
   data: ExtractedAccommodationData
@@ -42,7 +42,7 @@ export function ExtractedDataConfirmation({
     onConfirm(editedData)
   }
 
-  const accommodationTypes: { value: AccommodationReservationType; label: string }[] = [
+  const accommodationTypes: { value: AccommodationType; label: string }[] = [
     { value: "hotel", label: "Hotel" },
     { value: "airbnb", label: "Airbnb" },
     { value: "hostel", label: "Hostal" },
@@ -104,7 +104,7 @@ export function ExtractedDataConfirmation({
             <select
               id="type"
               value={editedData.type || "hotel"}
-              onChange={(e) => handleFieldChange("type", e.target.value as AccommodationReservationType)}
+              onChange={(e) => handleFieldChange("type", e.target.value as AccommodationType)}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               {accommodationTypes.map((type) => (

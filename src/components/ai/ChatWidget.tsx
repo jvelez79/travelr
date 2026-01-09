@@ -34,6 +34,8 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
     isStreaming,
     error,
     sendMessage,
+    canContinue,
+    continueConversation,
   } = useChatConversation({ tripId })
 
   // Auto-scroll to bottom when new messages arrive
@@ -204,6 +206,8 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
                     key={message.id}
                     message={message}
                     isLatest={index === messages.length - 1}
+                    onSendMessage={sendMessage}
+                    currentDayNumber={1}
                   />
                 ))}
 
@@ -216,6 +220,33 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
                     <div className="bg-muted rounded-2xl">
                       <TypingIndicator />
                     </div>
+                  </div>
+                )}
+
+                {/* Continue button - shown when step limit was reached */}
+                {canContinue && !isStreaming && (
+                  <div className="mx-4 mb-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={continueConversation}
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                        />
+                      </svg>
+                      Continuar donde me quedé
+                    </Button>
                   </div>
                 )}
 

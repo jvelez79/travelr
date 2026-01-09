@@ -558,7 +558,7 @@ export async function getDestinationInfo(placeId: string): Promise<{
  */
 export async function searchNearbyDestinations(
   location: Coordinates,
-  radiusMeters: number = 100000
+  radiusMeters: number = 50000
 ): Promise<Array<{
   placeId: string
   name: string
@@ -570,6 +570,9 @@ export async function searchNearbyDestinations(
   }
 
   try {
+    // Google Places API max radius is 50,000 meters
+    const clampedRadius = Math.min(radiusMeters, 50000)
+
     const response = await fetch(`${API_BASE}/places:searchNearby`, {
       method: "POST",
       headers: {
@@ -585,7 +588,7 @@ export async function searchNearbyDestinations(
               latitude: location.lat,
               longitude: location.lng,
             },
-            radius: radiusMeters,
+            radius: clampedRadius,
           },
         },
         maxResultCount: 10,
@@ -705,6 +708,63 @@ function inferCategory(primaryType?: string): PlaceCategory {
   }
 
   return "attractions"
+}
+
+/**
+ * Search for a specific place by name
+ *
+ * @param query - Name of the place to search for
+ * @param regionHint - Optional region hint to narrow results (e.g., "San Jose, Costa Rica")
+ * @returns Array of matching places (sorted by relevance)
+ */
+export async function searchPlaceByName(
+  query: string,
+  regionHint?: string
+): Promise<Place[]> {
+  if (!GOOGLE_PLACES_API_KEY) {
+    console.warn("Google Places API key not configured")
+    return []
+  }
+
+  try {
+    // Build search query with optional region hint
+    const textQuery = regionHint ? `${query} in ${regionHint}` : query
+
+    const response = await fetch(`${API_BASE}/places:searchText`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+        "X-Goog-FieldMask": PLACES_FIELD_MASK,
+      },
+      body: JSON.stringify({
+        textQuery,
+        languageCode: "es",
+        maxResultCount: 5, // Return top 5 results
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      console.error("Google Places API error:", error)
+      return []
+    }
+
+    const data: TextSearchResponse = await response.json()
+
+    if (!data.places) {
+      return []
+    }
+
+    // Transform results and infer categories
+    return data.places.map((place) => {
+      const category = inferCategory(place.primaryType)
+      return transformGooglePlace(place, category)
+    })
+  } catch (error) {
+    console.error("Error searching place by name:", error)
+    return []
+  }
 }
 
 /**

@@ -61,6 +61,9 @@ export interface ChatStreamEvent {
   toolInput?: Record<string, unknown>
   toolResult?: string
   error?: string
+  // Continuation fields (only present in 'done' events when limit was hit)
+  canContinue?: boolean
+  pendingToolCount?: number
 }
 
 // ============================================
@@ -137,6 +140,15 @@ export interface ChatMessage {
 }
 
 /**
+ * Continuation state when step limit is reached
+ */
+export interface ContinuationState {
+  canContinue: boolean
+  pendingToolCount: number
+  partialProgress?: string
+}
+
+/**
  * Trip context for AI prompts
  */
 export interface TripContext {
@@ -146,6 +158,36 @@ export interface TripContext {
   endDate: string
   travelers: number
   currentDayCount: number
+}
+
+// ============================================
+// Google Places Integration Types
+// ============================================
+
+/**
+ * Simplified place search result for AI agent
+ */
+export interface PlaceSearchResult {
+  id: string
+  name: string
+  category: string
+  rating?: number
+  reviewCount?: number
+  priceLevel?: 1 | 2 | 3 | 4
+  imageUrl?: string
+  address?: string
+  description?: string
+  location: { lat: number; lng: number }
+}
+
+/**
+ * Travel time calculation result
+ */
+export interface TravelTimeResult {
+  duration: number // seconds
+  distance: number // meters
+  durationText: string
+  distanceText: string
 }
 
 // ============================================

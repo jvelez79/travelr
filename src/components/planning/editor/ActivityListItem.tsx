@@ -5,6 +5,7 @@ import Image from "next/image"
 import type { TimelineEntry } from "@/types/plan"
 import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { PlaceHoverCard } from "./PlaceHoverCard"
+import { cn } from "@/lib/utils"
 import { ImageCarousel } from "@/components/ui/ImageCarousel"
 
 interface ActivityListItemProps {
@@ -62,13 +63,12 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
   return (
     <div
       ref={containerRef}
-      className={`relative group/activity flex items-center gap-3 p-3 rounded-lg border bg-card transition-all cursor-pointer ${
+      className={cn(
+        "relative group/activity flex items-start gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer",
         isSelected
-          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-          : hasPlaceLink
-          ? "border-border hover:border-green-500/50 border-l-2 border-l-green-500 hover:bg-muted/30"
-          : "border-border hover:border-primary/50 hover:bg-muted/30"
-      }`}
+          ? "bg-primary/8 ring-1 ring-primary/30"
+          : "hover:bg-muted/30"
+      )}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -81,74 +81,92 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
           onMouseLeave={() => setShowPlaceDetails(false)}
         />
       )}
-      {/* Time */}
-      <div className="flex-shrink-0 w-24 text-sm font-medium text-muted-foreground">
-        {activity.time}
+
+      {/* Time - Vertical compact */}
+      <div className="flex-shrink-0 w-14 pt-0.5">
+        <span className="text-sm font-semibold text-foreground tabular-nums">
+          {activity.time}
+        </span>
+        {duration > 0 && (
+          <p className="text-[10px] text-muted-foreground mt-0.5">
+            {formatDuration(duration)}
+          </p>
+        )}
       </div>
 
-      {/* Icon or Thumbnail */}
+      {/* Thumbnail - Larger and more prominent */}
       {activity.placeData?.images?.[0] ? (
         <button
           onClick={(e) => {
             e.stopPropagation()
             setShowCarousel(true)
           }}
-          className="flex-shrink-0 w-7 h-7 rounded overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all"
+          className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden hover:ring-2 hover:ring-primary/40 transition-all shadow-sm"
           aria-label="Ver fotos"
         >
           <Image
             src={activity.placeData.images[0]}
             alt={activity.activity}
-            width={28}
-            height={28}
+            width={48}
+            height={48}
             className="w-full h-full object-cover"
             unoptimized={activity.placeData.images[0].includes("googleapis.com")}
           />
         </button>
       ) : activity.icon ? (
-        <span className="flex-shrink-0 text-lg">{activity.icon}</span>
-      ) : null}
-
-      {/* Activity & Location */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">
-          {activity.activity}
-        </p>
-        {activity.location && (
-          <p className="text-xs text-muted-foreground truncate">
-            {activity.location}
-          </p>
-        )}
-      </div>
-
-      {/* Fixed time indicator */}
-      {activity.isFixedTime && (
-        <span className="flex-shrink-0 text-muted-foreground" title="Hora fija">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center">
+          <span className="text-xl">{activity.icon}</span>
+        </div>
+      ) : (
+        <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          <svg className="w-5 h-5 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-        </span>
-      )}
-
-      {/* Duration badge - slides left on hover to make room for actions */}
-      {duration > 0 && (
-        <div className="flex-shrink-0 px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground transition-transform duration-200 ease-out group-hover/activity:-translate-x-16">
-          {formatDuration(duration)}
         </div>
       )}
 
+      {/* Activity & Location */}
+      <div className="flex-1 min-w-0 py-0.5">
+        <p className="text-sm font-medium text-foreground leading-snug">
+          {activity.activity}
+        </p>
+        {activity.location && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {activity.location}
+          </p>
+        )}
+        {/* Tags row */}
+        <div className="flex items-center gap-2 mt-1.5">
+          {activity.isFixedTime && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Hora fija
+            </span>
+          )}
+          {activity.placeData?.rating && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+              <span className="text-amber-500">★</span>
+              {activity.placeData.rating.toFixed(1)}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Actions - positioned absolutely on the right, appear on hover */}
       {!disabled && (
-        <div className="absolute right-3 flex items-center gap-1 opacity-0 group-hover/activity:opacity-100 transition-opacity duration-200">
+        <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover/activity:opacity-100 transition-opacity duration-200 bg-card/80 backdrop-blur-sm rounded-lg p-0.5">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onEdit(activity)
             }}
-            className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             aria-label="Editar actividad"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </button>
@@ -157,10 +175,10 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
               e.stopPropagation()
               onDelete(activity.id)
             }}
-            className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+            className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
             aria-label="Eliminar actividad"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>

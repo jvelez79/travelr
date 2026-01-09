@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/collapsible"
 import {
   ChevronDown,
-  ChevronRight,
   Compass,
   Trash2,
   Calendar,
@@ -60,46 +59,51 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
 
   return (
     <>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-t border-border">
-        <CollapsibleTrigger className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2">
-            <Compass className="h-4 w-4 text-primary" />
-            <span className="font-medium text-sm">Things To Do</span>
-            {items.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
-                {items.length}
-              </span>
-            )}
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-t border-border/50">
+        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 hover:bg-muted/30 transition-colors">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Compass className="h-4 w-4 text-primary" />
+            </div>
+            <div className="text-left">
+              <span className="font-medium text-sm text-foreground block">Ideas guardadas</span>
+              {items.length > 0 && (
+                <span className="text-[10px] text-muted-foreground">
+                  {items.length} lugar{items.length !== 1 ? 'es' : ''} por agregar
+                </span>
+              )}
+            </div>
           </div>
-          {isOpen ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
+          <div className={cn(
+            "w-6 h-6 rounded-full bg-muted/50 flex items-center justify-center transition-transform duration-200",
+            isOpen && "rotate-180"
+          )}>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          </div>
         </CollapsibleTrigger>
 
         <CollapsibleContent>
-          <div className="px-4 pb-4">
+          <div className="px-3 pb-4">
             {loading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              <div className="grid grid-cols-2 gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-32 w-full rounded-xl" />
                 ))}
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-6 px-2">
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                  <Compass className="h-5 w-5 text-muted-foreground" />
+              <div className="text-center py-8 px-4">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Compass className="h-6 w-6 text-primary/50" />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  No places saved yet
+                <p className="text-sm font-medium text-foreground">
+                  Descubre lugares
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Click "Explore" to discover places
+                  Usa "Explore" para encontrar actividades
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {items.map((item) => (
                   <ThingsToDoItem
                     key={item.id}
@@ -130,7 +134,7 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
   )
 }
 
-// Individual item component
+// Individual item component - Larger, more visual cards
 interface ThingsToDoItemProps {
   item: ThingsToDoItem
   onAddToDay: () => void
@@ -144,72 +148,71 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
 
   return (
     <div
-      className="group flex items-center gap-3 p-2 rounded-lg border border-border bg-card hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer"
+      className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
       onClick={onAddToDay}
     >
-      {/* Thumbnail */}
-      <div className="w-12 h-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
+      {/* Image Section */}
+      <div className="relative h-20 bg-muted">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={place_data.name}
-            width={48}
-            height={48}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             unoptimized={imageUrl.includes("googleapis.com")}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Compass className="h-4 w-4 text-muted-foreground" />
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+            <Compass className="h-6 w-6 text-primary/30" />
           </div>
         )}
-      </div>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-medium text-foreground truncate">
-          {place_data.name}
-        </h4>
-        <div className="flex items-center gap-1 mt-0.5">
-          {place_data.rating && (
-            <span className="text-xs text-muted-foreground">
-              ★ {place_data.rating.toFixed(1)}
-            </span>
-          )}
-          {item.category && (
-            <span className="text-xs text-muted-foreground capitalize">
-              • {item.category.replace('_', ' ')}
-            </span>
-          )}
+        {/* Rating badge */}
+        {place_data.rating && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm">
+            <span className="text-amber-400 text-xs">★</span>
+            <span className="text-xs font-medium text-white">{place_data.rating.toFixed(1)}</span>
+          </div>
+        )}
+
+        {/* Quick action button on hover */}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            size="icon"
+            variant="secondary"
+            className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+            onClick={onRemove}
+            disabled={removing}
+          >
+            {removing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+            )}
+          </Button>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
-          onClick={(e) => {
-            e.stopPropagation()
-            onAddToDay()
-          }}
-        >
-          <Calendar className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-destructive hover:text-destructive"
-          onClick={onRemove}
-          disabled={removing}
-        >
-          {removing ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </Button>
+      {/* Content Section */}
+      <div className="p-2.5">
+        <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+          {place_data.name}
+        </h4>
+        {item.category && (
+          <span className="inline-block mt-1 text-[10px] text-muted-foreground capitalize px-1.5 py-0.5 rounded bg-muted">
+            {item.category.replace('_', ' ')}
+          </span>
+        )}
+      </div>
+
+      {/* Add to day overlay on hover */}
+      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+        <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5">
+          <Calendar className="h-3 w-3" />
+          Agregar a día
+        </div>
       </div>
     </div>
   )
