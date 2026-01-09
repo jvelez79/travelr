@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { useCanvasContext } from "./CanvasContext"
 import { ViewModeToggle, type ViewMode } from "./ViewModeToggle"
 import { ItineraryEditor } from "@/components/planning/editor"
@@ -29,6 +30,7 @@ function extractCityFromLocation(location: string): string {
 }
 
 interface CentralPanelProps {
+  tripId: string
   plan: GeneratedPlan
   onUpdatePlan: (plan: GeneratedPlan) => void
   // Streaming props
@@ -39,6 +41,7 @@ interface CentralPanelProps {
 }
 
 export function CentralPanel({
+  tripId,
   plan,
   onUpdatePlan,
   dayGenerationStates,
@@ -46,17 +49,23 @@ export function CentralPanel({
   getDayTimeline,
   onRegenerateDay,
 }: CentralPanelProps) {
-  const { selectActivity, selectAccommodation, openExploreModal, registerDayRef } = useCanvasContext()
+  const router = useRouter()
+  const { selectActivity, selectAccommodation, registerDayRef } = useCanvasContext()
   const [viewMode, setViewMode] = useState<ViewMode>("timeline")
 
-  // Handle add activity click - opens ExploreModal with day context
+  // Handle add activity click - navigates to search page
   const handleAddActivityClick = useCallback((dayNumber: number) => {
     const day = plan.itinerary.find(d => d.day === dayNumber)
     // Get city from first activity location (extract from address) or use trip destination
     const rawLocation = day?.timeline[0]?.location
     const dayLocation = rawLocation ? extractCityFromLocation(rawLocation) : plan.trip.destination
-    openExploreModal(dayNumber, dayLocation, 'add')
-  }, [plan.itinerary, plan.trip.destination, openExploreModal])
+    const params = new URLSearchParams({
+      day: String(dayNumber),
+      location: dayLocation,
+      mode: 'add'
+    })
+    router.push(`/trips/${tripId}/search?${params}`)
+  }, [plan.itinerary, plan.trip.destination, tripId, router])
 
   return (
     <div className="space-y-4">

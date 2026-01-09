@@ -34,6 +34,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          title: string | null
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          title?: string | null
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          tool_calls: Json | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          tool_calls?: Json | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          tool_calls?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "agent_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_request_logs: {
         Row: {
           completed_at: string
@@ -244,6 +314,41 @@ export type Database = {
           },
         ]
       }
+      trip_things_to_do: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          google_place_id: string
+          id: string
+          place_data: Json
+          trip_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          google_place_id: string
+          id?: string
+          place_data: Json
+          trip_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          google_place_id?: string
+          id?: string
+          place_data?: Json
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_things_to_do_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           created_at: string | null
@@ -288,41 +393,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      trip_things_to_do: {
-        Row: {
-          id: string
-          trip_id: string
-          google_place_id: string
-          place_data: Json
-          category: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          trip_id: string
-          google_place_id: string
-          place_data: Json
-          category?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          trip_id?: string
-          google_place_id?: string
-          place_data?: Json
-          category?: string | null
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "trip_things_to_do_trip_id_fkey"
-            columns: ["trip_id"]
-            isOneToOne: false
-            referencedRelation: "trips"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
@@ -868,26 +938,44 @@ export type Database = {
         Returns: undefined
       }
       operation: { Args: never; Returns: string }
-      search: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
+      search:
+        | {
+            Args: {
+              bucketname: string
+              levels?: number
+              limits?: number
+              offsets?: number
+              prefix: string
+            }
+            Returns: {
+              created_at: string
+              id: string
+              last_accessed_at: string
+              metadata: Json
+              name: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              bucketname: string
+              levels?: number
+              limits?: number
+              offsets?: number
+              prefix: string
+              search?: string
+              sortcolumn?: string
+              sortorder?: string
+            }
+            Returns: {
+              created_at: string
+              id: string
+              last_accessed_at: string
+              metadata: Json
+              name: string
+              updated_at: string
+            }[]
+          }
       search_legacy_v1: {
         Args: {
           bucketname: string
@@ -928,27 +1016,45 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_v2: {
-        Args: {
-          bucket_name: string
-          levels?: number
-          limits?: number
-          prefix: string
-          sort_column?: string
-          sort_column_after?: string
-          sort_order?: string
-          start_after?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
-          key: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
+      search_v2:
+        | {
+            Args: {
+              bucket_name: string
+              levels?: number
+              limits?: number
+              prefix: string
+              start_after?: string
+            }
+            Returns: {
+              created_at: string
+              id: string
+              key: string
+              metadata: Json
+              name: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: {
+              bucket_name: string
+              levels?: number
+              limits?: number
+              prefix: string
+              sort_column?: string
+              sort_column_after?: string
+              sort_order?: string
+              start_after?: string
+            }
+            Returns: {
+              created_at: string
+              id: string
+              key: string
+              last_accessed_at: string
+              metadata: Json
+              name: string
+              updated_at: string
+            }[]
+          }
     }
     Enums: {
       buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
@@ -963,7 +1069,7 @@ type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-type Tables<
+export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
@@ -992,7 +1098,7 @@ type Tables<
       : never
     : never
 
-type TablesInsert<
+export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1017,7 +1123,7 @@ type TablesInsert<
       : never
     : never
 
-type TablesUpdate<
+export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1042,7 +1148,7 @@ type TablesUpdate<
       : never
     : never
 
-type Enums<
+export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1059,7 +1165,7 @@ type Enums<
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
-type CompositeTypes<
+export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
@@ -1076,7 +1182,7 @@ type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
-const Constants = {
+export const Constants = {
   graphql_public: {
     Enums: {},
   },
@@ -1098,28 +1204,35 @@ const Constants = {
 export type Trip = Database['public']['Tables']['trips']['Row']
 export type Plan = Database['public']['Tables']['plans']['Row']
 export type GenerationState = Database['public']['Tables']['generation_states']['Row']
-type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
-type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
+export type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
+export type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
 export type TripThingsToDo = Database['public']['Tables']['trip_things_to_do']['Row']
+export type AgentConversation = Database['public']['Tables']['agent_conversations']['Row']
+export type AgentMessage = Database['public']['Tables']['agent_messages']['Row']
 
 // Insert types
 export type TripInsert = Database['public']['Tables']['trips']['Insert']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
-type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
-type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
+export type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
+export type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
 export type AIRequestLogInsert = Database['public']['Tables']['ai_request_logs']['Insert']
 export type TripThingsToDoInsert = Database['public']['Tables']['trip_things_to_do']['Insert']
+export type AgentConversationInsert = Database['public']['Tables']['agent_conversations']['Insert']
+export type AgentMessageInsert = Database['public']['Tables']['agent_messages']['Insert']
 
 // Update types
 export type TripUpdate = Database['public']['Tables']['trips']['Update']
-type PlanUpdate = Database['public']['Tables']['plans']['Update']
-type GenerationStateUpdate = Database['public']['Tables']['generation_states']['Update']
-type DirectionsCacheUpdate = Database['public']['Tables']['directions_cache']['Update']
-type AIRequestLogUpdate = Database['public']['Tables']['ai_request_logs']['Update']
+export type PlanUpdate = Database['public']['Tables']['plans']['Update']
+export type GenerationStateUpdate = Database['public']['Tables']['generation_states']['Update']
+export type DirectionsCacheUpdate = Database['public']['Tables']['directions_cache']['Update']
+export type AIRequestLogUpdate = Database['public']['Tables']['ai_request_logs']['Update']
+export type TripThingsToDoUpdate = Database['public']['Tables']['trip_things_to_do']['Update']
+export type AgentConversationUpdate = Database['public']['Tables']['agent_conversations']['Update']
+export type AgentMessageUpdate = Database['public']['Tables']['agent_messages']['Update']
 
 // Domain enums
 export type TripStatus = 'planning' | 'draft' | 'completed'
-type TripMode = 'guided' | 'manual'
+export type TripMode = 'guided' | 'manual'
 export type GenerationStatus =
   | 'idle'
   | 'generating_summary'
@@ -1136,3 +1249,4 @@ export interface FailedDay {
   lastError: string
   lastAttemptAt: string
 }
+

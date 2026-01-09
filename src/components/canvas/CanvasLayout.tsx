@@ -9,6 +9,7 @@ import { RightPanel } from "./RightPanel"
 import { CentralPanel } from "./CentralPanel"
 import { ExploreModal } from "@/components/explore/ExploreModal"
 import { HotelSearchModal } from "@/components/hotels/HotelSearchModal"
+import { ChatWidget } from "@/components/ai/ChatWidget"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { useCanvasContext } from "./CanvasContext"
@@ -457,6 +458,7 @@ function CanvasLayoutInner({
         <main className="flex-1 overflow-y-auto min-w-0">
           <div className="p-4 sm:p-6">
             <CentralPanel
+              tripId={trip.id}
               plan={plan}
               onUpdatePlan={onUpdatePlan}
               dayGenerationStates={dayGenerationStates}
@@ -470,13 +472,13 @@ function CanvasLayoutInner({
         {/* Right Panel - Desktop: visible, Tablet: visible, Mobile: Sheet */}
         {isDesktop && (
           <aside className="w-80 border-l border-border bg-card shrink-0 overflow-y-auto">
-            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
+            <RightPanel tripId={trip.id} plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}
 
         {isTablet && (
           <aside className="w-72 border-l border-border bg-card shrink-0 overflow-y-auto">
-            <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
+            <RightPanel tripId={trip.id} plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}
 
@@ -484,7 +486,7 @@ function CanvasLayoutInner({
           <Sheet open={isRightPanelOpen} onOpenChange={setRightPanelOpen}>
             <SheetContent side="right" className="w-full sm:w-96 p-0">
               <SheetTitle className="sr-only">Detalles y búsqueda</SheetTitle>
-              <RightPanel plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
+              <RightPanel tripId={trip.id} plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
             </SheetContent>
           </Sheet>
         )}
@@ -523,6 +525,9 @@ function CanvasLayoutInner({
       adults={plan.trip.travelers}
       onAddToPlan={handleHotelAddToPlan}
     />
+
+    {/* AI Chat Widget - floating button with sheet */}
+    <ChatWidget tripId={trip.id} />
     </CanvasDndProvider>
   )
 }

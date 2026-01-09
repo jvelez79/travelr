@@ -12,12 +12,13 @@ import type { GeneratedPlan } from "@/types/plan"
 import type { Accommodation } from "@/types/accommodation"
 
 interface RightPanelProps {
+  tripId: string
   plan: GeneratedPlan
   onUpdatePlan?: (plan: GeneratedPlan) => void
   onOpenHotelSearch?: (accommodation?: Accommodation) => void
 }
 
-export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanelProps) {
+export function RightPanel({ tripId, plan, onUpdatePlan, onOpenHotelSearch }: RightPanelProps) {
   const { rightPanelState, openCustomActivityEditor, clearRightPanel } = useCanvasContext()
   const [editingAccommodation, setEditingAccommodation] = useState<Accommodation | null>(null)
 
@@ -83,6 +84,7 @@ export function RightPanel({ plan, onUpdatePlan, onOpenHotelSearch }: RightPanel
         <ActivityDetails
           activity={rightPanelState.activity}
           dayNumber={rightPanelState.dayNumber}
+          tripId={tripId}
           plan={plan}
           onUpdatePlan={onUpdatePlan}
         />

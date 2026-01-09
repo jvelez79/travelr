@@ -1,10 +1,9 @@
 "use client"
 
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Check, Plus, Star, Sparkles, TrendingUp, Award } from "lucide-react"
 import type { Place } from "@/types/explore"
-import { getPlaceBadge, getPrimaryInsight, type PlaceBadge } from "@/lib/places/scoring"
+import { cn } from "@/lib/utils"
 
 interface PlaceCardProps {
   place: Place
@@ -13,39 +12,59 @@ interface PlaceCardProps {
   onHover?: (place: Place | null) => void
   isSelected?: boolean
   isHovered?: boolean
+  isAdded?: boolean
   categoryRank?: number
-  dayNumber: number
+  dayNumber?: number
   mode?: 'add' | 'replace'
 }
 
-function BadgeDisplay({ badge }: { badge: PlaceBadge }) {
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span
-            className={`absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full text-white text-xs font-semibold shadow-lg ${badge.color}`}
-          >
-            <span>{badge.emoji}</span>
-            <span className="hidden sm:inline">{badge.label}</span>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-[200px]">
-          <p className="text-sm">{badge.tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
+type QualityTier = 'exceptional' | 'excellent' | 'great' | 'good'
+
+// Calculate quality tier based on rating and reviews
+function getQualityTier(rating: number | undefined, reviewCount: number | undefined): {
+  tier: QualityTier
+  label: string
+  icon: React.ReactNode
+} | null {
+  if (!rating) return null
+
+  const reviews = reviewCount || 0
+
+  // Exceptional: 4.8+ with significant reviews
+  if (rating >= 4.8 && reviews >= 500) {
+    return {
+      tier: 'exceptional',
+      label: 'Excepcional',
+      icon: <Award className="w-3 h-3" />
+    }
+  }
+
+  // Excellent: 4.5+ with good reviews
+  if (rating >= 4.5 && reviews >= 100) {
+    return {
+      tier: 'excellent',
+      label: 'Excelente',
+      icon: <Sparkles className="w-3 h-3" />
+    }
+  }
+
+  // Great: 4.3+
+  if (rating >= 4.3 && reviews >= 50) {
+    return {
+      tier: 'great',
+      label: 'Muy bueno',
+      icon: <TrendingUp className="w-3 h-3" />
+    }
+  }
+
+  return null
 }
 
-function PriceLevel({ level }: { level?: number }) {
-  if (!level) return null
-  return (
-    <span className="text-sm">
-      <span className="text-foreground font-medium">{"$".repeat(level)}</span>
-      <span className="text-muted-foreground/40">{"$".repeat(4 - level)}</span>
-    </span>
-  )
+const tierStyles: Record<QualityTier, string> = {
+  exceptional: 'bg-amber-500 text-white',
+  excellent: 'bg-primary text-white',
+  great: 'bg-slate-700 text-white',
+  good: 'bg-slate-600 text-slate-200',
 }
 
 export function PlaceCard({
@@ -55,13 +74,9 @@ export function PlaceCard({
   onHover,
   isSelected = false,
   isHovered = false,
-  categoryRank,
+  isAdded = false,
   dayNumber,
-  mode = 'add',
 }: PlaceCardProps) {
-  const badge = getPlaceBadge(place, categoryRank)
-  const insight = getPrimaryInsight(place, categoryRank)
-
   const handleClick = () => {
     onSelect?.(place)
   }
@@ -79,197 +94,177 @@ export function PlaceCard({
     onHover?.(null)
   }
 
+  const qualityTier = getQualityTier(place.rating, place.reviewCount)
+
   return (
-    <div
+    <article
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`
-        group relative bg-card rounded-xl border overflow-hidden
-        transition-all duration-200 cursor-pointer
-        ${isSelected
-          ? "ring-2 ring-primary border-primary shadow-lg"
-          : isHovered
-          ? "ring-2 ring-primary/50 border-primary/50 shadow-md"
-          : "border-border hover:border-primary/50 hover:shadow-md"
-        }
-      `}
+      className={cn(
+        "group relative bg-card rounded-2xl overflow-hidden",
+        "transition-all duration-300 cursor-pointer",
+        "ring-1 ring-border/50",
+        isSelected && "ring-2 ring-primary shadow-lg shadow-primary/10",
+        isHovered && !isSelected && "ring-2 ring-primary/50 shadow-md",
+        !isSelected && !isHovered && "hover:ring-primary/30 hover:shadow-md"
+      )}
     >
-      {/* Image */}
-      <div className="relative w-full aspect-[16/10] bg-muted overflow-hidden">
+      {/* Image Container */}
+      <div className="relative w-full aspect-[4/3] bg-muted overflow-hidden">
         {place.images[0] ? (
           <Image
             src={place.images[0]}
             alt={place.name}
             fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             unoptimized={place.images[0].includes("googleapis.com")}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg
-              className="w-12 h-12 text-muted-foreground/30"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <div className="w-12 h-12 rounded-xl bg-muted-foreground/10 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-muted-foreground/50"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
           </div>
         )}
 
-        {/* Badge overlay */}
-        {badge && <BadgeDisplay badge={badge} />}
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Open now indicator */}
-        {place.openNow !== undefined && (
-          <span
-            className={`absolute top-3 right-3 z-10 px-2 py-0.5 rounded-full text-xs font-medium ${
-              place.openNow
-                ? "bg-green-500/90 text-white"
-                : "bg-gray-800/80 text-gray-200"
-            }`}
+        {/* Quality Badge - Top Left */}
+        {qualityTier && (
+          <div
+            className={cn(
+              "absolute top-3 left-3 z-10",
+              "inline-flex items-center gap-1 px-2 py-1 rounded-full",
+              "text-xs font-semibold",
+              "shadow-lg backdrop-blur-sm",
+              tierStyles[qualityTier.tier]
+            )}
           >
-            {place.openNow ? "Abierto" : "Cerrado"}
-          </span>
+            {qualityTier.icon}
+            <span>{qualityTier.label}</span>
+          </div>
         )}
+
+        {/* Add Button - Top Right */}
+        <button
+          onClick={handleAdd}
+          className={cn(
+            "absolute top-3 right-3 z-10",
+            "w-9 h-9 rounded-full",
+            "flex items-center justify-center",
+            "transition-all duration-200",
+            "shadow-lg backdrop-blur-sm",
+            isAdded
+              ? "bg-emerald-500 text-white"
+              : "bg-white/90 text-slate-700 hover:bg-primary hover:text-white hover:scale-110"
+          )}
+          aria-label={isAdded ? "Ya agregado" : `Agregar ${place.name} al Día ${dayNumber || 1}`}
+        >
+          {isAdded ? (
+            <Check className="w-4 h-4" strokeWidth={2.5} />
+          ) : (
+            <Plus className="w-4 h-4" strokeWidth={2.5} />
+          )}
+        </button>
       </div>
 
       {/* Content */}
       <div className="p-4">
         {/* Name */}
-        <h3 className="font-semibold text-base text-foreground leading-tight line-clamp-1">
+        <h3 className="font-semibold text-sm text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
           {place.name}
         </h3>
 
-        {/* Subcategory */}
+        {/* Category/Type - Subtle */}
         {place.subcategory && (
-          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
             {place.subcategory}
           </p>
         )}
 
-        {/* Rating and Price */}
+        {/* Rating Row */}
         <div className="flex items-center gap-2 mt-2">
           {place.rating && (
             <div className="flex items-center gap-1">
-              <svg
-                className="w-4 h-4 text-amber-400 fill-amber-400"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              <span className="text-sm font-semibold">{place.rating.toFixed(1)}</span>
+              <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <span className="text-sm font-medium text-foreground">
+                {place.rating.toFixed(1)}
+              </span>
               {place.reviewCount && (
-                <span className="text-sm text-muted-foreground">
-                  ({place.reviewCount.toLocaleString()})
+                <span className="text-xs text-muted-foreground">
+                  ({place.reviewCount >= 1000
+                    ? `${(place.reviewCount / 1000).toFixed(1)}k`
+                    : place.reviewCount.toLocaleString()})
                 </span>
               )}
             </div>
           )}
-          {place.rating && place.priceLevel && (
-            <span className="text-muted-foreground">•</span>
-          )}
-          <PriceLevel level={place.priceLevel} />
         </div>
 
-        {/* Description */}
-        {place.description && (
-          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-            {place.description}
-          </p>
-        )}
-
-        {/* Insight */}
-        {insight && (
-          <div className="flex items-start gap-2 mt-3 p-2.5 bg-primary/5 border border-primary/10 rounded-lg">
-            <span className="text-primary flex-shrink-0">💡</span>
-            <p className="text-xs text-primary/90 leading-relaxed">{insight}</p>
-          </div>
-        )}
-
-        {/* Add/Select button */}
-        <Button
-          onClick={handleAdd}
-          className="w-full mt-3"
-          variant="default"
-        >
-          {mode === 'replace' ? (
-            <>
-              <svg
-                className="w-4 h-4 mr-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Seleccionar
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4 mr-1.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              Agregar al Día {dayNumber}
-            </>
-          )}
-        </Button>
+        {/* Quick Add CTA - Shows on hover */}
+        <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={handleAdd}
+            className={cn(
+              "w-full py-2 rounded-lg text-sm font-medium transition-colors",
+              isAdded
+                ? "bg-emerald-500/10 text-emerald-600 cursor-default"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
+          >
+            {isAdded ? (
+              <span className="flex items-center justify-center gap-1.5">
+                <Check className="w-4 h-4" />
+                Agregado
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-1.5">
+                <Plus className="w-4 h-4" />
+                Agregar al Día {dayNumber || 1}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </article>
   )
 }
 
 // Skeleton loader for PlaceCard
 export function PlaceCardSkeleton() {
   return (
-    <div className="bg-card rounded-xl border border-border overflow-hidden animate-pulse">
+    <div className="bg-card rounded-2xl ring-1 ring-border/50 overflow-hidden">
       {/* Image skeleton */}
-      <div className="w-full aspect-[16/10] bg-muted" />
+      <div className="w-full aspect-[4/3] bg-muted animate-pulse" />
 
       {/* Content skeleton */}
-      <div className="p-4">
+      <div className="p-4 space-y-3">
         {/* Title */}
-        <div className="h-5 bg-muted rounded w-3/4" />
+        <div className="h-4 bg-muted rounded-lg w-4/5 animate-pulse" />
 
-        {/* Subcategory */}
-        <div className="h-4 bg-muted rounded w-1/2 mt-2" />
+        {/* Category */}
+        <div className="h-3 bg-muted rounded-lg w-1/2 animate-pulse" />
 
         {/* Rating */}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="h-4 w-4 bg-muted rounded" />
-          <div className="h-4 bg-muted rounded w-16" />
+        <div className="flex items-center gap-2">
+          <div className="h-3.5 w-3.5 bg-muted rounded animate-pulse" />
+          <div className="h-3 bg-muted rounded-lg w-20 animate-pulse" />
         </div>
-
-        {/* Description */}
-        <div className="space-y-1.5 mt-3">
-          <div className="h-3 bg-muted rounded w-full" />
-          <div className="h-3 bg-muted rounded w-2/3" />
-        </div>
-
-        {/* Button */}
-        <div className="h-9 bg-muted rounded w-full mt-4" />
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCanvasContext } from "../CanvasContext"
@@ -51,12 +52,14 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 interface ActivityDetailsProps {
   activity: TimelineEntry
   dayNumber: number
+  tripId: string
   plan: GeneratedPlan
   onUpdatePlan?: (plan: GeneratedPlan) => void
 }
 
-export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: ActivityDetailsProps) {
-  const { clearRightPanel, openExploreModal } = useCanvasContext()
+export function ActivityDetails({ activity, dayNumber, tripId, plan, onUpdatePlan }: ActivityDetailsProps) {
+  const router = useRouter()
+  const { clearRightPanel } = useCanvasContext()
   const [isDeleting, setIsDeleting] = useState(false)
 
   // Verificar si este item puede buscar opciones
@@ -279,16 +282,17 @@ export function ActivityDetails({ activity, dayNumber, plan, onUpdatePlan }: Act
             variant="outline"
             size="sm"
             className="w-full"
-            onClick={() => openExploreModal(
-              dayNumber,
-              extractCityFromLocation(activity.location) || plan.trip.destination,
-              'replace',
-              {
-                replaceActivityId: activity.id,
-                preselectedCategory: searchableCategory,
-                activityName: activity.activity,
-              }
-            )}
+            onClick={() => {
+              const params = new URLSearchParams({
+                day: String(dayNumber),
+                location: extractCityFromLocation(activity.location) || plan.trip.destination,
+                mode: 'replace',
+                activityId: activity.id,
+                category: searchableCategory!,
+                name: activity.activity,
+              })
+              router.push(`/trips/${tripId}/search?${params}`)
+            }}
           >
             <Search className="w-4 h-4 mr-2" />
             Buscar {CATEGORY_LABELS[searchableCategory!]}
