@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/.playwright-mcp/
+
+# temporary test docs
+test-google-places-integration.md
 
 # next.js
 /.next/
