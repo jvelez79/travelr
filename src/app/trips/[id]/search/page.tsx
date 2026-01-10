@@ -23,8 +23,13 @@ import {
   List,
   Compass,
   ChevronDown,
-  SlidersHorizontal,
   Sparkles,
+  Utensils,
+  Coffee,
+  TreePine,
+  Wine,
+  Landmark,
+  Calendar,
 } from "lucide-react"
 import { DiscoveryChips } from "@/components/explore/DiscoveryChips"
 import { PlaceCard, PlaceCardSkeleton } from "@/components/explore/PlaceCard"
@@ -73,14 +78,16 @@ async function geocodeLocation(locationName: string): Promise<Coordinates | null
   }
 }
 
-// Categories with icons
-const CATEGORIES: { id: PlaceCategory; label: string; icon: string }[] = [
-  { id: "attractions", label: "Atracciones", icon: "🎯" },
-  { id: "restaurants", label: "Restaurantes", icon: "🍽️" },
-  { id: "cafes", label: "Cafes", icon: "☕" },
-  { id: "nature", label: "Naturaleza", icon: "🌋" },
-  { id: "bars", label: "Bares", icon: "🍺" },
-  { id: "museums", label: "Museos", icon: "🏛️" },
+// Categories with Lucide icons (no emojis per design system)
+import type { LucideIcon } from "lucide-react"
+
+const CATEGORIES: { id: PlaceCategory; label: string; icon: LucideIcon }[] = [
+  { id: "attractions", label: "Atracciones", icon: Compass },
+  { id: "restaurants", label: "Restaurantes", icon: Utensils },
+  { id: "cafes", label: "Cafés", icon: Coffee },
+  { id: "nature", label: "Naturaleza", icon: TreePine },
+  { id: "bars", label: "Bares", icon: Wine },
+  { id: "museums", label: "Museos", icon: Landmark },
 ]
 
 export default function SearchPage() {
@@ -114,7 +121,6 @@ export default function SearchPage() {
   const [openNowFilter, setOpenNowFilter] = useState(false)
   const [mobileViewMode, setMobileViewMode] = useState<"list" | "map">("list")
   const [isAddingPlace, setIsAddingPlace] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
 
   // Geocoding state
   const [locationCoords, setLocationCoords] = useState<Coordinates | null>(null)
@@ -348,10 +354,16 @@ export default function SearchPage() {
 
   const destinationName = location || trip.destination
 
+  // Get category label for display
+  const getCategoryLabel = (id: PlaceCategory) => {
+    return CATEGORIES.find(c => c.id === id)?.label || id
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Compact Header */}
+      {/* Clean Header */}
       <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border">
+        {/* Top Row: Back + Search + Day Context */}
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
             {/* Back Button */}
@@ -365,7 +377,7 @@ export default function SearchPage() {
             </Button>
 
             {/* Search Input */}
-            <div className="relative flex-1 max-w-2xl">
+            <div className="relative flex-1 max-w-xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
@@ -384,136 +396,163 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* Day Selector */}
+            {/* Day Context - Compact inline */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-primary/5 rounded-full border border-primary/10 shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-primary" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center gap-1 font-medium text-sm text-foreground hover:text-primary transition-colors">
+                    Día {selectedDay}
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {availableDays.map((day) => (
+                    <DropdownMenuItem
+                      key={day.number}
+                      onClick={() => handleDayChange(day.number)}
+                      className={selectedDay === day.number ? "bg-primary/10 text-primary" : ""}
+                    >
+                      <span className="font-medium">Día {day.number}</span>
+                      {day.location && (
+                        <span className="ml-2 text-muted-foreground text-xs">{day.location}</span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Mobile Day Selector */}
+          <div className="flex sm:hidden items-center gap-2 mt-2 px-3 py-2 bg-primary/5 rounded-lg border border-primary/10">
+            <Calendar className="w-4 h-4 text-primary" />
+            <span className="text-sm text-muted-foreground">Agregar al</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
-                  Dia {selectedDay}
+                <button className="inline-flex items-center gap-1.5 font-semibold text-sm text-foreground hover:text-primary transition-colors">
+                  Día {selectedDay}
                   <ChevronDown className="w-3.5 h-3.5" />
-                </Button>
+                </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="start">
                 {availableDays.map((day) => (
                   <DropdownMenuItem
                     key={day.number}
                     onClick={() => handleDayChange(day.number)}
-                    className={selectedDay === day.number ? "bg-muted" : ""}
+                    className={selectedDay === day.number ? "bg-primary/10 text-primary" : ""}
                   >
-                    Dia {day.number}
+                    <span className="font-medium">Día {day.number}</span>
+                    {day.location && (
+                      <span className="ml-2 text-muted-foreground text-xs">{day.location}</span>
+                    )}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <span className="text-sm text-muted-foreground">en {destinationName}</span>
           </div>
         </div>
 
-        {/* Category Pills - Horizontally scrollable */}
-        <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryChange(cat.id)}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
-                selectedCategory === cat.id
-                  ? "bg-foreground text-background"
-                  : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
+        {/* Category Pills - Clean design with icons and smooth transitions */}
+        <div className="px-4 pb-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
+          {CATEGORIES.map((cat) => {
+            const Icon = cat.icon
+            const isSelected = selectedCategory === cat.id
+            return (
+              <button
+                key={cat.id}
+                onClick={() => handleCategoryChange(cat.id)}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap",
+                  "transition-all duration-200 ease-out",
+                  "active:scale-95",
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                )}
+              >
+                <Icon className={cn(
+                  "w-4 h-4 transition-transform duration-200",
+                  isSelected && "scale-110"
+                )} />
+                <span>{cat.label}</span>
+              </button>
+            )
+          })}
+        </div>
 
-          {/* Filter Button */}
+        {/* Inline Filters Row - Always visible */}
+        <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-hide border-t border-border/50 pt-2.5">
+          {/* Rating Filter */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
+                  minRating
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                <Star className="w-3.5 h-3.5" />
+                {minRating ? `${minRating}+ estrellas` : "Rating"}
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setMinRating(null)}>
+                Cualquiera
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setMinRating(4)}>
+                <Star className="w-3.5 h-3.5 mr-2 fill-amber-400 text-amber-400" />
+                4+ estrellas
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setMinRating(4.5)}>
+                <Star className="w-3.5 h-3.5 mr-2 fill-amber-400 text-amber-400" />
+                4.5+ estrellas
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Open Now Filter */}
           <button
-            onClick={() => setShowFilters(!showFilters)}
+            onClick={() => setOpenNowFilter(!openNowFilter)}
             className={cn(
-              "inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ml-auto",
-              activeFiltersCount > 0
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all border",
+              openNowFilter
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Filtros</span>
-            {activeFiltersCount > 0 && (
-              <span className="ml-1 w-5 h-5 rounded-full bg-background/20 flex items-center justify-center text-xs">
-                {activeFiltersCount}
-              </span>
-            )}
+            <Clock className="w-3.5 h-3.5" />
+            Abierto ahora
           </button>
-        </div>
 
-        {/* Expandable Filters Panel */}
-        {showFilters && (
-          <div className="px-4 pb-4 border-t border-border pt-3 space-y-4 animate-in slide-in-from-top-2 duration-200">
-            {/* Quick Filters Row */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn("gap-1.5", minRating && "border-primary text-primary")}
-                  >
-                    <Star className="w-3.5 h-3.5" />
-                    {minRating ? `${minRating}+` : "Rating"}
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => setMinRating(null)}>
-                    Cualquiera
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setMinRating(4)}>
-                    <Star className="w-3.5 h-3.5 mr-2 fill-amber-400 text-amber-400" />
-                    4+ estrellas
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setMinRating(4.5)}>
-                    <Star className="w-3.5 h-3.5 mr-2 fill-amber-400 text-amber-400" />
-                    4.5+ estrellas
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          {/* Divider */}
+          <div className="w-px h-5 bg-border mx-1" />
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOpenNowFilter(!openNowFilter)}
-                className={cn("gap-1.5", openNowFilter && "border-primary text-primary bg-primary/5")}
-              >
-                <Clock className="w-3.5 h-3.5" />
-                Abierto ahora
-              </Button>
-
-              {activeFiltersCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="text-muted-foreground ml-auto"
-                >
-                  Limpiar todo
-                </Button>
-              )}
-            </div>
-
-            {/* Discovery Chips */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Descubre
-              </p>
-              <DiscoveryChips
-                selectedChipId={selectedChipId}
-                onSelectChip={handleChipSelect}
-                compact
-              />
-            </div>
+          {/* Discovery Chips Inline */}
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <DiscoveryChips
+              selectedChipId={selectedChipId}
+              onSelectChip={handleChipSelect}
+              compact
+            />
           </div>
-        )}
+
+          {/* Clear All */}
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={clearAllFilters}
+              className="ml-auto text-xs text-muted-foreground hover:text-foreground whitespace-nowrap"
+            >
+              Limpiar filtros
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main Content */}
@@ -526,39 +565,37 @@ export default function SearchPage() {
             mobileViewMode === "map" && "hidden md:block"
           )}
         >
-          {/* Results Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {isLoading ? (
-                  "Cargando..."
-                ) : (
-                  <>
-                    <span className="font-medium text-foreground">{filteredPlaces.length}</span>
-                    {" "}lugares
-                    {isSearchMode && (
-                      <span> para &quot;{searchQuery}&quot;</span>
-                    )}
-                  </>
-                )}
-              </span>
-
-              {/* Active chip badge */}
-              {selectedChipId && !isLoading && (() => {
-                const activeChip = DISCOVERY_CHIPS.find(c => c.id === selectedChipId)
-                if (!activeChip) return null
-                return (
-                  <button
-                    onClick={() => setSelectedChipId(null)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  >
-                    <span>{activeChip.emoji}</span>
-                    <span>{activeChip.label}</span>
-                    <X className="w-3 h-3 ml-0.5" />
-                  </button>
-                )
-              })()}
-            </div>
+          {/* Results Header - Prominent with context */}
+          <div className="mb-6">
+            {isLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-foreground">
+                  {filteredPlaces.length} {getCategoryLabel(selectedCategory).toLowerCase()}
+                  {isSearchMode && (
+                    <span className="font-normal text-muted-foreground">
+                      {" "}para &quot;{searchQuery}&quot;
+                    </span>
+                  )}
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  en {destinationName}
+                  {selectedChipId && (() => {
+                    const activeChip = DISCOVERY_CHIPS.find(c => c.id === selectedChipId)
+                    if (!activeChip) return null
+                    return (
+                      <span className="ml-2 inline-flex items-center gap-1">
+                        · <span className="text-primary">{activeChip.label}</span>
+                      </span>
+                    )
+                  })()}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Places Grid */}
