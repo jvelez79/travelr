@@ -11,18 +11,24 @@ import type { Place } from "@/types/explore"
 interface PlaceGridProps {
   places: Place[]
   loading: boolean
+  loadingMore?: boolean
+  hasMore?: boolean
   thingsToDoPlaceIds: Set<string>
   onPlaceClick: (place: Place) => void
   onAddToThingsToDo: (place: Place) => void
+  onLoadMore?: () => void
   addingItem: boolean
 }
 
 export function PlaceGrid({
   places,
   loading,
+  loadingMore = false,
+  hasMore = false,
   thingsToDoPlaceIds,
   onPlaceClick,
   onAddToThingsToDo,
+  onLoadMore,
   addingItem,
 }: PlaceGridProps) {
   const [addingPlaceId, setAddingPlaceId] = useState<string | null>(null)
@@ -53,22 +59,55 @@ export function PlaceGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {places.map((place) => {
-        const isInThingsToDo = thingsToDoPlaceIds.has(place.id)
-        const isAdding = addingPlaceId === place.id
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {places.map((place) => {
+          const isInThingsToDo = thingsToDoPlaceIds.has(place.id)
+          const isAdding = addingPlaceId === place.id
 
-        return (
-          <ExplorePlaceCard
-            key={place.id}
-            place={place}
-            isInThingsToDo={isInThingsToDo}
-            isAdding={isAdding}
-            onClick={() => onPlaceClick(place)}
-            onAdd={(e) => handleAdd(place, e)}
-          />
-        )
-      })}
+          return (
+            <ExplorePlaceCard
+              key={place.id}
+              place={place}
+              isInThingsToDo={isInThingsToDo}
+              isAdding={isAdding}
+              onClick={() => onPlaceClick(place)}
+              onAdd={(e) => handleAdd(place, e)}
+            />
+          )
+        })}
+      </div>
+
+      {/* Load More button */}
+      {hasMore && onLoadMore && (
+        <div className="flex justify-center pt-4">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="min-w-[200px]"
+          >
+            {loadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Loading more...
+              </>
+            ) : (
+              `Load More (${places.length} loaded)`
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Loading more skeletons */}
+      {loadingMore && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <PlaceCardSkeleton key={`loading-more-${i}`} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -50,12 +50,13 @@ export async function GET(request: NextRequest) {
   const googleType = searchParams.get("googleType")
   if (googleType) {
     try {
-      const places = await searchPlacesByDestinationAndType(destination, googleType)
+      const result = await searchPlacesByDestinationAndType(destination, googleType, 20, pageToken)
       return NextResponse.json({
-        places,
-        count: places.length,
+        places: result.places,
+        count: result.places.length,
         destination,
         googleType,
+        nextPageToken: result.nextPageToken,
       })
     } catch (error) {
       console.error("Error searching places by type:", error)

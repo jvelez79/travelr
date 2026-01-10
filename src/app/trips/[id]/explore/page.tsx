@@ -59,6 +59,8 @@ export default function ExplorePage() {
   const [selectedCategory, setSelectedCategory] = useState<ExploreCategory>('attractions')
   const [places, setPlaces] = useState<Place[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null)
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -66,10 +68,18 @@ export default function ExplorePage() {
   const thingsToDoPlaceIds = new Set(thingsToDoItems.map(item => item.google_place_id))
 
   // Fetch places when category or destination changes
-  const fetchPlaces = useCallback(async () => {
+  const fetchPlaces = useCallback(async (pageToken?: string) => {
     if (!trip?.destination) return
 
-    setLoading(true)
+    // If no pageToken, we're loading fresh data
+    if (!pageToken) {
+      setLoading(true)
+      setPlaces([])
+      setNextPageToken(null)
+    } else {
+      setLoadingMore(true)
+    }
+
     try {
       const categoryConfig = EXPLORE_CATEGORIES.find(c => c.id === selectedCategory)
       if (!categoryConfig) return
@@ -81,24 +91,49 @@ export default function ExplorePage() {
         googleType,
       })
 
+      // Add pageToken if we're loading more
+      if (pageToken) {
+        params.append('pageToken', pageToken)
+      }
+
       const response = await fetch(`/api/explore/places?${params}`)
       if (!response.ok) {
         throw new Error('Failed to fetch places')
       }
 
       const data = await response.json()
-      setPlaces(data.places || [])
+
+      if (pageToken) {
+        // Append to existing places
+        setPlaces(prev => [...prev, ...(data.places || [])])
+      } else {
+        // Replace places
+        setPlaces(data.places || [])
+      }
+
+      // Save nextPageToken for "Load More"
+      setNextPageToken(data.nextPageToken || null)
     } catch (error) {
       console.error('Error fetching places:', error)
-      setPlaces([])
+      if (!pageToken) {
+        setPlaces([])
+      }
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }, [trip?.destination, selectedCategory])
 
   useEffect(() => {
     fetchPlaces()
   }, [fetchPlaces])
+
+  // Load more handler
+  const handleLoadMore = useCallback(() => {
+    if (nextPageToken && !loadingMore) {
+      fetchPlaces(nextPageToken)
+    }
+  }, [nextPageToken, loadingMore, fetchPlaces])
 
   // Handle add to Things To Do
   const handleAddToThingsToDo = async (place: Place) => {
@@ -222,9 +257,12 @@ export default function ExplorePage() {
         <PlaceGrid
           places={places}
           loading={loading}
+          loadingMore={loadingMore}
+          hasMore={!!nextPageToken}
           thingsToDoPlaceIds={thingsToDoPlaceIds}
           onPlaceClick={handlePlaceClick}
           onAddToThingsToDo={handleAddToThingsToDo}
+          onLoadMore={handleLoadMore}
           addingItem={addingItem}
         />
       </main>
