@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RefreshCw, ArrowLeft } from 'lucide-react'
+import { RefreshCw, ArrowLeft, Calendar } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AILogsPage() {
@@ -25,6 +25,7 @@ export default function AILogsPage() {
     page: 1,
     pageSize: 50,
   })
+  const [dateRange, setDateRange] = useState('all')
 
   const { logs, stats, pagination, loading, error, refetch } = useAILogs(filters)
 
@@ -69,6 +70,40 @@ export default function AILogsPage() {
     setFilters((f) => ({ ...f, page }))
   }
 
+  // Filters component to pass to table
+  const FiltersComponent = (
+    <>
+      <Select
+        value={filters.provider || 'all'}
+        onValueChange={handleProviderChange}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-sm">
+          <SelectValue placeholder="Provider" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Providers</SelectItem>
+          <SelectItem value="claude-cli">Claude CLI</SelectItem>
+          <SelectItem value="anthropic">Anthropic</SelectItem>
+          <SelectItem value="openai">OpenAI</SelectItem>
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.status || 'all'}
+        onValueChange={handleStatusChange}
+      >
+        <SelectTrigger className="w-[120px] h-8 text-sm">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Status</SelectItem>
+          <SelectItem value="success">Success</SelectItem>
+          <SelectItem value="error">Error</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
+  )
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -76,17 +111,35 @@ export default function AILogsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/trips">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Dashboard
               </Button>
             </Link>
-            <h1 className="text-xl font-semibold">AI Request Logs</h1>
+            <div className="h-6 w-px bg-border" />
+            <div>
+              <h1 className="text-lg font-semibold">AI Request Logs</h1>
+              <p className="text-xs text-muted-foreground">Monitor AI provider usage and costs</p>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={refetch} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-3">
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-[130px] h-8 text-sm">
+                <Calendar className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={refetch} disabled={loading} className="h-8">
+              <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -94,46 +147,15 @@ export default function AILogsPage() {
         {/* Stats Cards */}
         <AILogsStatsCards stats={stats} loading={loading} />
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mt-8">
-          <Select
-            value={filters.provider || 'all'}
-            onValueChange={handleProviderChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Provider" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Providers</SelectItem>
-              <SelectItem value="claude-cli">Claude CLI</SelectItem>
-              <SelectItem value="anthropic">Anthropic</SelectItem>
-              <SelectItem value="openai">OpenAI</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.status || 'all'}
-            onValueChange={handleStatusChange}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Table */}
+        {/* Table with integrated filters */}
         <AILogsTable
           logs={logs}
           pagination={pagination}
           loading={loading}
           error={error}
           onPageChange={handlePageChange}
-          className="mt-6"
+          filters={FiltersComponent}
+          className="mt-8"
         />
       </main>
     </div>
