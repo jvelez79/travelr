@@ -884,6 +884,37 @@ input:focus, textarea:focus, select:focus {
   line-height: 1.05;
 }
 
+/* Animated gradient headline */
+.hero-title-gradient {
+  background: linear-gradient(
+    90deg,
+    #2DD4BF 0%,
+    #4ECDC4 25%,
+    #06B6D4 50%,
+    #4ECDC4 75%,
+    #2DD4BF 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-shift 4s ease-in-out infinite, fade-up 0.6s ease-out forwards;
+}
+
+/* Override the opacity for gradient text since it uses transparency differently */
+.hero-title-gradient.opacity-0 {
+  opacity: 1;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
 /* Hero CTA - see enhanced version at bottom of file */
 
 /* ========================================
@@ -1128,6 +1159,19 @@ input:focus, textarea:focus, select:focus {
   background: rgba(45, 212, 191, 0.1);
 }
 
+/* Features section gradient background */
+.features-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(13, 148, 136, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(78, 205, 196, 0.06) 0%, transparent 60%);
+}
+
+.dark .features-gradient {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 30%, rgba(45, 212, 191, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(78, 205, 196, 0.08) 0%, transparent 60%);
+}
+
 /* ========================================
    Product Canvas Mockup - Homepage Hero
    ======================================== */
@@ -1140,30 +1184,61 @@ input:focus, textarea:focus, select:focus {
 
 .product-mockup-glow {
   position: absolute;
-  inset: -40px;
-  background: radial-gradient(ellipse at center, rgba(13, 148, 136, 0.15) 0%, transparent 70%);
+  inset: -60px;
+  background: radial-gradient(ellipse at center, rgba(45, 212, 191, 0.25) 0%, rgba(13, 148, 136, 0.1) 40%, transparent 70%);
   z-index: -1;
-  filter: blur(40px);
+  filter: blur(50px);
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
 }
 
 .dark .product-mockup-glow {
-  background: radial-gradient(ellipse at center, rgba(45, 212, 191, 0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(45, 212, 191, 0.2) 0%, rgba(78, 205, 196, 0.08) 40%, transparent 70%);
 }
 
 .product-mockup {
   border-radius: 16px;
   overflow: hidden;
   background: var(--card);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(45, 212, 191, 0.2);
   box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 80px -20px rgba(45, 212, 191, 0.15);
+  transition: all 0.3s ease;
+}
+
+.product-mockup:hover {
+  transform: translateY(-4px);
+  border-color: rgba(45, 212, 191, 0.3);
+  box-shadow:
+    0 30px 60px -12px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 100px -20px rgba(45, 212, 191, 0.25);
 }
 
 .dark .product-mockup {
   box-shadow:
     0 25px 50px -12px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 80px -20px rgba(45, 212, 191, 0.1);
+}
+
+.dark .product-mockup:hover {
+  box-shadow:
+    0 30px 60px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 100px -20px rgba(45, 212, 191, 0.2);
 }
 
 /* Browser bar */
@@ -1456,10 +1531,177 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ========================================
+   Enhanced Social Proof Section
+   ======================================== */
+
+.social-proof-enhanced {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 32px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.dark .social-proof-enhanced {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.avatar-stack-enhanced {
+  display: flex;
+}
+
+.avatar-item-enhanced {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--background);
+  margin-left: -12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.avatar-item-enhanced:first-child {
+  margin-left: 0;
+}
+
+.avatar-stack-enhanced:hover .avatar-item-enhanced {
+  margin-left: -8px;
+}
+
+.avatar-stack-enhanced:hover .avatar-item-enhanced:first-child {
+  margin-left: 0;
+}
+
+.social-proof-text-enhanced {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.social-proof-number {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--foreground);
+  letter-spacing: -0.02em;
+}
+
+.social-proof-label {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+
+/* ========================================
+   Floating Decorative Orbs
+   ======================================== */
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  animation: float-gentle 20s ease-in-out infinite;
+}
+
+.floating-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.3) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  animation-delay: 0s;
+}
+
+.floating-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(78, 205, 196, 0.25) 0%, transparent 70%);
+  bottom: 20%;
+  left: -80px;
+  animation-delay: -7s;
+}
+
+.floating-orb-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(13, 148, 136, 0.2) 0%, transparent 70%);
+  top: 40%;
+  right: 10%;
+  animation-delay: -14s;
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.05);
+  }
+  50% {
+    transform: translate(-10px, 20px) scale(0.95);
+  }
+  75% {
+    transform: translate(-20px, -10px) scale(1.02);
+  }
+}
+
+/* ========================================
+   Scroll Indicator
+   ======================================== */
+
+.scroll-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-foreground);
+  transition: color 0.2s ease;
+}
+
+.scroll-indicator:hover {
+  color: var(--foreground);
+}
+
+.scroll-indicator-arrow {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+  animation: bounce-arrow 2s ease-in-out infinite;
+}
+
+.scroll-indicator:hover .scroll-indicator-arrow {
+  border-color: var(--primary);
+  background: rgba(45, 212, 191, 0.1);
+  color: var(--primary);
+}
+
+@keyframes bounce-arrow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* ========================================
    Enhanced Hero CTA Button
    ======================================== */
 
 .hero-cta {
+  position: relative;
   height: 3.5rem;
   padding-left: 2rem;
   padding-right: 2rem;
@@ -1473,6 +1715,32 @@ input:focus, textarea:focus, select:focus {
     0 4px 14px rgba(13, 148, 136, 0.3),
     0 0 40px -8px rgba(13, 148, 136, 0.25);
   transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.hero-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  animation: cta-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes cta-shimmer {
+  0% {
+    left: -100%;
+  }
+  50%, 100% {
+    left: 100%;
+  }
 }
 
 .hero-cta:hover {

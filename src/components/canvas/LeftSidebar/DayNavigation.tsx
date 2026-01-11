@@ -10,7 +10,7 @@ interface DayNavigationProps {
 }
 
 export function DayNavigation({ plan }: DayNavigationProps) {
-  const { scrollToDay } = useCanvasContext()
+  const { scrollToDay, focusedDayNumber } = useCanvasContext()
 
   // Calculate trip progress - positive framing
   const totalActivities = plan.itinerary.reduce((sum, day) => sum + day.timeline.length, 0)
@@ -74,6 +74,7 @@ export function DayNavigation({ plan }: DayNavigationProps) {
           const hasActivities = activityCount > 0
           const isFirst = index === 0
           const isLast = index === plan.itinerary.length - 1
+          const isFocused = focusedDayNumber === day.day
 
           return (
             <button
@@ -85,7 +86,9 @@ export function DayNavigation({ plan }: DayNavigationProps) {
                 hasActivities
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted/40 text-muted-foreground hover:bg-muted/60",
-                (isFirst || isLast) && !hasActivities && "ring-1 ring-inset ring-primary/30"
+                (isFirst || isLast) && !hasActivities && "ring-1 ring-inset ring-primary/30",
+                // Focused day indicator - ring around the day
+                isFocused && "ring-2 ring-offset-1 ring-offset-card ring-primary scale-110 shadow-md"
               )}
               title={`${activityCount} actividades`}
             >

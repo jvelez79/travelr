@@ -99,11 +99,11 @@ export function EmptyState({ plan }: EmptyStateProps) {
           </div>
         </div>
 
-        {/* Subtle progress bar */}
+        {/* Subtle progress bar - thin and minimal */}
         {daysWithActivities > 0 && daysWithActivities < totalDays && (
-          <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="mt-3 h-1 bg-muted/50 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary/60 rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-primary/50 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(daysWithActivities / totalDays) * 100}%` }}
             />
           </div>

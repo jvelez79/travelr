@@ -38,6 +38,10 @@ interface CanvasContextType {
   isRightPanelOpen: boolean
   setRightPanelOpen: (open: boolean) => void
 
+  // Focused day state (for navigation highlight)
+  focusedDayNumber: number | null
+  setFocusedDayNumber: (dayNumber: number | null) => void
+
   // Explore modal state
   exploreModalState: ExploreModalState | null
   openExploreModal: (
@@ -80,6 +84,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
   const [isRightPanelOpen, setRightPanelOpen] = useState(false)
 
+  // Focused day state (for navigation highlight)
+  const [focusedDayNumber, setFocusedDayNumber] = useState<number | null>(null)
+
   // Explore modal state
   const [exploreModalState, setExploreModalState] = useState<ExploreModalState | null>(null)
 
@@ -95,6 +102,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     if (ref) {
       ref.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
+    // Set focused day for navigation highlight
+    setFocusedDayNumber(dayNumber)
     // Close sidebar on mobile after navigation
     setSidebarOpen(false)
   }, [])
@@ -170,6 +179,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         setSidebarOpen,
         isRightPanelOpen,
         setRightPanelOpen,
+        focusedDayNumber,
+        setFocusedDayNumber,
         exploreModalState,
         openExploreModal,
         closeExploreModal,

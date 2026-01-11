@@ -133,16 +133,17 @@ function ProductCanvasMockup() {
 // Social Proof Component
 function SocialProof() {
   return (
-    <div className="social-proof animate-fade-up opacity-0" style={{ animationDelay: '550ms', animationFillMode: 'forwards' }}>
-      <div className="avatar-stack">
-        <div className="avatar-item" style={{ backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }} />
-        <div className="avatar-item" style={{ backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }} />
-        <div className="avatar-item" style={{ backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }} />
-        <div className="avatar-item" style={{ backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }} />
+    <div className="social-proof-enhanced animate-fade-up opacity-0" style={{ animationDelay: '550ms', animationFillMode: 'forwards' }}>
+      <div className="avatar-stack-enhanced">
+        <div className="avatar-item-enhanced" style={{ backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }} />
+        <div className="avatar-item-enhanced" style={{ backgroundImage: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }} />
+        <div className="avatar-item-enhanced" style={{ backgroundImage: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }} />
+        <div className="avatar-item-enhanced" style={{ backgroundImage: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }} />
       </div>
-      <span className="social-proof-text">
-        <strong>500+</strong> viajeros planificando con Travelr
-      </span>
+      <div className="social-proof-text-enhanced">
+        <span className="social-proof-number">500+</span>
+        <span className="social-proof-label">viajeros planificando con Travelr</span>
+      </div>
     </div>
   )
 }
@@ -159,12 +160,13 @@ export default function Home() {
             <AdminLink variant="text" />
             <Link
               href="/trips"
-              className="hidden sm:block text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden sm:block text-sm text-muted-foreground hover:text-foreground transition-colors relative group"
             >
               Mis Viajes
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
             </Link>
             <Link href="/trips/new">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105 transition-all duration-200">
                 Comenzar
               </Button>
             </Link>
@@ -180,13 +182,20 @@ export default function Home() {
         {/* Subtle grid pattern */}
         <div className="absolute inset-0 hero-grid opacity-[0.02]" />
 
+        {/* Floating decorative elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="floating-orb floating-orb-1" />
+          <div className="floating-orb floating-orb-2" />
+          <div className="floating-orb floating-orb-3" />
+        </div>
+
         <div className="relative z-10 w-full max-w-5xl mx-auto px-6 text-center">
           {/* Main Headline - Larger, more impact */}
           <h1 className="hero-title">
             <span className="block animate-fade-up opacity-0" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
               Deja de planificar.
             </span>
-            <span className="block text-primary animate-fade-up opacity-0" style={{ animationDelay: '150ms', animationFillMode: 'forwards' }}>
+            <span className="block hero-title-gradient" style={{ animationDelay: '150ms' }}>
               Empieza a viajar.
             </span>
           </h1>
@@ -207,6 +216,21 @@ export default function Home() {
                 </svg>
               </Button>
             </Link>
+            <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Sin tarjeta de credito
+              </span>
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+              <span className="flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Gratis para siempre
+              </span>
+            </div>
           </div>
 
           {/* Social Proof */}
@@ -220,20 +244,28 @@ export default function Home() {
 
         {/* Scroll indicator */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-up opacity-0" style={{ animationDelay: '900ms', animationFillMode: 'forwards' }}>
-          <Link href="#features" className="flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
-            <span className="text-sm">Descubre más</span>
-            <svg className="w-5 h-5 animate-subtle-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+          <Link href="#features" className="scroll-indicator group">
+            <span className="text-sm font-medium">Descubre más</span>
+            <div className="scroll-indicator-arrow">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
           </Link>
         </div>
       </section>
 
       {/* Features Section - Below the fold */}
-      <section id="features" className="py-24 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="features" className="py-24 bg-muted/30 relative overflow-hidden">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 features-gradient opacity-50" />
+
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
           {/* Section header */}
           <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="inline-block px-4 py-1.5 text-sm font-medium text-primary bg-primary/10 rounded-full mb-4">
+              Funcionalidades
+            </span>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
               Todo lo que necesitas para planificar
             </h2>

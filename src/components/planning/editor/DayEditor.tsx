@@ -501,22 +501,22 @@ export function DayEditor({
                   )}
                 </p>
               </div>
-              {/* Status badge */}
+              {/* Status badge - subtle outlined style */}
               <div className="flex-shrink-0">
                 {accommodationIndicator.accommodation.status === "confirmed" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/50 text-xs font-medium text-green-700 dark:text-green-300">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-green-300 dark:border-green-700 text-[11px] font-medium text-green-600 dark:text-green-400">
                     <CheckCircle className="w-3 h-3" />
                     Confirmado
                   </span>
                 )}
                 {accommodationIndicator.accommodation.status === "suggested" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/50 text-xs font-medium text-blue-700 dark:text-blue-300">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-blue-300 dark:border-blue-700 text-[11px] font-medium text-blue-600 dark:text-blue-400">
                     <Sparkles className="w-3 h-3" />
-                    Sugerencia AI
+                    Sugerencia
                   </span>
                 )}
                 {accommodationIndicator.accommodation.status === "pending" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-900/50 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border text-[11px] font-medium text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     Pendiente
                   </span>
