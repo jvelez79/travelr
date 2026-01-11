@@ -194,23 +194,25 @@ export function DayEditor({
     <div
       ref={handleRef}
       className={cn(
-        "group/day rounded-xl bg-card border transition-all duration-200",
+        "group/day rounded-xl bg-card border transition-all duration-200 shadow-sm hover:shadow-md",
         // Normal state
         !isOver && "border-border/60 hover:border-border",
         // Collapsed empty state
         !expanded && !hasActivities && "opacity-70 hover:opacity-100",
         // Drop target state
-        isOver && "border-primary border-dashed bg-primary/5 ring-1 ring-primary/20",
+        isOver && "border-primary border-dashed bg-primary/5 ring-1 ring-primary/20 shadow-lg",
         // Generation states
-        isGenerating && "border-primary/40",
+        isGenerating && "border-primary/40 shadow-primary/10",
         isPending && "opacity-50",
-        hasError && "border-destructive/40"
+        hasError && "border-destructive/40 shadow-destructive/10"
       )}
     >
       {/* Day Header - Modern Visual Style */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+      <button
+        type="button"
+        className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer select-none text-left hover:bg-muted/30 transition-colors rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
       >
         {/* Day Date Block */}
         <div className={cn(
@@ -222,7 +224,7 @@ export function DayEditor({
             : "bg-muted/60"
         )}>
           <span className={cn(
-            "text-[10px] font-medium uppercase",
+            "text-xs font-medium uppercase",
             hasActivities && !isGenerating ? "text-primary-foreground/80" : "text-muted-foreground"
           )}>
             {formatDate(day.date).split(' ')[0]?.slice(0, 3)}
@@ -431,7 +433,7 @@ export function DayEditor({
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-      </div>
+      </button>
 
       {/* Drop indicator when dragging over */}
       {isOver && (
@@ -461,6 +463,7 @@ export function DayEditor({
                 "border-l-4 cursor-pointer",
                 "transition-all duration-200 ease-out",
                 "hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 accommodationIndicator.accommodation.status === "confirmed"
                   ? "bg-green-50/50 dark:bg-green-950/20 border-l-green-500 hover:bg-green-50 dark:hover:bg-green-950/40"
                   : accommodationIndicator.accommodation.status === "pending"
@@ -504,19 +507,19 @@ export function DayEditor({
               {/* Status badge - subtle outlined style */}
               <div className="flex-shrink-0">
                 {accommodationIndicator.accommodation.status === "confirmed" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-green-300 dark:border-green-700 text-[11px] font-medium text-green-600 dark:text-green-400">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-green-300 dark:border-green-700 text-xs font-medium text-green-600 dark:text-green-400">
                     <CheckCircle className="w-3 h-3" />
                     Confirmado
                   </span>
                 )}
                 {accommodationIndicator.accommodation.status === "suggested" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-blue-300 dark:border-blue-700 text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-blue-300 dark:border-blue-700 text-xs font-medium text-blue-600 dark:text-blue-400">
                     <Sparkles className="w-3 h-3" />
                     Sugerencia
                   </span>
                 )}
                 {accommodationIndicator.accommodation.status === "pending" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border text-[11px] font-medium text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border text-xs font-medium text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     Pendiente
                   </span>
@@ -556,7 +559,8 @@ export function DayEditor({
                   "w-full flex items-center gap-3 px-3 py-3 rounded-lg mb-2",
                   "bg-slate-100 dark:bg-slate-800",
                   "border-2 border-dashed border-slate-300 dark:border-slate-600",
-                  "cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  "cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 hover:shadow-sm transition-all duration-200",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 )}
               >
                 <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
@@ -564,7 +568,7 @@ export function DayEditor({
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
+                    <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">
                       Check-out
                     </span>
                     {checkOutAccommodation.checkOutTime && (
@@ -685,7 +689,7 @@ export function DayEditor({
                   handleAddActivity()
                 }
               }}
-              className="group/add w-full mt-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-primary transition-all duration-200 flex items-center justify-center gap-2 hover:bg-muted/30"
+              className="group/add w-full mt-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-primary transition-all duration-200 flex items-center justify-center gap-2 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <svg className="w-4 h-4 transition-transform group-hover/add:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />

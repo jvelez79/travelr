@@ -74,56 +74,68 @@ export function RightPanel({ tripId, plan, onUpdatePlan, onOpenHotelSearch }: Ri
   }, [plan.accommodations, updateAccommodations])
 
   return (
-    <div className="h-full bg-card">
+    <div className="h-full bg-card transition-all duration-200 ease-out">
       {rightPanelState.type === 'empty' && (
-        <EmptyState plan={plan} />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <EmptyState plan={plan} />
+        </div>
       )}
 
       {rightPanelState.type === 'activity' && (
-        <ActivityDetails
-          activity={rightPanelState.activity}
-          dayNumber={rightPanelState.dayNumber}
-          tripId={tripId}
-          plan={plan}
-          onUpdatePlan={onUpdatePlan}
-        />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <ActivityDetails
+            activity={rightPanelState.activity}
+            dayNumber={rightPanelState.dayNumber}
+            tripId={tripId}
+            plan={plan}
+            onUpdatePlan={onUpdatePlan}
+          />
+        </div>
       )}
 
       {rightPanelState.type === 'accommodation' && (
-        <AccommodationDetails
-          accommodation={rightPanelState.accommodation}
-          onEdit={handleEditAccommodation}
-          onDelete={handleDeleteAccommodation}
-          onReplace={handleReplaceAccommodation}
-          onMarkConfirmed={handleMarkConfirmedAccommodation}
-          onDismiss={handleDismissAccommodation}
-          onBookNow={handleBookNowAccommodation}
-        />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <AccommodationDetails
+            accommodation={rightPanelState.accommodation}
+            onEdit={handleEditAccommodation}
+            onDelete={handleDeleteAccommodation}
+            onReplace={handleReplaceAccommodation}
+            onMarkConfirmed={handleMarkConfirmedAccommodation}
+            onDismiss={handleDismissAccommodation}
+            onBookNow={handleBookNowAccommodation}
+          />
+        </div>
       )}
 
       {rightPanelState.type === 'search' && (
-        <PlaceSearch
-          dayNumber={rightPanelState.dayNumber}
-          timeSlot={rightPanelState.timeSlot}
-          replaceActivityId={rightPanelState.replaceActivityId}
-          preselectedCategory={rightPanelState.preselectedCategory}
-          plan={plan}
-          onUpdatePlan={onUpdatePlan}
-          onOpenCustomActivity={() => openCustomActivityEditor(rightPanelState.dayNumber, rightPanelState.timeSlot)}
-        />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <PlaceSearch
+            dayNumber={rightPanelState.dayNumber}
+            timeSlot={rightPanelState.timeSlot}
+            replaceActivityId={rightPanelState.replaceActivityId}
+            preselectedCategory={rightPanelState.preselectedCategory}
+            plan={plan}
+            onUpdatePlan={onUpdatePlan}
+            onOpenCustomActivity={() => openCustomActivityEditor(rightPanelState.dayNumber, rightPanelState.timeSlot)}
+          />
+        </div>
       )}
 
       {rightPanelState.type === 'customActivity' && (
-        <ActivityEditorInPanel
-          dayNumber={rightPanelState.dayNumber}
-          timeSlot={rightPanelState.timeSlot}
-          plan={plan}
-          onUpdatePlan={onUpdatePlan}
-        />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <ActivityEditorInPanel
+            dayNumber={rightPanelState.dayNumber}
+            timeSlot={rightPanelState.timeSlot}
+            plan={plan}
+            onUpdatePlan={onUpdatePlan}
+          />
+        </div>
       )}
 
       {rightPanelState.type === 'ai' && (
-        <AISuggestionsPlaceholder dayNumber={rightPanelState.dayNumber} />
+        <div className="animate-in fade-in slide-in-from-right-2 duration-200">
+          <AISuggestionsPlaceholder dayNumber={rightPanelState.dayNumber} />
+        </div>
       )}
 
       {/* Edit Accommodation Modal */}

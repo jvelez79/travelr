@@ -76,10 +76,10 @@ export function EmptyState({ plan }: EmptyStateProps) {
       </div>
 
       {/* Progress - Positive Framing */}
-      <div className="p-4 rounded-xl bg-muted/30">
+      <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <span className="text-xl font-bold text-primary">{daysWithActivities}</span>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <span className="text-lg font-bold text-primary">{daysWithActivities}</span>
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">
@@ -99,11 +99,11 @@ export function EmptyState({ plan }: EmptyStateProps) {
           </div>
         </div>
 
-        {/* Subtle progress bar - thin and minimal */}
+        {/* Subtle progress bar - thin and minimal with shimmer */}
         {daysWithActivities > 0 && daysWithActivities < totalDays && (
-          <div className="mt-3 h-1 bg-muted/50 rounded-full overflow-hidden">
+          <div className="mt-3 h-1.5 bg-muted/40 rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary/50 rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-gradient-to-r from-primary/60 via-primary to-primary/60 rounded-full transition-all duration-500 ease-out animate-pulse"
               style={{ width: `${(daysWithActivities / totalDays) * 100}%` }}
             />
           </div>
@@ -118,9 +118,9 @@ export function EmptyState({ plan }: EmptyStateProps) {
         {getSuggestions().map((suggestion, i) => (
           <button
             key={i}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 group"
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 group"
           >
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-105 transition-all duration-200">
               <suggestion.icon className="w-4 h-4 text-primary" />
             </div>
             <span className="text-sm font-medium text-foreground">{suggestion.text}</span>
@@ -144,7 +144,7 @@ export function EmptyState({ plan }: EmptyStateProps) {
       )}
 
       {/* Subtle hint */}
-      <p className="text-[11px] text-muted-foreground/50 text-center pt-2">
+      <p className="text-xs text-muted-foreground/50 text-center pt-2">
         Haz clic en una actividad para ver detalles
       </p>
     </div>

@@ -48,7 +48,7 @@ export function DayNavigation({ plan }: DayNavigationProps) {
       {/* Mini Calendar Grid */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
-          <div key={d} className="text-[10px] font-medium text-muted-foreground/60 text-center py-1">
+          <div key={d} className="text-xs font-medium text-muted-foreground/60 text-center py-1">
             {d}
           </div>
         ))}
@@ -83,6 +83,7 @@ export function DayNavigation({ plan }: DayNavigationProps) {
               className={cn(
                 "relative aspect-square rounded-lg flex flex-col items-center justify-center transition-all duration-200",
                 "hover:scale-105 hover:shadow-sm",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-card",
                 hasActivities
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted/40 text-muted-foreground hover:bg-muted/60",
@@ -126,15 +127,15 @@ export function DayNavigation({ plan }: DayNavigationProps) {
       <div className="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-border/30">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-emerald-500" />
-          <span className="text-[10px] text-muted-foreground">Llegada</span>
+          <span className="text-xs text-muted-foreground">Llegada</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-amber-500" />
-          <span className="text-[10px] text-muted-foreground">Regreso</span>
+          <span className="text-xs text-muted-foreground">Regreso</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-primary" />
-          <span className="text-[10px] text-muted-foreground">Planeado</span>
+          <span className="text-xs text-muted-foreground">Planeado</span>
         </div>
       </div>
     </div>

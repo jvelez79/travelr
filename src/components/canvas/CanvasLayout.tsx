@@ -433,7 +433,7 @@ function CanvasLayoutInner({
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Desktop: visible, Mobile/Tablet: Sheet */}
         {isDesktop ? (
-          <aside className="w-60 border-r border-border bg-card shrink-0 overflow-y-auto">
+          <aside className="w-60 border-r border-border/60 bg-card shrink-0 overflow-y-auto">
             <LeftSidebar
               plan={plan}
               tripId={trip.id}
@@ -470,13 +470,13 @@ function CanvasLayoutInner({
 
         {/* Right Panel - Desktop: visible, Tablet: visible, Mobile: Sheet */}
         {isDesktop && (
-          <aside className="w-80 border-l border-border bg-card shrink-0 overflow-y-auto">
+          <aside className="w-80 border-l border-border/60 bg-card shrink-0 overflow-y-auto">
             <RightPanel tripId={trip.id} plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}
 
         {isTablet && (
-          <aside className="w-72 border-l border-border bg-card shrink-0 overflow-y-auto">
+          <aside className="w-72 border-l border-border/60 bg-card shrink-0 overflow-y-auto">
             <RightPanel tripId={trip.id} plan={plan} onUpdatePlan={onUpdatePlan} onOpenHotelSearch={handleOpenHotelSearch} />
           </aside>
         )}

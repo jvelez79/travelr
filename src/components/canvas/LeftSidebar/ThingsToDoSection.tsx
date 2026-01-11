@@ -60,7 +60,7 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border-t border-border/50">
-        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 hover:bg-muted/30 transition-colors">
+        <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-3 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset transition-colors">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Compass className="h-4 w-4 text-primary" />
@@ -68,7 +68,7 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
             <div className="text-left">
               <span className="font-medium text-sm text-foreground block">Ideas guardadas</span>
               {items.length > 0 && (
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {items.length} lugar{items.length !== 1 ? 'es' : ''} por agregar
                 </span>
               )}
@@ -147,8 +147,8 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
   const imageUrl = place_data.photos?.[0]?.photo_reference || null
 
   return (
-    <div
-      className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/40 hover:shadow-md transition-all cursor-pointer"
+    <button
+      className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all cursor-pointer text-left w-full"
       onClick={onAddToDay}
     >
       {/* Image Section */}
@@ -201,7 +201,7 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
           {place_data.name}
         </h4>
         {item.category && (
-          <span className="inline-block mt-1 text-[10px] text-muted-foreground capitalize px-1.5 py-0.5 rounded bg-muted">
+          <span className="inline-block mt-1 text-xs text-muted-foreground capitalize px-1.5 py-0.5 rounded bg-muted">
             {item.category.replace('_', ' ')}
           </span>
         )}
@@ -214,6 +214,6 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
           Agregar a día
         </div>
       </div>
-    </div>
+    </button>
   )
 }

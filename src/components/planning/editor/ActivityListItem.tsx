@@ -66,8 +66,8 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
       className={cn(
         "relative group/activity flex items-start gap-3 p-2.5 rounded-xl transition-all duration-200 cursor-pointer",
         isSelected
-          ? "bg-primary/8 ring-1 ring-primary/30"
-          : "hover:bg-muted/30"
+          ? "bg-primary/8 ring-1 ring-primary/30 shadow-sm"
+          : "hover:bg-muted/30 hover:shadow-sm hover:scale-[1.01]"
       )}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
@@ -88,7 +88,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
           {activity.time}
         </span>
         {duration > 0 && (
-          <p className="text-[10px] text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {formatDuration(duration)}
           </p>
         )}
@@ -139,7 +139,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
         {/* Tags row - subtle metadata */}
         <div className="flex items-center gap-2 mt-1.5">
           {activity.isFixedTime && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-amber-600/80 dark:text-amber-400/80 font-medium">
+            <span className="inline-flex items-center gap-1 text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -147,7 +147,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
             </span>
           )}
           {activity.placeData?.rating && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
               <span className="text-muted-foreground/50">★</span>
               <span className="tabular-nums">{activity.placeData.rating.toFixed(1)}</span>
             </span>
