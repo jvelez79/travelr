@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
+import { useDraggable, useDroppable } from "@dnd-kit/core"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -15,9 +16,12 @@ import {
   Trash2,
   Calendar,
   Loader2,
+  GripVertical,
+  Ban,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useThingsToDo, useRemoveFromThingsToDo, type ThingsToDoItem } from "@/hooks/useThingsToDo"
+import { useCanvasDnd } from "@/components/canvas/CanvasDndContext"
 import { AddToDayModal } from "./AddToDayModal"
 import type { GeneratedPlan } from "@/types/plan"
 
@@ -25,15 +29,33 @@ interface ThingsToDoSectionProps {
   tripId: string
   plan: GeneratedPlan
   onAddToDay: (item: ThingsToDoItem, dayNumber: number) => void
+  refreshTrigger?: number
 }
 
-export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectionProps) {
+export function ThingsToDoSection({ tripId, plan, onAddToDay, refreshTrigger }: ThingsToDoSectionProps) {
   const [isOpen, setIsOpen] = useState(true)
   const [selectedItem, setSelectedItem] = useState<ThingsToDoItem | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const { items, loading, refetch } = useThingsToDo(tripId)
+
+  // Refetch when refreshTrigger changes (after drag-drop operations)
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      refetch()
+    }
+  }, [refreshTrigger, refetch])
   const { removeItem, loading: removing } = useRemoveFromThingsToDo()
+  const { isDraggingActivity, canDropToIdeas, isDesktop } = useCanvasDnd()
+
+  // Droppable for receiving activities from timeline
+  const { isOver, setNodeRef: setDropRef } = useDroppable({
+    id: "ideas-drop-zone",
+    data: {
+      type: "ideas-drop-zone",
+    },
+    disabled: !isDraggingActivity || !canDropToIdeas,
+  })
 
   const handleRemove = async (itemId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -56,6 +78,9 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
       setSelectedItem(null)
     }
   }
+
+  // Show drop zone when dragging an activity
+  const showDropZone = isDraggingActivity && isDesktop
 
   return (
     <>
@@ -84,6 +109,37 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
 
         <CollapsibleContent>
           <div className="px-3 pb-4">
+            {/* Drop zone for activities - appears when dragging */}
+            {showDropZone && (
+              <div
+                ref={setDropRef}
+                className={cn(
+                  "mb-3 p-4 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition-all duration-200",
+                  canDropToIdeas
+                    ? isOver
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                      : "border-primary/50 bg-primary/5"
+                    : "border-muted-foreground/30 bg-muted/20"
+                )}
+              >
+                {canDropToIdeas ? (
+                  <>
+                    <Compass className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-primary">
+                      {isOver ? "Suelta para guardar" : "Suelta aqui para guardar como idea"}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Ban className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Solo actividades con lugar enlazado
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
             {loading ? (
               <div className="grid grid-cols-2 gap-2">
                 {[1, 2, 3, 4].map((i) => (
@@ -99,18 +155,19 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
                   Sin ideas guardadas
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  Usa <span className="font-medium text-primary">"Explore"</span> para descubrir lugares y guardarlos aquí
+                  Usa <span className="font-medium text-primary">Explore</span> para descubrir lugares y guardarlos aquí
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {items.map((item) => (
-                  <ThingsToDoItem
+                  <DraggableThingsToDoItem
                     key={item.id}
                     item={item}
                     onAddToDay={() => handleAddToDay(item)}
                     onRemove={(e) => handleRemove(item.id, e)}
                     removing={removing}
+                    isDesktop={isDesktop}
                   />
                 ))}
               </div>
@@ -134,86 +191,129 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
   )
 }
 
-// Individual item component - Larger, more visual cards
-interface ThingsToDoItemProps {
+// Individual item component - Draggable version
+interface DraggableThingsToDoItemProps {
   item: ThingsToDoItem
   onAddToDay: () => void
   onRemove: (e: React.MouseEvent) => void
   removing: boolean
+  isDesktop: boolean
 }
 
-function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItemProps) {
+function DraggableThingsToDoItem({ item, onAddToDay, onRemove, removing, isDesktop }: DraggableThingsToDoItemProps) {
   const { place_data } = item
   const imageUrl = place_data.photos?.[0]?.photo_reference || null
 
+  // Only enable dragging on desktop
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `saved-idea-${item.id}`,
+    data: {
+      type: "saved-idea",
+      item,
+    },
+    disabled: !isDesktop,
+  })
+
   return (
-    <button
-      className="group relative rounded-xl overflow-hidden bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 cursor-pointer text-left w-full hover:scale-[1.02]"
-      onClick={onAddToDay}
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "group relative rounded-xl overflow-hidden bg-card border border-border/60 transition-all duration-200",
+        isDragging
+          ? "opacity-50 shadow-xl scale-95"
+          : "hover:border-primary/50 hover:shadow-lg hover:scale-[1.02]"
+      )}
     >
-      {/* Image Section - Taller for better visuals */}
-      <div className="relative h-24 bg-muted">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={place_data.name}
-            fill
-            className="object-cover"
-            unoptimized={imageUrl.includes("googleapis.com")}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
-            <Compass className="h-6 w-6 text-primary/30" />
+      {/* Drag handle - only visible on desktop */}
+      {isDesktop && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+        >
+          <div className="p-1 rounded bg-black/50 backdrop-blur-sm">
+            <GripVertical className="h-4 w-4 text-white" />
           </div>
-        )}
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        </div>
+      )}
 
-        {/* Rating badge */}
-        {place_data.rating && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm">
-            <span className="text-amber-400 text-xs">★</span>
-            <span className="text-xs font-medium text-white">{place_data.rating.toFixed(1)}</span>
+      {/* Main clickable area - using div to avoid nested button issue */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+        onClick={onAddToDay}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onAddToDay()
+          }
+        }}
+      >
+        {/* Image Section - Taller for better visuals */}
+        <div className="relative h-24 bg-muted">
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt={place_data.name}
+              fill
+              className="object-cover"
+              unoptimized={imageUrl.includes("googleapis.com")}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10">
+              <Compass className="h-6 w-6 text-primary/30" />
+            </div>
+          )}
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+          {/* Rating badge */}
+          {place_data.rating && (
+            <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/50 backdrop-blur-sm">
+              <span className="text-amber-400 text-xs">★</span>
+              <span className="text-xs font-medium text-white">{place_data.rating.toFixed(1)}</span>
+            </div>
+          )}
+
+          {/* Quick action button on hover */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="secondary"
+              className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
+              onClick={onRemove}
+              disabled={removing}
+            >
+              {removing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+              )}
+            </Button>
           </div>
-        )}
+        </div>
 
-        {/* Quick action button on hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="icon"
-            variant="secondary"
-            className="h-7 w-7 bg-white/90 hover:bg-white shadow-sm"
-            onClick={onRemove}
-            disabled={removing}
-          >
-            {removing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-            )}
-          </Button>
+        {/* Content Section */}
+        <div className="p-2.5">
+          <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+            {place_data.name}
+          </h4>
+          {item.category && (
+            <span className="inline-block mt-1.5 text-[10px] text-primary/80 capitalize px-2 py-0.5 rounded-full bg-primary/10 font-medium">
+              {item.category.replace('_', ' ')}
+            </span>
+          )}
+        </div>
+
+        {/* Add to day overlay on hover */}
+        <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+          <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5">
+            <Calendar className="h-3 w-3" />
+            Agregar a día
+          </div>
         </div>
       </div>
-
-      {/* Content Section */}
-      <div className="p-2.5">
-        <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
-          {place_data.name}
-        </h4>
-        {item.category && (
-          <span className="inline-block mt-1.5 text-[10px] text-primary/80 capitalize px-2 py-0.5 rounded-full bg-primary/10 font-medium">
-            {item.category.replace('_', ' ')}
-          </span>
-        )}
-      </div>
-
-      {/* Add to day overlay on hover */}
-      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-        <div className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-medium shadow-lg flex items-center gap-1.5">
-          <Calendar className="h-3 w-3" />
-          Agregar a día
-        </div>
-      </div>
-    </button>
+    </div>
   )
 }

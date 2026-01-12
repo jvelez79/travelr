@@ -56,9 +56,8 @@ export function DayEditor({
   checkOutAccommodation,
   onAccommodationClick,
 }: DayEditorProps) {
-  // Auto-collapse days without activities
   const hasActivities = day.timeline.length > 0
-  const [expanded, setExpanded] = useState(hasActivities)
+  const [expanded, setExpanded] = useState(true)
   const [editingActivity, setEditingActivity] = useState<TimelineEntry | null>(null)
   const [editorMode, setEditorMode] = useState<"edit" | "create">("edit")
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -194,7 +193,7 @@ export function DayEditor({
     <div
       ref={handleRef}
       className={cn(
-        "group/day rounded-xl bg-card border transition-all duration-300 ease-out",
+        "group/day h-full flex flex-col rounded-xl bg-card border transition-all duration-300 ease-out",
         // Normal state - enhanced shadows
         !isOver && "border-border/50 shadow-sm hover:shadow-xl hover:border-border hover:-translate-y-0.5",
         // Has activities - slightly elevated
@@ -475,7 +474,7 @@ export function DayEditor({
       {/* Expanded Content */}
       {expanded && (
         <div className={cn(
-          "px-4 pb-4 pt-0",
+          "px-4 pb-4 pt-0 flex-1 flex flex-col",
           isGenerating && "pointer-events-none"
         )}>
           {/* Divider line */}
@@ -574,7 +573,7 @@ export function DayEditor({
           <div className="relative space-y-0.5">
             {/* Vertical timeline line - connecting activities visually */}
             {displayTimeline.length > 1 && (
-              <div className="absolute left-[3.55rem] top-8 bottom-10 w-0.5 bg-gradient-to-b from-primary/50 via-border to-primary/50 rounded-full" />
+              <div className="absolute left-[4.1rem] top-4 bottom-8 w-0.5 bg-gradient-to-b from-primary/50 via-border to-primary/50 rounded-full" />
             )}
             {isPending && (
               // Show skeleton for pending days
@@ -677,10 +676,12 @@ export function DayEditor({
                 >
                   <ActivityListItem
                     activity={activity}
+                    dayNumber={day.day}
                     onEdit={handleEditActivity}
                     onDelete={handleDeleteActivity}
                     onSelect={onActivityClick}
                     disabled={isGenerating}
+                    enableDrag={!isGenerating}
                   />
                   {showTransport && nextActivity && (
                     <TransportBlock

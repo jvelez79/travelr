@@ -16,12 +16,13 @@ import { useCanvasContext } from "./CanvasContext"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
 import { calculateNights, createUserAccommodation } from "@/types/accommodation"
-import type { GeneratedPlan, TimelineEntry, PlaceData, ItineraryDay } from "@/types/plan"
+import type { GeneratedPlan, TimelineEntry, PlaceData } from "@/types/plan"
 import type { DayGenerationState, DayGenerationStatus } from "@/hooks/useDayGeneration"
 import type { Place, PlaceCategory } from "@/types/explore"
 import type { HotelResult } from "@/lib/hotels/types"
 import type { Accommodation } from "@/types/accommodation"
 import type { ThingsToDoItem } from "@/hooks/useThingsToDo"
+import { useAddToThingsToDo, useRemoveFromThingsToDo } from "@/hooks/useThingsToDo"
 
 /**
  * Extract city name from a location string like "7av. Norte 18B, Antigua Guatemala"
@@ -127,6 +128,13 @@ function CanvasLayoutInner({
   // Hotel search modal state
   const [showHotelSearch, setShowHotelSearch] = useState(false)
   const [searchAccommodation, setSearchAccommodation] = useState<Accommodation | null>(null)
+
+  // Trigger to refresh Things To Do list after drag operations
+  const [thingsToDoRefreshTrigger, setThingsToDoRefreshTrigger] = useState(0)
+
+  // Hooks for Things To Do management (for drag to Ideas)
+  const { addItem: addToThingsToDo } = useAddToThingsToDo()
+  const { removeItem: removeFromThingsToDo } = useRemoveFromThingsToDo()
 
   // Get available days for the modal - extract city from location address
   const availableDays = plan.itinerary.map(d => {
@@ -359,6 +367,156 @@ function CanvasLayoutInner({
     }
   }, [plan, onUpdatePlan])
 
+  // Handle moving activity between days (with time and insertion logic)
+  const handleMoveActivity = useCallback(async (
+    activityId: string,
+    fromDay: number,
+    toDay: number,
+    newTime?: string,
+    insertionIndex?: number
+  ) => {
+    const sourceDay = plan.itinerary.find(d => d.day === fromDay)
+    const targetDay = plan.itinerary.find(d => d.day === toDay)
+
+    if (!sourceDay || !targetDay) return
+
+    const activity = sourceDay.timeline.find(a => a.id === activityId)
+    if (!activity) return
+
+    // Create the activity for the new day
+    const movedActivity: TimelineEntry = {
+      ...activity,
+      time: newTime || "Por definir",
+    }
+
+    // Build the new timeline for the target day
+    const targetTimeline = [...targetDay.timeline]
+    const index = insertionIndex !== undefined ? insertionIndex : targetTimeline.length
+    targetTimeline.splice(index, 0, movedActivity)
+
+    // Update itinerary
+    const updatedItinerary = plan.itinerary.map(d => {
+      if (d.day === fromDay) {
+        // Remove from source day
+        const newTimeline = recalculateTimeline(d.timeline.filter(a => a.id !== activityId))
+        return { ...d, timeline: newTimeline }
+      }
+      if (d.day === toDay) {
+        // Add to target day (recalculate only if no specific time)
+        const newTimeline = newTime ? targetTimeline : recalculateTimeline(targetTimeline)
+        return { ...d, timeline: newTimeline }
+      }
+      return d
+    })
+
+    // Update plan immediately
+    onUpdatePlan({ ...plan, itinerary: updatedItinerary })
+
+    // Calculate transport for both affected days in background
+    const daysToUpdate = [fromDay, toDay]
+    for (const dayNum of daysToUpdate) {
+      const dayToUpdate = updatedItinerary.find(d => d.day === dayNum)
+      if (dayToUpdate && dayToUpdate.timeline.length >= 2) {
+        try {
+          const timelineWithTransport = await calculateTransportForTimeline(dayToUpdate.timeline)
+          const finalItinerary = updatedItinerary.map(d =>
+            d.day === dayNum ? { ...d, timeline: timelineWithTransport } : d
+          )
+          onUpdatePlan({ ...plan, itinerary: finalItinerary })
+        } catch (error) {
+          console.error('Error calculating transport:', error)
+        }
+      }
+    }
+  }, [plan, onUpdatePlan])
+
+  // Handle dropping a saved idea onto a day (drag from Ideas to Day)
+  const handleDropIdeaOnDay = useCallback(async (item: ThingsToDoItem, dayNumber: number) => {
+    // First add to day (reuse existing logic)
+    await handleAddThingsToDoToDay(item, dayNumber)
+
+    // Then remove from Things To Do
+    await removeFromThingsToDo(item.id)
+
+    // Trigger refresh of Things To Do list
+    setThingsToDoRefreshTrigger(prev => prev + 1)
+  }, [handleAddThingsToDoToDay, removeFromThingsToDo])
+
+  // Handle moving activity to Ideas (drag from Day to Ideas)
+  const handleMoveActivityToIdeas = useCallback(async (activity: TimelineEntry, fromDay: number) => {
+    // Only allow if activity has placeId
+    if (!activity.placeId) return
+
+    // Convert TimelineEntry to ThingsToDo item and save
+    const placeData = {
+      name: activity.activity,
+      formatted_address: activity.placeData?.address,
+      rating: activity.placeData?.rating,
+      user_ratings_total: activity.placeData?.reviewCount,
+      photos: activity.placeData?.images?.map(url => ({ photo_reference: url })),
+      opening_hours: activity.placeData?.openingHours
+        ? { weekday_text: activity.placeData.openingHours }
+        : undefined,
+      geometry: activity.placeData?.coordinates
+        ? { location: activity.placeData.coordinates }
+        : undefined,
+    }
+
+    // Determine category from placeData
+    const categoryMap: Record<PlaceCategory, ThingsToDoItem['category']> = {
+      restaurants: 'food_drink',
+      cafes: 'food_drink',
+      bars: 'food_drink',
+      attractions: 'attractions',
+      nature: 'activities',
+      museums: 'attractions',
+      landmarks: 'attractions',
+      beaches: 'activities',
+      religious: 'attractions',
+      markets: 'attractions',
+      viewpoints: 'activities',
+      wellness: 'activities',
+    }
+
+    const category = activity.placeData?.category
+      ? categoryMap[activity.placeData.category] || 'attractions'
+      : 'attractions'
+
+    // Add to Things To Do
+    await addToThingsToDo({
+      tripId: trip.id,
+      googlePlaceId: activity.placeId,
+      placeData,
+      category,
+    })
+
+    // Remove from timeline
+    const updatedItinerary = plan.itinerary.map(d => {
+      if (d.day !== fromDay) return d
+      const newTimeline = recalculateTimeline(d.timeline.filter(a => a.id !== activity.id))
+      return { ...d, timeline: newTimeline }
+    })
+
+    onUpdatePlan({ ...plan, itinerary: updatedItinerary })
+
+    // Trigger refresh of Things To Do list
+    setThingsToDoRefreshTrigger(prev => prev + 1)
+
+    // Recalculate transport for affected day
+    const dayToUpdate = updatedItinerary.find(d => d.day === fromDay)
+    if (dayToUpdate && dayToUpdate.timeline.length >= 2) {
+      try {
+        const timelineWithTransport = await calculateTransportForTimeline(dayToUpdate.timeline)
+        const finalItinerary = updatedItinerary.map(d =>
+          d.day === fromDay ? { ...d, timeline: timelineWithTransport } : d
+        )
+        onUpdatePlan({ ...plan, itinerary: finalItinerary })
+      } catch (error) {
+        console.error('Error calculating transport:', error)
+      }
+    }
+  }, [plan, onUpdatePlan, trip.id, addToThingsToDo])
+
   // Handle adding a hotel from the search modal
   const handleHotelAddToPlan = useCallback((hotel: HotelResult) => {
     const checkIn = searchAccommodation?.checkIn || plan.trip.startDate
@@ -426,7 +584,13 @@ function CanvasLayoutInner({
   }, [plan, searchAccommodation, onUpdatePlan])
 
   return (
-    <CanvasDndProvider onDropPlaceOnDay={handleDropPlaceOnDay}>
+    <CanvasDndProvider
+      onDropPlaceOnDay={handleDropPlaceOnDay}
+      onMoveActivity={handleMoveActivity}
+      onDropIdeaOnDay={handleDropIdeaOnDay}
+      onMoveActivityToIdeas={handleMoveActivityToIdeas}
+      itinerary={plan.itinerary}
+    >
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <CanvasHeader trip={trip} plan={plan} onStartOver={onStartOver} />
 
@@ -438,6 +602,7 @@ function CanvasLayoutInner({
               plan={plan}
               tripId={trip.id}
               onAddThingsToDoToDay={handleAddThingsToDoToDay}
+              thingsToDoRefreshTrigger={thingsToDoRefreshTrigger}
             />
           </aside>
         ) : (
@@ -448,6 +613,7 @@ function CanvasLayoutInner({
                 plan={plan}
                 tripId={trip.id}
                 onAddThingsToDoToDay={handleAddThingsToDoToDay}
+                thingsToDoRefreshTrigger={thingsToDoRefreshTrigger}
               />
             </SheetContent>
           </Sheet>

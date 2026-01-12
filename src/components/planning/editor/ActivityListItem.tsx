@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
+import { useDraggable } from "@dnd-kit/core"
+import { GripVertical } from "lucide-react"
 import type { TimelineEntry } from "@/types/plan"
 import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { PlaceHoverCard } from "./PlaceHoverCard"
@@ -10,14 +12,25 @@ import { ImageCarousel } from "@/components/ui/ImageCarousel"
 
 interface ActivityListItemProps {
   activity: TimelineEntry
+  dayNumber: number
   onEdit: (activity: TimelineEntry) => void
   onDelete: (id: string) => void
   onSelect?: (activity: TimelineEntry) => void
   isSelected?: boolean
   disabled?: boolean
+  enableDrag?: boolean
 }
 
-export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelected = false, disabled = false }: ActivityListItemProps) {
+export function ActivityListItem({
+  activity,
+  dayNumber,
+  onEdit,
+  onDelete,
+  onSelect,
+  isSelected = false,
+  disabled = false,
+  enableDrag = true,
+}: ActivityListItemProps) {
   const [showPlaceDetails, setShowPlaceDetails] = useState(false)
   const [showCarousel, setShowCarousel] = useState(false)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
@@ -28,6 +41,17 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
 
   // Check if this activity is linked to a Google Place
   const hasPlaceLink = Boolean(activity.placeId && activity.placeData)
+
+  // Draggable setup
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `activity-${activity.id}`,
+    data: {
+      type: "timeline-activity",
+      activity,
+      dayNumber,
+    },
+    disabled: !enableDrag || disabled,
+  })
 
   // Handle hover with delay to prevent flickering
   // Only capture position on initial enter, don't follow mouse
@@ -62,19 +86,37 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
 
   return (
     <div
-      ref={containerRef}
+      ref={(node) => {
+        containerRef.current = node
+        setNodeRef(node)
+      }}
       className={cn(
         "relative group/activity flex items-start gap-3 p-2.5 rounded-xl cursor-pointer",
         "transition-all duration-200 ease-out",
-        isSelected
+        isDragging
+          ? "opacity-50 shadow-xl scale-95"
+          : isSelected
           ? "bg-primary/8 ring-1 ring-primary/30 shadow-sm scale-[1.01]"
           : "hover:bg-muted/40 hover:shadow-md hover:scale-[1.005]",
-        "active:scale-[0.995] active:shadow-sm"
+        !isDragging && "active:scale-[0.995] active:shadow-sm"
       )}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      {/* Drag handle - visible on hover when drag is enabled */}
+      {enableDrag && !disabled && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="absolute -left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/activity:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none z-10"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-1 rounded bg-muted/80 hover:bg-muted">
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+      )}
       {/* Hover card popover - fixed position near mouse entry point */}
       {showPlaceDetails && activity.placeData && (
         <PlaceHoverCard

@@ -11,9 +11,10 @@ interface LeftSidebarProps {
   onUpdatePlan?: (plan: GeneratedPlan) => void
   tripId?: string
   onAddThingsToDoToDay?: (item: ThingsToDoItem, dayNumber: number) => void
+  thingsToDoRefreshTrigger?: number
 }
 
-export function LeftSidebar({ plan, onUpdatePlan, tripId, onAddThingsToDoToDay }: LeftSidebarProps) {
+export function LeftSidebar({ plan, onUpdatePlan, tripId, onAddThingsToDoToDay, thingsToDoRefreshTrigger }: LeftSidebarProps) {
   return (
     <div className="h-full flex flex-col overflow-y-auto">
       <DayNavigation plan={plan} />
@@ -23,6 +24,7 @@ export function LeftSidebar({ plan, onUpdatePlan, tripId, onAddThingsToDoToDay }
           tripId={tripId}
           plan={plan}
           onAddToDay={onAddThingsToDoToDay}
+          refreshTrigger={thingsToDoRefreshTrigger}
         />
       )}
     </div>

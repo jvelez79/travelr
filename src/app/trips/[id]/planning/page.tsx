@@ -113,6 +113,15 @@ export default function PlanningPage() {
   // Track if transport has been calculated for loaded plan
   const [transportCalculated, setTransportCalculated] = useState(false)
 
+  // Sync savedPlanData to localPlan when it arrives (handles race condition)
+  // This ensures localPlan is set even if savedPlanData arrives after initialLoadDone
+  useEffect(() => {
+    if (savedPlanData && !localPlan && !planLoading) {
+      const loadedPlan = savedPlanData as unknown as GeneratedPlan
+      setLocalPlan(loadedPlan)
+    }
+  }, [savedPlanData, localPlan, planLoading])
+
   // Day generation hook
   const {
     plan,
@@ -193,10 +202,6 @@ export default function PlanningPage() {
       // Always hydrate from saved generation state if it exists
       // This ensures the hook's plan state is set for regenerateDay to work
       if (savedGenerationState) {
-        console.log('[planning] Found saved generation state, hydrating...')
-        console.log('[planning] Loaded plan has', loadedPlan.itinerary?.length || 0, 'days')
-        console.log('[planning] Generation status:', savedGenerationState.status)
-
         // Restore preferences if saved
         if (savedGenerationState.preferences) {
           setPreferences(savedGenerationState.preferences)
@@ -204,18 +209,13 @@ export default function PlanningPage() {
 
         // Hydrate the hook with saved state AND the existing plan
         // This sets the hook's plan state which is needed for regenerateDay
-        const shouldContinue = hydrateFromSavedState(savedGenerationState, loadedPlan)
-        console.log('[planning] Hydration complete, shouldContinue:', shouldContinue)
-      } else {
-        console.log('[planning] No generation state found, plan is fully manual')
+        hydrateFromSavedState(savedGenerationState, loadedPlan)
       }
 
       setStep("viewing")
     } else if (trip) {
       // No plan exists yet - check if we have partial generation state (e.g., summary generated but lost plan)
       if (savedGenerationState?.summaryResult && savedGenerationState.status === 'ready_to_generate') {
-        console.log('[planning] Found summary but no plan, recovering...')
-
         // Restore preferences
         if (savedGenerationState.preferences) {
           setPreferences(savedGenerationState.preferences)
@@ -245,7 +245,6 @@ export default function PlanningPage() {
       } else {
         // Guided mode: Check if user already answered questions (preferences saved)
         if (savedGenerationState?.preferences) {
-          console.log('[planning] Found saved preferences, skipping questions')
           setPreferences(savedGenerationState.preferences)
           // Start generation with saved preferences
           setStep("generating-summary")
@@ -271,12 +270,10 @@ export default function PlanningPage() {
     if (!localPlan || transportCalculated || step !== "viewing") return
 
     // Check if any day needs transport calculation
+    // Check ALL activities except the last one (last doesn't need travelToNext)
     const needsTransport = localPlan.itinerary.some(day => {
-      // Day has activities but first activity doesn't have travelToNext (except last activity)
       if (day.timeline.length < 2) return false
-      // Check if first activity has transport info
-      const firstActivity = day.timeline[0]
-      return !firstActivity.travelToNext
+      return day.timeline.slice(0, -1).some(activity => !activity.travelToNext)
     })
 
     if (!needsTransport) {
@@ -286,16 +283,14 @@ export default function PlanningPage() {
 
     // Calculate transport for all days
     const calculateTransport = async () => {
-      console.log('[planning] Calculating transport for loaded plan...')
       try {
         const planWithTransport = await calculateAllDaysTransport(localPlan)
         setLocalPlan(planWithTransport)
         setTransportCalculated(true)
         // Save updated plan with transport info
         await savePlan(tripId, planWithTransport as unknown as Record<string, unknown>)
-        console.log('[planning] Transport calculation complete')
       } catch (error) {
-        console.error('[planning] Error calculating transport for loaded plan:', error)
+        console.error('[planning] Error calculating transport:', error)
         setTransportCalculated(true) // Mark as done to avoid infinite retries
       }
     }

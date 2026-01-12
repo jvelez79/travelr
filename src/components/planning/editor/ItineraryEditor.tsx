@@ -65,7 +65,7 @@ export function ItineraryEditor({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-auto items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-stretch">
       {/* Days */}
       {plan.itinerary.map((day) => {
         const dayStatus = getDayStatus?.(day.day) || 'completed'
