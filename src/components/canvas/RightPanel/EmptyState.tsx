@@ -110,35 +110,51 @@ export function EmptyState({ plan }: EmptyStateProps) {
         )}
       </div>
 
-      {/* Contextual Suggestions */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+      {/* Contextual Suggestions - More prominent CTAs */}
+      <div className="space-y-3">
+        <h4 className="text-[11px] font-semibold text-foreground/70 uppercase tracking-widest px-1">
           Siguiente paso
         </h4>
         {getSuggestions().map((suggestion, i) => (
           <button
             key={i}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 group"
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-card to-card/80 border border-border/50 hover:border-primary/40 hover:from-primary/5 hover:to-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 group shadow-sm hover:shadow-md"
           >
-            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-105 transition-all duration-200">
-              <suggestion.icon className="w-4 h-4 text-primary" />
+            <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-200 shadow-sm">
+              <suggestion.icon className="w-5 h-5 text-primary" />
             </div>
-            <span className="text-sm font-medium text-foreground">{suggestion.text}</span>
-            <svg className="w-4 h-4 ml-auto text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex-1 text-left">
+              <span className="text-sm font-semibold text-foreground block">{suggestion.text}</span>
+              <span className="text-xs text-muted-foreground">
+                {suggestion.action === "explore" && "Busca atracciones cerca"}
+                {suggestion.action === "generate" && "AI planifica tu viaje"}
+                {suggestion.action === "plan" && "Completa tu itinerario"}
+                {suggestion.action === "suggest" && "Ideas basadas en ubicación"}
+                {suggestion.action === "optimize" && "Mejora tiempos de viaje"}
+              </span>
+            </div>
+            <svg className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
         ))}
       </div>
 
-      {/* Quick Tips - More visual */}
+      {/* Quick Tips - Refined styling */}
       {plan.tips && plan.tips.length > 0 && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-800/30">
-          <div className="flex items-start gap-2">
-            <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
-              {plan.tips[0]}
-            </p>
+        <div className="p-3.5 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-200/60 dark:border-amber-800/40 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">
+                Tip del viaje
+              </p>
+              <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                {plan.tips[0]}
+              </p>
+            </div>
           </div>
         </div>
       )}

@@ -20,25 +20,50 @@ export function DayNavigation({ plan }: DayNavigationProps) {
 
   return (
     <div className="px-3 py-4">
-      {/* Progress Header - Positive Framing */}
-      <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10">
+      {/* Progress Header - Compact with Progress Ring */}
+      <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/10">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center">
-            <span className="text-lg font-bold text-primary">{daysWithActivities}</span>
+          {/* Progress Ring */}
+          <div className="relative w-12 h-12 flex-shrink-0">
+            <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
+              <circle
+                cx="18"
+                cy="18"
+                r="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                className="text-muted/30"
+              />
+              <circle
+                cx="18"
+                cy="18"
+                r="15"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeDasharray={`${(daysWithActivities / totalDays) * 94.2} 94.2`}
+                strokeLinecap="round"
+                className="text-primary transition-all duration-500"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-primary">
+              {daysWithActivities}
+            </span>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">
               {daysWithActivities === 0
                 ? "Comienza tu aventura"
                 : daysWithActivities === totalDays
-                  ? "Viaje completo"
-                  : `${daysWithActivities} día${daysWithActivities > 1 ? 's' : ''} planeado${daysWithActivities > 1 ? 's' : ''}`
+                  ? "¡Viaje completo!"
+                  : `${daysWithActivities} de ${totalDays} días`
               }
             </p>
             <p className="text-xs text-muted-foreground">
               {daysToExplore > 0
-                ? `${daysToExplore} por descubrir · ${totalActivities} actividades`
-                : `${totalActivities} actividades listas`
+                ? `${daysToExplore} por descubrir`
+                : `${totalActivities} actividades`
               }
             </p>
           </div>
@@ -46,16 +71,16 @@ export function DayNavigation({ plan }: DayNavigationProps) {
       </div>
 
       {/* Mini Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1.5 mb-2">
         {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
-          <div key={d} className="text-xs font-medium text-muted-foreground/60 text-center py-1">
+          <div key={d} className="text-[10px] font-semibold text-muted-foreground/70 text-center py-1">
             {d}
           </div>
         ))}
       </div>
 
       {/* Days Grid - Calendar Style */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {/* Empty cells for first week alignment */}
         {(() => {
           const firstDate = parseLocalDate(plan.itinerary[0]?.date)

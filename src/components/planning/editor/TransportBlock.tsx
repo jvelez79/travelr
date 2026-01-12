@@ -95,43 +95,48 @@ export function TransportBlock({ travelInfo, fromLocation, toLocation }: Transpo
   const googleMapsUrl = buildGoogleMapsUrl(fromLocation, toLocation, method)
 
   return (
-    <div className="flex items-center gap-2 py-1.5 px-3 mx-3 my-1">
-      {/* Vertical connector line */}
-      <div className="flex flex-col items-center w-6 -my-1">
-        <div className="w-px h-2 bg-border" />
-        <div className="w-6 h-6 rounded-full border border-border bg-muted/50 flex items-center justify-center">
-          <TransportIcon method={method} className="w-3.5 h-3.5 text-muted-foreground" />
+    <div className="relative flex items-center ml-[1.9rem]">
+      {/* Vertical timeline connector - before transport */}
+      <div className="absolute left-[0.94rem] -top-1 w-0.5 h-2 bg-gradient-to-b from-primary/30 to-border/50" />
+
+      {/* Transport content */}
+      <div className="flex items-center gap-2.5 py-2 px-3 my-1 rounded-lg bg-muted/20 border border-dashed border-border/40 hover:border-primary/30 hover:bg-muted/30 transition-all duration-200 group/transport">
+        {/* Transport icon */}
+        <div className="w-7 h-7 rounded-full bg-muted/60 border border-border/50 flex items-center justify-center group-hover/transport:border-primary/40 group-hover/transport:bg-primary/5 transition-colors">
+          <TransportIcon method={method} className="w-3.5 h-3.5 text-muted-foreground group-hover/transport:text-primary transition-colors" />
         </div>
-        <div className="w-px h-2 bg-border" />
+
+        {/* Travel info - compact */}
+        <div className="flex items-center gap-2 flex-1 text-xs">
+          {duration && (
+            <span className="font-semibold text-foreground/80">{duration}</span>
+          )}
+          {distance && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-muted-foreground/70">{distance}</span>
+            </>
+          )}
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-muted-foreground/60">{getMethodLabel(method)}</span>
+        </div>
+
+        {/* Directions button - appears on hover */}
+        <a
+          href={googleMapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-muted-foreground/60 hover:text-primary hover:bg-primary/10 transition-all opacity-0 group-hover/transport:opacity-100"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          Ver ruta
+        </a>
       </div>
 
-      {/* Travel info */}
-      <div className="flex items-center gap-3 flex-1 text-xs text-muted-foreground">
-        {duration && (
-          <span className="font-medium">{duration}</span>
-        )}
-        {distance && (
-          <>
-            <span className="text-border">·</span>
-            <span>{distance}</span>
-          </>
-        )}
-        <span className="text-border">·</span>
-        <span>{getMethodLabel(method)}</span>
-      </div>
-
-      {/* Directions button */}
-      <a
-        href={googleMapsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
-      >
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-        </svg>
-        Directions
-      </a>
+      {/* Vertical timeline connector - after transport */}
+      <div className="absolute left-[0.94rem] -bottom-1 w-0.5 h-2 bg-gradient-to-b from-border/50 to-primary/30" />
     </div>
   )
 }

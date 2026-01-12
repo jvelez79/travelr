@@ -64,10 +64,12 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
     <div
       ref={containerRef}
       className={cn(
-        "relative group/activity flex items-start gap-3 p-2.5 rounded-xl transition-all duration-200 cursor-pointer",
+        "relative group/activity flex items-start gap-3 p-2.5 rounded-xl cursor-pointer",
+        "transition-all duration-200 ease-out",
         isSelected
-          ? "bg-primary/8 ring-1 ring-primary/30 shadow-sm"
-          : "hover:bg-muted/30 hover:shadow-sm hover:scale-[1.01]"
+          ? "bg-primary/8 ring-1 ring-primary/30 shadow-sm scale-[1.01]"
+          : "hover:bg-muted/40 hover:shadow-md hover:scale-[1.005]",
+        "active:scale-[0.995] active:shadow-sm"
       )}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
@@ -82,16 +84,24 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
         />
       )}
 
-      {/* Time - Vertical compact */}
-      <div className="flex-shrink-0 w-14 pt-0.5">
-        <span className="text-sm font-semibold text-foreground tabular-nums">
+      {/* Timeline column with time and connector */}
+      <div className="flex-shrink-0 w-14 flex flex-col items-center relative">
+        {/* Time */}
+        <span className="text-sm font-bold text-foreground tabular-nums tracking-tight">
           {activity.time}
         </span>
         {duration > 0 && (
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[10px] text-muted-foreground/60 font-medium">
             {formatDuration(duration)}
           </p>
         )}
+        {/* Timeline dot */}
+        <div className={cn(
+          "absolute -right-1.5 top-1 w-2.5 h-2.5 rounded-full border-2 transition-colors",
+          isSelected
+            ? "bg-primary border-primary"
+            : "bg-card border-primary/40 group-hover/activity:border-primary group-hover/activity:bg-primary/20"
+        )} />
       </div>
 
       {/* Thumbnail - Larger and more prominent */}
@@ -128,28 +138,28 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
 
       {/* Activity & Location */}
       <div className="flex-1 min-w-0 py-0.5">
-        <p className="text-sm font-medium text-foreground leading-snug">
+        <p className="text-sm font-medium text-foreground leading-snug group-hover/activity:text-primary transition-colors">
           {activity.activity}
         </p>
         {activity.location && (
-          <p className="text-xs text-muted-foreground/80 mt-0.5 truncate">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
             {activity.location}
           </p>
         )}
         {/* Tags row - subtle metadata */}
-        <div className="flex items-center gap-2 mt-1.5">
+        <div className="flex items-center gap-2 mt-1">
           {activity.isFixedTime && (
-            <span className="inline-flex items-center gap-1 text-xs text-amber-600/80 dark:text-amber-400/80 font-medium">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span className="inline-flex items-center gap-1 text-[10px] text-amber-600/80 dark:text-amber-400/80 font-medium px-1.5 py-0.5 rounded-full bg-amber-500/10">
+              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Hora fija
+              Fija
             </span>
           )}
           {activity.placeData?.rating && (
-            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground/70">
-              <span className="text-muted-foreground/50">★</span>
-              <span className="tabular-nums">{activity.placeData.rating.toFixed(1)}</span>
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-muted/50">
+              <span className="text-amber-500">★</span>
+              <span className="tabular-nums text-muted-foreground font-medium">{activity.placeData.rating.toFixed(1)}</span>
             </span>
           )}
         </div>
@@ -157,7 +167,7 @@ export function ActivityListItem({ activity, onEdit, onDelete, onSelect, isSelec
 
       {/* Actions - positioned absolutely on the right, appear on hover */}
       {!disabled && (
-        <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover/activity:opacity-100 transition-opacity duration-200 bg-card/80 backdrop-blur-sm rounded-lg p-0.5">
+        <div className="absolute right-2 top-2 flex items-center gap-0.5 opacity-0 group-hover/activity:opacity-100 transition-opacity duration-200 bg-card/90 backdrop-blur-sm rounded-lg p-0.5 shadow-sm">
           <button
             onClick={(e) => {
               e.stopPropagation()

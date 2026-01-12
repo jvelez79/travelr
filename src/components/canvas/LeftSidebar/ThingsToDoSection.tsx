@@ -91,15 +91,15 @@ export function ThingsToDoSection({ tripId, plan, onAddToDay }: ThingsToDoSectio
                 ))}
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-8 px-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <Compass className="h-6 w-6 text-primary/50" />
+              <div className="text-center py-6 px-4 rounded-xl bg-muted/20 border border-dashed border-muted-foreground/20">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/20 flex items-center justify-center mx-auto mb-3 shadow-sm">
+                  <Compass className="h-7 w-7 text-primary/60" />
                 </div>
-                <p className="text-sm font-medium text-foreground">
-                  Descubre lugares
+                <p className="text-sm font-semibold text-foreground">
+                  Sin ideas guardadas
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Usa "Explore" para encontrar actividades
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  Usa <span className="font-medium text-primary">"Explore"</span> para descubrir lugares y guardarlos aquí
                 </p>
               </div>
             ) : (
@@ -148,11 +148,11 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
 
   return (
     <button
-      className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all cursor-pointer text-left w-full"
+      className="group relative rounded-xl overflow-hidden bg-card border border-border/60 hover:border-primary/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 cursor-pointer text-left w-full hover:scale-[1.02]"
       onClick={onAddToDay}
     >
-      {/* Image Section */}
-      <div className="relative h-20 bg-muted">
+      {/* Image Section - Taller for better visuals */}
+      <div className="relative h-24 bg-muted">
         {imageUrl ? (
           <Image
             src={imageUrl}
@@ -197,11 +197,11 @@ function ThingsToDoItem({ item, onAddToDay, onRemove, removing }: ThingsToDoItem
 
       {/* Content Section */}
       <div className="p-2.5">
-        <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+        <h4 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
           {place_data.name}
         </h4>
         {item.category && (
-          <span className="inline-block mt-1 text-xs text-muted-foreground capitalize px-1.5 py-0.5 rounded bg-muted">
+          <span className="inline-block mt-1.5 text-[10px] text-primary/80 capitalize px-2 py-0.5 rounded-full bg-primary/10 font-medium">
             {item.category.replace('_', ' ')}
           </span>
         )}

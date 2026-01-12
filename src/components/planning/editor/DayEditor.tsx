@@ -194,16 +194,18 @@ export function DayEditor({
     <div
       ref={handleRef}
       className={cn(
-        "group/day rounded-xl bg-card border transition-all duration-200 shadow-sm hover:shadow-md",
-        // Normal state
-        !isOver && "border-border/60 hover:border-border",
+        "group/day rounded-xl bg-card border transition-all duration-300 ease-out",
+        // Normal state - enhanced shadows
+        !isOver && "border-border/50 shadow-sm hover:shadow-xl hover:border-border hover:-translate-y-0.5",
+        // Has activities - slightly elevated
+        hasActivities && !isOver && "shadow-md hover:shadow-xl",
         // Collapsed empty state
-        !expanded && !hasActivities && "opacity-70 hover:opacity-100",
+        !expanded && !hasActivities && "opacity-70 hover:opacity-100 hover:shadow-lg",
         // Drop target state
-        isOver && "border-primary border-dashed bg-primary/5 ring-1 ring-primary/20 shadow-lg",
+        isOver && "border-primary border-dashed bg-primary/5 ring-2 ring-primary/20 shadow-xl scale-[1.01]",
         // Generation states
-        isGenerating && "border-primary/40 shadow-primary/10",
-        isPending && "opacity-50",
+        isGenerating && "border-primary/40 shadow-primary/20 ring-1 ring-primary/10",
+        isPending && "opacity-40",
         hasError && "border-destructive/40 shadow-destructive/10"
       )}
     >
@@ -221,23 +223,23 @@ export function DayEditor({
         }}
         aria-expanded={expanded}
       >
-        {/* Day Date Block */}
+        {/* Day Date Block - More prominent */}
         <div className={cn(
-          "flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-200",
+          "flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-all duration-200 shadow-sm",
           isGenerating
-            ? "bg-primary/20"
+            ? "bg-primary/20 ring-2 ring-primary/30"
             : hasActivities
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted/60"
+            ? "bg-primary text-primary-foreground shadow-primary/20"
+            : "bg-muted border border-border/50"
         )}>
           <span className={cn(
-            "text-xs font-medium uppercase",
-            hasActivities && !isGenerating ? "text-primary-foreground/80" : "text-muted-foreground"
+            "text-[11px] font-semibold uppercase tracking-wide",
+            hasActivities && !isGenerating ? "text-primary-foreground/90" : "text-muted-foreground"
           )}>
             {formatDate(day.date).split(' ')[0]?.slice(0, 3)}
           </span>
           <span className={cn(
-            "text-lg font-bold leading-none",
+            "text-xl font-bold leading-none mt-0.5",
             hasActivities && !isGenerating ? "text-primary-foreground" : "text-foreground"
           )}>
             {formatDate(day.date).split(' ')[1] || day.day}
@@ -259,11 +261,28 @@ export function DayEditor({
               </span>
             )}
           </div>
-          {/* Activity summary when collapsed */}
+          {/* Activity summary when collapsed - more informative */}
           {!expanded && hasActivities && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate">
-              {displayTimeline.length} {displayTimeline.length === 1 ? 'actividad' : 'actividades'}
-              {displayTimeline[0]?.location && ` · ${displayTimeline[0].location}`}
+            <p className="text-xs text-muted-foreground mt-0.5 truncate flex items-center gap-1.5">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-primary/15 text-[10px] font-semibold text-primary">
+                {displayTimeline.length}
+              </span>
+              <span>{displayTimeline.length === 1 ? 'actividad' : 'actividades'}</span>
+              {displayTimeline[0]?.location && (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span className="text-muted-foreground/70">{displayTimeline[0].location}</span>
+                </>
+              )}
+            </p>
+          )}
+          {/* Empty state hint when collapsed - more inviting */}
+          {!expanded && !hasActivities && !isPending && !isGenerating && (
+            <p className="text-xs text-muted-foreground/60 mt-0.5 flex items-center gap-1">
+              <svg className="w-3 h-3 text-primary/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Clic para agregar actividades</span>
             </p>
           )}
         </div>
@@ -422,20 +441,21 @@ export function DayEditor({
           </span> */}
         </div>
 
-        {/* Expand Chevron - Animated */}
+        {/* Expand Chevron - More visible */}
         <div className={cn(
           "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-          "bg-muted/50 group-hover/day:bg-muted"
+          "bg-muted group-hover/day:bg-muted/80",
+          expanded ? "bg-primary/10" : "bg-muted"
         )}>
           <svg
             className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform duration-300",
-              expanded && "rotate-180"
+              "w-5 h-5 transition-transform duration-300",
+              expanded ? "rotate-180 text-primary" : "text-foreground/70"
             )}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
-            strokeWidth={2}
+            strokeWidth={2.5}
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
@@ -466,26 +486,35 @@ export function DayEditor({
             <button
               onClick={() => onAccommodationClick?.(accommodationIndicator.accommodation)}
               className={cn(
-                "group/acc w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-4 text-left",
-                "border-l-4 cursor-pointer",
+                "group/acc w-full flex items-center gap-3 px-4 py-3.5 rounded-xl mb-4 text-left",
+                "border-2 cursor-pointer",
                 "transition-all duration-200 ease-out",
-                "hover:shadow-md hover:scale-[1.01] hover:-translate-y-0.5",
+                "hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 accommodationIndicator.accommodation.status === "confirmed"
-                  ? "bg-green-50/50 dark:bg-green-950/20 border-l-green-500 hover:bg-green-50 dark:hover:bg-green-950/40"
+                  ? "bg-gradient-to-r from-green-50 to-emerald-50/50 dark:from-green-950/30 dark:to-emerald-950/20 border-green-200 dark:border-green-800 hover:border-green-300"
                   : accommodationIndicator.accommodation.status === "pending"
-                  ? "bg-amber-50/50 dark:bg-amber-950/20 border-l-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-                  : "bg-blue-50/50 dark:bg-blue-950/20 border-l-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                  ? "bg-gradient-to-r from-amber-50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-200 dark:border-amber-800 hover:border-amber-300"
+                  : "bg-gradient-to-r from-blue-50 to-sky-50/50 dark:from-blue-950/30 dark:to-sky-950/20 border-blue-200 dark:border-blue-800 hover:border-blue-300"
               )}
             >
-              <Hotel className={cn(
-                "w-5 h-5 flex-shrink-0",
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                 accommodationIndicator.accommodation.status === "confirmed"
-                  ? "text-green-600 dark:text-green-400"
+                  ? "bg-green-100 dark:bg-green-900/50"
                   : accommodationIndicator.accommodation.status === "pending"
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-blue-600 dark:text-blue-400"
-              )} />
+                  ? "bg-amber-100 dark:bg-amber-900/50"
+                  : "bg-blue-100 dark:bg-blue-900/50"
+              )}>
+                <Hotel className={cn(
+                  "w-5 h-5",
+                  accommodationIndicator.accommodation.status === "confirmed"
+                    ? "text-green-600 dark:text-green-400"
+                    : accommodationIndicator.accommodation.status === "pending"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-blue-600 dark:text-blue-400"
+                )} />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   Esta noche: {accommodationIndicator.accommodation.name}
@@ -526,7 +555,7 @@ export function DayEditor({
                   </span>
                 )}
                 {accommodationIndicator.accommodation.status === "pending" && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border text-xs font-medium text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs font-medium text-amber-700 dark:text-amber-400">
                     <Clock className="w-3 h-3" />
                     Pendiente
                   </span>
@@ -541,8 +570,12 @@ export function DayEditor({
             </button>
           ) : null}
 
-          {/* Activities List with Transport */}
-          <div className="space-y-0.5">
+          {/* Activities List with Transport - Timeline style */}
+          <div className="relative space-y-0.5">
+            {/* Vertical timeline line - connecting activities visually */}
+            {displayTimeline.length > 1 && (
+              <div className="absolute left-[3.55rem] top-8 bottom-10 w-0.5 bg-gradient-to-b from-primary/50 via-border to-primary/50 rounded-full" />
+            )}
             {isPending && (
               // Show skeleton for pending days
               <div className="space-y-3">
@@ -685,24 +718,50 @@ export function DayEditor({
             )}
           </div>
 
-          {/* Add Activity Button - Minimal */}
+          {/* Add Activity Button - More inviting design */}
           {!isGenerating && !isPending && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                if (onAddActivityClick) {
-                  onAddActivityClick()
-                } else {
-                  handleAddActivity()
-                }
-              }}
-              className="group/add w-full mt-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-primary transition-all duration-200 flex items-center justify-center gap-2 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            >
-              <svg className="w-4 h-4 transition-transform group-hover/add:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              <span className="font-medium">Añadir actividad</span>
-            </button>
+            <div className="mt-3">
+              {/* Onboarding hint for empty days */}
+              {!hasActivities && (
+                <p className="text-xs text-muted-foreground/60 text-center mb-2 animate-in fade-in duration-500">
+                  Arrastra lugares desde "Ideas guardadas" o busca con Explore
+                </p>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (onAddActivityClick) {
+                    onAddActivityClick()
+                  } else {
+                    handleAddActivity()
+                  }
+                }}
+                className={cn(
+                  "group/add w-full rounded-xl transition-all duration-200 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  // Different styles based on whether day has activities
+                  hasActivities
+                    ? "py-2.5 text-xs text-muted-foreground/50 hover:text-primary hover:bg-primary/5 border border-dashed border-transparent hover:border-primary/30"
+                    : "py-5 text-sm text-muted-foreground hover:text-primary bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15 border-2 border-dashed border-primary/20 hover:border-primary/40"
+                )}
+              >
+                <div className={cn(
+                  "rounded-full flex items-center justify-center transition-all duration-200",
+                  hasActivities
+                    ? "w-5 h-5 bg-transparent group-hover/add:bg-primary/10"
+                    : "w-9 h-9 bg-primary/10 group-hover/add:bg-primary/20 group-hover/add:scale-110"
+                )}>
+                  <svg className={cn(
+                    "transition-transform duration-300 group-hover/add:rotate-90",
+                    hasActivities ? "w-3.5 h-3.5" : "w-4 h-4 text-primary"
+                  )} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <span className={cn("font-medium", !hasActivities && "text-primary/80")}>
+                  {hasActivities ? "Añadir actividad" : "Agregar primera actividad"}
+                </span>
+              </button>
+            </div>
           )}
 
           {/* Day Summary - Only show if there's meaningful data (not placeholder values) */}
