@@ -208,10 +208,17 @@ export function DayEditor({
       )}
     >
       {/* Day Header - Modern Visual Style */}
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         className="w-full flex items-center gap-3 px-4 py-3 cursor-pointer select-none text-left hover:bg-muted/30 transition-colors rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         onClick={() => setExpanded(!expanded)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setExpanded(!expanded)
+          }
+        }}
         aria-expanded={expanded}
       >
         {/* Day Date Block */}
@@ -433,7 +440,7 @@ export function DayEditor({
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-      </button>
+      </div>
 
       {/* Drop indicator when dragging over */}
       {isOver && (
