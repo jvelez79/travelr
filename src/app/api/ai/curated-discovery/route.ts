@@ -101,14 +101,19 @@ export async function POST(request: NextRequest) {
 
     // 4. Check cache first
     const cacheKey = generateCacheKey(destination)
+    console.log('[curated-discovery] Cache lookup for key:', cacheKey, 'destination:', destination)
 
     // CRITICAL: Use .maybeSingle() - cache entry may not exist
-    const { data: cached } = await supabase
+    const { data: cached, error: cacheError } = await supabase
       .from('destination_suggestions')
       .select('suggestions, generated_at')
       .eq('cache_key', cacheKey)
       .gt('expires_at', new Date().toISOString())
       .maybeSingle()
+
+    if (cacheError) {
+      console.error('[curated-discovery] Cache lookup error:', cacheError.message)
+    }
 
     if (cached?.suggestions) {
       console.log('[curated-discovery] Cache HIT:', cacheKey)
