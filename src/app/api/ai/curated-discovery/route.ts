@@ -204,10 +204,10 @@ export async function POST(request: NextRequest) {
 
     const generatedAt = new Date().toISOString()
 
-    // 9. Store in cache (fire and forget - don't block response)
+    // 9. Store in cache (await to ensure it completes in serverless)
     // Only cache if we have results to avoid caching empty responses
     if (totalValidated > 0) {
-      supabase
+      const { error: cacheError } = await supabase
         .from('destination_suggestions')
         .upsert(
           {
@@ -219,13 +219,12 @@ export async function POST(request: NextRequest) {
           },
           { onConflict: 'cache_key' }
         )
-        .then(({ error }) => {
-          if (error) {
-            console.error('[curated-discovery] Cache store error:', error.message)
-          } else {
-            console.log('[curated-discovery] Cached:', cacheKey)
-          }
-        })
+
+      if (cacheError) {
+        console.error('[curated-discovery] Cache store error:', cacheError.message)
+      } else {
+        console.log('[curated-discovery] Cached:', cacheKey)
+      }
     }
 
     // 10. Build response
