@@ -108,6 +108,7 @@ export interface CuratedDiscoveryResponse {
     validatedPlaces: number
     filteredByRating: number
   }
+  cached?: boolean // True if response came from cache
 }
 
 /**

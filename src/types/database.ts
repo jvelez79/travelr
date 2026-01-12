@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -171,6 +176,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      destination_suggestions: {
+        Row: {
+          cache_key: string
+          expires_at: string
+          generated_at: string | null
+          id: string
+          place_name: string
+          suggestions: Json
+        }
+        Insert: {
+          cache_key: string
+          expires_at: string
+          generated_at?: string | null
+          id?: string
+          place_name: string
+          suggestions: Json
+        }
+        Update: {
+          cache_key?: string
+          expires_at?: string
+          generated_at?: string | null
+          id?: string
+          place_name?: string
+          suggestions?: Json
+        }
+        Relationships: []
       }
       directions_cache: {
         Row: {
@@ -522,101 +554,6 @@ export type Database = {
         }
         Relationships: []
       }
-      iceberg_namespaces: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      iceberg_tables: {
-        Row: {
-          bucket_name: string
-          catalog_id: string
-          created_at: string
-          id: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id: string | null
-          shard_id: string | null
-          shard_key: string | null
-          updated_at: string
-        }
-        Insert: {
-          bucket_name: string
-          catalog_id: string
-          created_at?: string
-          id?: string
-          location: string
-          name: string
-          namespace_id: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Update: {
-          bucket_name?: string
-          catalog_id?: string
-          created_at?: string
-          id?: string
-          location?: string
-          name?: string
-          namespace_id?: string
-          remote_table_id?: string | null
-          shard_id?: string | null
-          shard_key?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "iceberg_tables_catalog_id_fkey"
-            columns: ["catalog_id"]
-            isOneToOne: false
-            referencedRelation: "buckets_analytics"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "iceberg_tables_namespace_id_fkey"
-            columns: ["namespace_id"]
-            isOneToOne: false
-            referencedRelation: "iceberg_namespaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       migrations: {
         Row: {
           executed_at: string | null
@@ -938,44 +875,26 @@ export type Database = {
         Returns: undefined
       }
       operation: { Args: never; Returns: string }
-      search:
-        | {
-            Args: {
-              bucketname: string
-              levels?: number
-              limits?: number
-              offsets?: number
-              prefix: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
-        | {
-            Args: {
-              bucketname: string
-              levels?: number
-              limits?: number
-              offsets?: number
-              prefix: string
-              search?: string
-              sortcolumn?: string
-              sortorder?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
+      search: {
+        Args: {
+          bucketname: string
+          levels?: number
+          limits?: number
+          offsets?: number
+          prefix: string
+          search?: string
+          sortcolumn?: string
+          sortorder?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
       search_legacy_v1: {
         Args: {
           bucketname: string
@@ -1016,45 +935,27 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_v2:
-        | {
-            Args: {
-              bucket_name: string
-              levels?: number
-              limits?: number
-              prefix: string
-              start_after?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              key: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
-        | {
-            Args: {
-              bucket_name: string
-              levels?: number
-              limits?: number
-              prefix: string
-              sort_column?: string
-              sort_column_after?: string
-              sort_order?: string
-              start_after?: string
-            }
-            Returns: {
-              created_at: string
-              id: string
-              key: string
-              last_accessed_at: string
-              metadata: Json
-              name: string
-              updated_at: string
-            }[]
-          }
+      search_v2: {
+        Args: {
+          bucket_name: string
+          levels?: number
+          limits?: number
+          prefix: string
+          sort_column?: string
+          sort_column_after?: string
+          sort_order?: string
+          start_after?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          key: string
+          last_accessed_at: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }[]
+      }
     }
     Enums: {
       buckettype: "STANDARD" | "ANALYTICS" | "VECTOR"
@@ -1205,6 +1106,7 @@ export type Trip = Database['public']['Tables']['trips']['Row']
 export type Plan = Database['public']['Tables']['plans']['Row']
 export type GenerationState = Database['public']['Tables']['generation_states']['Row']
 export type DirectionsCache = Database['public']['Tables']['directions_cache']['Row']
+export type DestinationSuggestions = Database['public']['Tables']['destination_suggestions']['Row']
 export type AIRequestLog = Database['public']['Tables']['ai_request_logs']['Row']
 export type TripThingsToDo = Database['public']['Tables']['trip_things_to_do']['Row']
 export type AgentConversation = Database['public']['Tables']['agent_conversations']['Row']
@@ -1215,6 +1117,7 @@ export type TripInsert = Database['public']['Tables']['trips']['Insert']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type GenerationStateInsert = Database['public']['Tables']['generation_states']['Insert']
 export type DirectionsCacheInsert = Database['public']['Tables']['directions_cache']['Insert']
+export type DestinationSuggestionsInsert = Database['public']['Tables']['destination_suggestions']['Insert']
 export type AIRequestLogInsert = Database['public']['Tables']['ai_request_logs']['Insert']
 export type TripThingsToDoInsert = Database['public']['Tables']['trip_things_to_do']['Insert']
 export type AgentConversationInsert = Database['public']['Tables']['agent_conversations']['Insert']
@@ -1225,6 +1128,7 @@ export type TripUpdate = Database['public']['Tables']['trips']['Update']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 export type GenerationStateUpdate = Database['public']['Tables']['generation_states']['Update']
 export type DirectionsCacheUpdate = Database['public']['Tables']['directions_cache']['Update']
+export type DestinationSuggestionsUpdate = Database['public']['Tables']['destination_suggestions']['Update']
 export type AIRequestLogUpdate = Database['public']['Tables']['ai_request_logs']['Update']
 export type TripThingsToDoUpdate = Database['public']['Tables']['trip_things_to_do']['Update']
 export type AgentConversationUpdate = Database['public']['Tables']['agent_conversations']['Update']
@@ -1249,4 +1153,3 @@ export interface FailedDay {
   lastError: string
   lastAttemptAt: string
 }
-

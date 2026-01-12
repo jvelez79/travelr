@@ -15,12 +15,31 @@ import type {
   CuratedCategoryType,
 } from '@/types/curated'
 import type { Place } from '@/types/explore'
+import type { Json } from '@/types/database'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60 // Allow up to 60 seconds for AI + validation
 
 // Minimum rating to include a place
 const MIN_RATING = 4.0
+
+// Cache TTL: 30 days (shared cache benefits from longer TTL)
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * Generate a cache key from destination string
+ * Normalizes the string for consistent lookups
+ */
+function generateCacheKey(destination: string): string {
+  return destination
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9\s-]/g, '')    // Remove special chars
+    .replace(/\s+/g, '-')            // Replace spaces with dashes
+    .replace(/-+/g, '-')             // Remove duplicate dashes
+    .trim()
+}
 
 /**
  * POST /api/ai/curated-discovery
@@ -80,7 +99,49 @@ export async function POST(request: NextRequest) {
 
     console.log('[curated-discovery] Starting generation for:', destination)
 
-    // 4. Generate AI recommendations
+    // 4. Check cache first
+    const cacheKey = generateCacheKey(destination)
+
+    // CRITICAL: Use .maybeSingle() - cache entry may not exist
+    const { data: cached } = await supabase
+      .from('destination_suggestions')
+      .select('suggestions, generated_at')
+      .eq('cache_key', cacheKey)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle()
+
+    if (cached?.suggestions) {
+      console.log('[curated-discovery] Cache HIT:', cacheKey)
+
+      // Type assertion for cached suggestions (via unknown to satisfy TS)
+      const cachedSections = cached.suggestions as unknown as {
+        mustSeeAttractions: CuratedPlace[]
+        outstandingRestaurants: CuratedPlace[]
+        uniqueExperiences: CuratedPlace[]
+      }
+
+      const response: CuratedDiscoveryResponse = {
+        destination,
+        tripId,
+        sections: cachedSections,
+        generatedAt: cached.generated_at || new Date().toISOString(),
+        stats: {
+          aiRecommendations: 0, // Unknown for cached responses
+          validatedPlaces:
+            cachedSections.mustSeeAttractions.length +
+            cachedSections.outstandingRestaurants.length +
+            cachedSections.uniqueExperiences.length,
+          filteredByRating: 0,
+        },
+        cached: true,
+      }
+
+      return NextResponse.json(response)
+    }
+
+    console.log('[curated-discovery] Cache MISS:', cacheKey)
+
+    // 5. Generate AI recommendations
     const aiRecommendations = await generateAIRecommendations(destination)
 
     if (!aiRecommendations) {
@@ -96,7 +157,7 @@ export async function POST(request: NextRequest) {
       experiences: aiRecommendations.uniqueExperiences.length,
     })
 
-    // 5. Validate against Google Places (in parallel for each category)
+    // 6. Validate against Google Places (in parallel for each category)
     const [mustSeeAttractions, outstandingRestaurants, uniqueExperiences] = await Promise.all([
       validateRecommendations(
         aiRecommendations.mustSeeAttractions,
@@ -115,7 +176,7 @@ export async function POST(request: NextRequest) {
       ),
     ])
 
-    // 6. Calculate stats
+    // 7. Calculate stats
     const totalAI =
       aiRecommendations.mustSeeAttractions.length +
       aiRecommendations.outstandingRestaurants.length +
@@ -134,21 +195,51 @@ export async function POST(request: NextRequest) {
       experiences: uniqueExperiences.length,
     })
 
-    // 7. Build response
+    // 8. Build sections for response and cache
+    const sections = {
+      mustSeeAttractions,
+      outstandingRestaurants,
+      uniqueExperiences,
+    }
+
+    const generatedAt = new Date().toISOString()
+
+    // 9. Store in cache (fire and forget - don't block response)
+    // Only cache if we have results to avoid caching empty responses
+    if (totalValidated > 0) {
+      supabase
+        .from('destination_suggestions')
+        .upsert(
+          {
+            cache_key: cacheKey,
+            place_name: destination,
+            suggestions: sections as unknown as Json,
+            generated_at: generatedAt,
+            expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+          },
+          { onConflict: 'cache_key' }
+        )
+        .then(({ error }) => {
+          if (error) {
+            console.error('[curated-discovery] Cache store error:', error.message)
+          } else {
+            console.log('[curated-discovery] Cached:', cacheKey)
+          }
+        })
+    }
+
+    // 10. Build response
     const response: CuratedDiscoveryResponse = {
       destination,
       tripId,
-      sections: {
-        mustSeeAttractions,
-        outstandingRestaurants,
-        uniqueExperiences,
-      },
-      generatedAt: new Date().toISOString(),
+      sections,
+      generatedAt,
       stats: {
         aiRecommendations: totalAI,
         validatedPlaces: totalValidated,
         filteredByRating: totalAI - totalValidated,
       },
+      cached: false,
     }
 
     return NextResponse.json(response)
