@@ -16,7 +16,6 @@ import {
   Trash2,
   Calendar,
   Loader2,
-  GripVertical,
   Ban,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -217,25 +216,15 @@ function DraggableThingsToDoItem({ item, onAddToDay, onRemove, removing, isDeskt
   return (
     <div
       ref={setNodeRef}
+      {...(isDesktop ? { ...attributes, ...listeners } : {})}
       className={cn(
         "group relative rounded-xl overflow-hidden bg-card border border-border/60 transition-all duration-200",
+        isDesktop && "cursor-grab active:cursor-grabbing touch-none",
         isDragging
           ? "opacity-50 shadow-xl scale-95"
           : "hover:border-primary/50 hover:shadow-lg hover:scale-[1.02]"
       )}
     >
-      {/* Drag handle - only visible on desktop */}
-      {isDesktop && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute top-2 left-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none"
-        >
-          <div className="p-1 rounded bg-black/50 backdrop-blur-sm">
-            <GripVertical className="h-4 w-4 text-white" />
-          </div>
-        </div>
-      )}
 
       {/* Main clickable area - using div to avoid nested button issue */}
       <div

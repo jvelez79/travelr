@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import {
   Dialog,
@@ -16,34 +16,48 @@ import {
   Clock,
   Phone,
   Globe,
-  Plus,
-  Check,
-  Loader2,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Quote,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { AddToDropdown } from "./AddToDropdown"
 import type { Place } from "@/types/explore"
+import type { CuratedPlace } from "@/types/curated"
+import type { ItineraryDay } from "@/types/plan"
 
-interface PlaceDetailsModalProps {
-  place: Place | null
+interface PlaceDetailsModalProps<T extends Place = Place> {
+  place: T | null
   isOpen: boolean
   onClose: () => void
   isInThingsToDo: boolean
-  onAddToThingsToDo: (place: Place) => void
-  addingItem: boolean
+  onAddToThingsToDo: (place: T) => Promise<void>
+  onAddToDay?: (place: T, dayNumber: number) => Promise<void>
+  days?: ItineraryDay[]
 }
 
-export function PlaceDetailsModal({
+// Type guard to check if place is a CuratedPlace
+function isCuratedPlace(place: Place | CuratedPlace): place is CuratedPlace {
+  return 'whyUnmissable' in place
+}
+
+export function PlaceDetailsModal<T extends Place = Place>({
   place,
   isOpen,
   onClose,
   isInThingsToDo,
   onAddToThingsToDo,
-  addingItem,
-}: PlaceDetailsModalProps) {
+  onAddToDay,
+  days = [],
+}: PlaceDetailsModalProps<T>) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Reset image index when place changes
+  useEffect(() => {
+    setCurrentImageIndex(0)
+  }, [place?.id])
 
   if (!place) return null
 
@@ -65,7 +79,10 @@ export function PlaceDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto p-0"
+        onInteractOutside={() => onClose()}
+      >
         {/* Image carousel */}
         <div className="relative aspect-video bg-muted">
           {images[currentImageIndex] ? (
@@ -159,6 +176,18 @@ export function PlaceDetailsModal({
             )}
           </div>
 
+          {/* Why Unmissable - for curated places */}
+          {isCuratedPlace(place) && place.whyUnmissable && (
+            <div className="mt-4 p-3 bg-primary/5 border border-primary/10 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Quote className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-foreground leading-relaxed">
+                  {place.whyUnmissable}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           {place.description && (
             <p className="text-muted-foreground mt-4">{place.description}</p>
@@ -218,31 +247,34 @@ export function PlaceDetailsModal({
 
           {/* Actions */}
           <div className="flex gap-3 mt-6">
-            <Button
-              onClick={() => onAddToThingsToDo(place)}
-              disabled={isInThingsToDo || addingItem}
-              className={cn(
-                "flex-1",
-                isInThingsToDo && "bg-green-500 hover:bg-green-500"
-              )}
-            >
-              {addingItem ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Adding...
-                </>
-              ) : isInThingsToDo ? (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Added to Things To Do
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add to Things To Do
-                </>
-              )}
-            </Button>
+            <div className="flex-1">
+              <AddToDropdown
+                days={days}
+                onAddToThingsToDo={async () => {
+                  setIsLoading(true)
+                  try {
+                    await onAddToThingsToDo(place)
+                    onClose()
+                  } finally {
+                    setIsLoading(false)
+                  }
+                }}
+                onAddToDay={async (dayNumber) => {
+                  if (onAddToDay) {
+                    setIsLoading(true)
+                    try {
+                      await onAddToDay(place, dayNumber)
+                      onClose()
+                    } finally {
+                      setIsLoading(false)
+                    }
+                  }
+                }}
+                isAdded={isInThingsToDo}
+                isLoading={isLoading}
+                variant="default"
+              />
+            </div>
 
             <Button
               variant="outline"
@@ -254,7 +286,7 @@ export function PlaceDetailsModal({
                 rel="noopener noreferrer"
               >
                 <MapPin className="h-4 w-4 mr-2" />
-                View on Map
+                Ver en Mapa
               </a>
             </Button>
           </div>

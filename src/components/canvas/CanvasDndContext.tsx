@@ -16,9 +16,10 @@ import { Compass } from "lucide-react"
 import type { Place } from "@/types/explore"
 import type { TimelineEntry, ItineraryDay } from "@/types/plan"
 import type { ThingsToDoItem } from "@/hooks/useThingsToDo"
+import type { PlaceChipData } from "@/types/ai-agent"
 
-// Drag data types - extended with saved-idea
-// type DragItemType = "place" | "timeline-activity" | "saved-idea" // Currently unused but documents valid types
+// Drag data types - extended with saved-idea and place-chip
+// type DragItemType = "place" | "timeline-activity" | "saved-idea" | "place-chip" // Currently unused but documents valid types
 
 interface PlaceDragData {
   type: "place"
@@ -36,7 +37,13 @@ interface SavedIdeaDragData {
   item: ThingsToDoItem
 }
 
-type DragData = PlaceDragData | TimelineActivityDragData | SavedIdeaDragData
+interface PlaceChipDragData {
+  type: "place-chip"
+  placeId: string
+  placeData: PlaceChipData
+}
+
+type DragData = PlaceDragData | TimelineActivityDragData | SavedIdeaDragData | PlaceChipDragData
 
 // Context for accessing drag state
 interface CanvasDndContextValue {
@@ -44,6 +51,7 @@ interface CanvasDndContextValue {
   isDraggingPlace: boolean
   isDraggingSavedIdea: boolean
   isDraggingActivity: boolean
+  isDraggingPlaceChip: boolean
   canDropToIdeas: boolean // Whether the dragged item can be dropped to Ideas
   isDesktop: boolean // Whether drag is enabled (desktop only)
 }
@@ -127,6 +135,7 @@ function canActivityDropToIdeas(activity: TimelineEntry): boolean {
 interface CanvasDndProviderProps {
   children: ReactNode
   onDropPlaceOnDay?: (place: Place, dayNumber: number, dropY?: number) => void
+  onDropPlaceChipOnDay?: (placeId: string, placeData: PlaceChipData, dayNumber: number) => void
   onMoveActivity?: (activityId: string, fromDay: number, toDay: number, newTime?: string, insertionIndex?: number) => void
   onDropIdeaOnDay?: (item: ThingsToDoItem, dayNumber: number) => void
   onMoveActivityToIdeas?: (activity: TimelineEntry, fromDay: number) => void
@@ -136,6 +145,7 @@ interface CanvasDndProviderProps {
 export function CanvasDndProvider({
   children,
   onDropPlaceOnDay,
+  onDropPlaceChipOnDay,
   onMoveActivity,
   onDropIdeaOnDay,
   onMoveActivityToIdeas,
@@ -204,6 +214,14 @@ export function CanvasDndProvider({
       }
     }
 
+    // Handle dropping a place chip onto a day
+    if (activeItem.type === "place-chip" && overData?.type === "day-drop-zone") {
+      const dayNumber = overData.dayNumber
+      if (dayNumber && onDropPlaceChipOnDay) {
+        onDropPlaceChipOnDay(activeItem.placeId, activeItem.placeData, dayNumber)
+      }
+    }
+
     // Handle dropping a saved idea onto a day
     if (activeItem.type === "saved-idea" && overData?.type === "day-drop-zone") {
       const dayNumber = overData.dayNumber
@@ -238,7 +256,7 @@ export function CanvasDndProvider({
     }
 
     setActiveItem(null)
-  }, [activeItem, onDropPlaceOnDay, onMoveActivity, onDropIdeaOnDay, onMoveActivityToIdeas, itinerary])
+  }, [activeItem, onDropPlaceOnDay, onDropPlaceChipOnDay, onMoveActivity, onDropIdeaOnDay, onMoveActivityToIdeas, itinerary])
 
   const handleDragCancel = useCallback(() => {
     setActiveItem(null)
@@ -254,6 +272,7 @@ export function CanvasDndProvider({
     isDraggingPlace: activeItem?.type === "place",
     isDraggingSavedIdea: activeItem?.type === "saved-idea",
     isDraggingActivity: activeItem?.type === "timeline-activity",
+    isDraggingPlaceChip: activeItem?.type === "place-chip",
     canDropToIdeas,
     isDesktop,
   }
@@ -279,6 +298,9 @@ export function CanvasDndProvider({
           )}
           {activeItem?.type === "saved-idea" && (
             <SavedIdeaDragPreview item={activeItem.item} />
+          )}
+          {activeItem?.type === "place-chip" && (
+            <PlaceChipDragPreview placeData={activeItem.placeData} />
           )}
         </DragOverlay>
       </DndContext>
@@ -365,6 +387,53 @@ function SavedIdeaDragPreview({ item }: { item: ThingsToDoItem }) {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// Preview component for dragging a place chip from AI chat
+function PlaceChipDragPreview({ placeData }: { placeData: PlaceChipData }) {
+  // Get emoji icon for category
+  const getCategoryEmoji = (category?: string): string => {
+    if (!category) return '📍'
+
+    const emojiMap: Record<string, string> = {
+      restaurant: '🍽️',
+      restaurants: '🍽️',
+      cafe: '☕',
+      cafes: '☕',
+      bar: '🍷',
+      bars: '🍷',
+      hotel: '🏨',
+      lodging: '🏨',
+      attraction: '🎯',
+      attractions: '🎯',
+      museum: '🏛️',
+      museums: '🏛️',
+      park: '🌳',
+      nature: '🌳',
+      beach: '🏖️',
+      beaches: '🏖️',
+      shopping: '🛍️',
+      market: '🛍️',
+      markets: '🛍️',
+    }
+
+    return emojiMap[category.toLowerCase()] || '📍'
+  }
+
+  const emoji = getCategoryEmoji(placeData.category)
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-background border border-primary rounded-full shadow-xl opacity-90 scale-105 rotate-2 cursor-grabbing">
+      <span className="text-base leading-none">{emoji}</span>
+      <span className="text-sm font-medium truncate max-w-[180px]">{placeData.name}</span>
+      {placeData.rating && (
+        <span className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-500">
+          <span>★</span>
+          <span>{placeData.rating.toFixed(1)}</span>
+        </span>
+      )}
     </div>
   )
 }

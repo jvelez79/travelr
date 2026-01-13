@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Compass } from "lucide-react"
@@ -11,6 +12,7 @@ import { useThingsToDo, useAddToThingsToDo } from "@/hooks/useThingsToDo"
 import { useCuratedDiscovery } from "@/hooks/useCuratedDiscovery"
 import { useAuth } from "@/contexts/AuthContext"
 import { CuratedDiscoveryView } from "@/components/explore/CuratedDiscoveryView"
+import { PlaceDetailsModal } from "@/components/explore/PlaceDetailsModal"
 import type { CuratedPlace } from "@/types/curated"
 import type { GeneratedPlan } from "@/types/plan"
 
@@ -41,8 +43,21 @@ export default function ExplorePage() {
     autoFetch: true,
   })
 
+  // State for selected place modal
+  const [selectedPlace, setSelectedPlace] = useState<CuratedPlace | null>(null)
+
   // Get place IDs already in Things To Do
   const thingsToDoPlaceIds = new Set(thingsToDoItems.map(item => item.google_place_id))
+
+  // Handle place selection for modal
+  const handleSelectPlace = (place: CuratedPlace) => {
+    setSelectedPlace(place)
+  }
+
+  // Handle modal close
+  const handleCloseModal = () => {
+    setSelectedPlace(null)
+  }
 
   // Handle curated place add to Things To Do
   const handleCuratedAddToThingsToDo = async (place: CuratedPlace) => {
@@ -160,9 +175,22 @@ export default function ExplorePage() {
           onRefresh={refreshCurated}
           onAddToThingsToDo={handleCuratedAddToThingsToDo}
           onAddToDay={handleCuratedAddToDay}
+          onSelectPlace={handleSelectPlace}
           addedPlaceIds={thingsToDoPlaceIds}
+          selectedPlaceId={selectedPlace?.id}
         />
       </main>
+
+      {/* Place Details Modal */}
+      <PlaceDetailsModal
+        place={selectedPlace}
+        isOpen={!!selectedPlace}
+        onClose={handleCloseModal}
+        isInThingsToDo={selectedPlace ? thingsToDoPlaceIds.has(selectedPlace.id) : false}
+        onAddToThingsToDo={handleCuratedAddToThingsToDo}
+        onAddToDay={handleCuratedAddToDay}
+        days={itineraryDays}
+      />
     </div>
   )
 }

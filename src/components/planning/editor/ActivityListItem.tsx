@@ -3,7 +3,6 @@
 import { useState, useRef } from "react"
 import Image from "next/image"
 import { useDraggable } from "@dnd-kit/core"
-import { GripVertical } from "lucide-react"
 import type { TimelineEntry } from "@/types/plan"
 import { formatDuration, estimateDuration } from "@/lib/timeUtils"
 import { PlaceHoverCard } from "./PlaceHoverCard"
@@ -90,9 +89,12 @@ export function ActivityListItem({
         containerRef.current = node
         setNodeRef(node)
       }}
+      {...(enableDrag && !disabled ? { ...attributes, ...listeners } : {})}
       className={cn(
-        "relative group/activity flex items-start gap-3 p-2.5 rounded-xl cursor-pointer",
+        "relative group/activity flex items-start gap-3 p-2.5 rounded-xl",
         "transition-all duration-200 ease-out",
+        enableDrag && !disabled && "cursor-grab active:cursor-grabbing touch-none",
+        !enableDrag && "cursor-pointer",
         isDragging
           ? "opacity-50 shadow-xl scale-95"
           : isSelected
@@ -104,19 +106,6 @@ export function ActivityListItem({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Drag handle - visible on hover when drag is enabled */}
-      {enableDrag && !disabled && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="absolute -left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover/activity:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none z-10"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-1 rounded bg-muted/80 hover:bg-muted">
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
-      )}
       {/* Hover card popover - fixed position near mouse entry point */}
       {showPlaceDetails && activity.placeData && (
         <PlaceHoverCard

@@ -12,6 +12,7 @@ interface UseChatStreamingOptions {
   onTextChunk: (text: string) => void
   onToolCall?: (toolName: string, toolInput: Record<string, unknown>) => void
   onToolResult?: (toolName: string, result: string) => void
+  onPlacesContext?: (placesContext: Record<string, unknown>) => void
   onDone: (data?: any) => void
   onError: (error: string) => void
 }
@@ -108,6 +109,12 @@ export function useChatStreaming() {
                 case 'tool_result':
                   if (event.toolName && event.toolResult && options.onToolResult) {
                     options.onToolResult(event.toolName, event.toolResult)
+                  }
+                  break
+
+                case 'places_context':
+                  if (event.placesContext && options.onPlacesContext) {
+                    options.onPlacesContext(event.placesContext)
                   }
                   break
 

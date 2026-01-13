@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useChatStreaming } from './useChatStreaming'
-import type { ChatMessage, ToolCall } from '@/types/ai-agent'
+import type { ChatMessage, ToolCall, PlaceChipData } from '@/types/ai-agent'
 
 interface UseChatConversationOptions {
   tripId: string
@@ -29,6 +29,7 @@ interface UseChatConversationReturn {
   conversationId: string | null
   canContinue: boolean
   continueConversation: () => Promise<void>
+  placesMap: Record<string, PlaceChipData>
 }
 
 export function useChatConversation({
@@ -41,6 +42,7 @@ export function useChatConversation({
   const [error, setError] = useState<Error | null>(null)
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null)
   const [canContinue, setCanContinue] = useState(false)
+  const [placesMap, setPlacesMap] = useState<Record<string, PlaceChipData>>({})
 
   // Ref to track conversationId and avoid closure issues
   const conversationIdRef = useRef<string | null>(initialConversationId || null)
@@ -86,7 +88,16 @@ export function useChatConversation({
         isStreaming: false,
       }))
 
+      // Parse places_context from all messages and merge into a single map
+      const placesContext: Record<string, PlaceChipData> = {}
+      data.forEach((msg: any) => {
+        if (msg.places_context) {
+          Object.assign(placesContext, msg.places_context)
+        }
+      })
+
       setMessages(chatMessages)
+      setPlacesMap(placesContext)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error loading messages'))
     } finally {
@@ -121,7 +132,16 @@ export function useChatConversation({
         isStreaming: false,
       }))
 
+      // Parse places_context from all messages and merge into a single map
+      const placesContext: Record<string, PlaceChipData> = {}
+      data.forEach((msg: any) => {
+        if (msg.places_context) {
+          Object.assign(placesContext, msg.places_context)
+        }
+      })
+
       setMessages(chatMessages)
+      setPlacesMap(placesContext)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Error loading messages'))
     } finally {
@@ -262,7 +282,15 @@ export function useChatConversation({
             console.log('[chat] Tool result:', toolName, result)
             // Optionally show tool result in UI
           },
-          onDone: (data?: { conversationId?: string; toolCallsCount?: number; canContinue?: boolean }) => {
+          onPlacesContext: (newPlacesContext: Record<string, unknown>) => {
+            console.log('[chat] Received places context:', Object.keys(newPlacesContext).length, 'places')
+            // Merge new places context into existing map
+            setPlacesMap(prev => ({
+              ...prev,
+              ...(newPlacesContext as Record<string, PlaceChipData>)
+            }))
+          },
+          onDone: (data?: { conversationId?: string; toolCallsCount?: number; canContinue?: boolean; messagesSaved?: boolean }) => {
             console.log('[chat] Stream completed', data)
             // Mark assistant message as complete
             setMessages(prev =>
@@ -286,10 +314,18 @@ export function useChatConversation({
                 conversationIdRef.current = data.conversationId
               }
 
-              // Reload history with the known conversationId
-              setTimeout(() => {
-                loadHistoryForConversation(finalConvId)
-              }, 500)
+              // Only reload history if messages were successfully saved to DB
+              // This prevents the race condition where we reload before save completes
+              if (data?.messagesSaved) {
+                // Small delay to ensure DB replication (Supabase may have slight delay)
+                setTimeout(() => {
+                  loadHistoryForConversation(finalConvId)
+                }, 100)
+              } else {
+                console.log('[chat] Messages not saved to DB, keeping optimistic messages')
+                // Don't reload - keep the optimistic messages in state
+                // They will be reloaded on next page load or manual refresh
+              }
             }
           },
           onError: (errorMsg: string) => {
@@ -365,5 +401,6 @@ export function useChatConversation({
     conversationId,
     canContinue,
     continueConversation,
+    placesMap,
   }
 }

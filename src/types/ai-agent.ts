@@ -49,7 +49,7 @@ export interface ToolCall {
 /**
  * Types of events sent during SSE streaming
  */
-export type ChatStreamEventType = 'text' | 'tool_call' | 'tool_result' | 'done' | 'error'
+export type ChatStreamEventType = 'text' | 'tool_call' | 'tool_result' | 'places_context' | 'done' | 'error'
 
 /**
  * Event sent through SSE stream
@@ -61,6 +61,8 @@ export interface ChatStreamEvent {
   toolInput?: Record<string, unknown>
   toolResult?: string
   error?: string
+  // Places context (only present in 'places_context' events)
+  placesContext?: Record<string, PlaceChipData>
   // Continuation fields (only present in 'done' events when limit was hit)
   canContinue?: boolean
   pendingToolCount?: number
@@ -137,6 +139,7 @@ export interface ChatMessage {
   isStreaming?: boolean
   requiresConfirmation?: boolean
   confirmationMessage?: string
+  placesContext?: Record<string, PlaceChipData> // Map of place_id to place data for chips
 }
 
 /**
@@ -178,6 +181,26 @@ export interface PlaceSearchResult {
   address?: string
   description?: string
   location: { lat: number; lng: number }
+}
+
+/**
+ * Place data for rendering interactive chips in chat messages
+ * Lightweight version optimized for inline display
+ */
+export interface PlaceChipData {
+  id: string                    // Google Place ID
+  name: string                  // Nombre del lugar
+  rating?: number               // 0-5
+  reviewCount?: number          // Cantidad de reviews
+  category?: string             // 'restaurant', 'attraction', etc.
+  priceLevel?: 1 | 2 | 3 | 4   // $ a $$$$
+  imageUrl?: string             // Primera imagen
+  address?: string              // Dirección completa
+  description?: string          // Descripción breve
+  location: {                   // Coordenadas para Google Maps
+    lat: number
+    lng: number
+  }
 }
 
 /**

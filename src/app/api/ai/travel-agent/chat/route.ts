@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildTravelAgentSystemPrompt, buildConversationMessages } from '@/lib/ai/travel-agent-prompts'
 import { TRAVEL_AGENT_TOOLS, executeToolCall, validateToolInput } from '@/lib/ai/travel-agent-tools'
-import type { ChatRequest, ChatStreamEvent } from '@/types/ai-agent'
+import type { ChatRequest, ChatStreamEvent, PlaceChipData } from '@/types/ai-agent'
 import type { GeneratedPlan } from '@/types/plan'
 
 export const runtime = 'nodejs'
@@ -266,6 +266,9 @@ export async function POST(request: NextRequest) {
           result: string
         }> = []
 
+        // Track places found during search_places tool calls
+        const placesContext: Record<string, PlaceChipData> = {}
+
         // Track conversation messages for multi-turn tool execution
         let currentMessages = [...apiMessages]
         let iterationCount = 0
@@ -346,12 +349,67 @@ export async function POST(request: NextRequest) {
             }
 
             // Execute tool
-            const toolResult = await executeToolCall(toolName, toolInput, {
+            let toolResult = await executeToolCall(toolName, toolInput, {
               tripId,
               userId: user.id,
               plan: freshPlan,
               supabase,
             })
+
+            // Capture place data from search tools for interactive chips
+            if (toolName === 'search_place_by_name' || toolName === 'search_places_nearby' || toolName === 'search_accommodations') {
+              try {
+                // Parse the places JSON from tool result (supports both 'places' and 'accommodations' formats)
+                const placesMatch = toolResult.match(/```(?:places|accommodations)\n([\s\S]*?)\n```/)
+                if (placesMatch) {
+                  const places = JSON.parse(placesMatch[1])
+                  // Convert to PlaceChipData and store in context
+                  const chipReferences: string[] = []
+                  places.forEach((place: any) => {
+                    // Handle both 'places' format (location) and 'accommodations' format (coordinates)
+                    const location = place.location || place.coordinates || { lat: 0, lng: 0 }
+                    placesContext[place.id] = {
+                      id: place.id,
+                      name: place.name,
+                      rating: place.rating,
+                      reviewCount: place.reviewCount,
+                      category: place.category || 'accommodation',
+                      priceLevel: place.priceLevel,
+                      imageUrl: place.imageUrl,
+                      address: place.address,
+                      description: place.description,
+                      location,
+                    }
+                    // Build chip reference for AI to use - show exact format to copy
+                    const ratingStr = place.rating ? ` (★${place.rating})` : ''
+                    chipReferences.push(`${place.name}${ratingStr} → USAR: [[place:${place.id}]]`)
+                  })
+                  console.log(`[travel-agent/chat] Captured ${places.length} places for interactive chips`)
+
+                  // Send places context to frontend immediately so chips can render during streaming
+                  sendEvent({
+                    type: 'places_context',
+                    placesContext: { ...placesContext },
+                  })
+
+                  // Append STRONG instructions for chip format
+                  toolResult += `\n\n---
+⚠️ **FORMATO OBLIGATORIO PARA MENCIONAR LUGARES:**
+
+Cuando menciones estos lugares en tu respuesta, DEBES usar EXACTAMENTE este formato:
+- Sintaxis: [[place:PLACE_ID]] (doble corchete, palabra "place", dos puntos, ID)
+- NO uses [ID] ni [place:ID] - DEBE ser [[place:ID]]
+
+**Copia y pega estos chips en tu respuesta:**
+${chipReferences.join('\n')}
+
+Ejemplo correcto: "Te recomiendo [[place:${places[0]?.id}]] para cenar"
+Ejemplo INCORRECTO: "Te recomiendo [${places[0]?.id}]" ❌`
+                }
+              } catch (err) {
+                console.error('[travel-agent/chat] Failed to parse places from tool result:', err)
+              }
+            }
 
             toolCallsExecuted.push({
               toolName,
@@ -426,9 +484,31 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Save messages to DB
+        // Post-process response to auto-correct place chip format
+        // Convert [ChIJ...] or [place:ChIJ...] to [[place:ChIJ...]]
+        let processedResponse = fullResponse
+        const knownPlaceIds = Object.keys(placesContext)
+        if (knownPlaceIds.length > 0) {
+          for (const placeId of knownPlaceIds) {
+            // Pattern 1: [ChIJ...] (single bracket, no "place:")
+            const singleBracketPattern = new RegExp(`\\[${placeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]`, 'g')
+            // Pattern 2: [place:ChIJ...] (single bracket with "place:")
+            const singleBracketPlacePattern = new RegExp(`\\[place:${placeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]`, 'g')
+
+            // Replace with correct format [[place:ID]]
+            processedResponse = processedResponse.replace(singleBracketPattern, `[[place:${placeId}]]`)
+            processedResponse = processedResponse.replace(singleBracketPlacePattern, `[[place:${placeId}]]`)
+          }
+
+          if (processedResponse !== fullResponse) {
+            console.log('[travel-agent/chat] Auto-corrected place chip format in response')
+          }
+        }
+
+        // Save messages to DB - MUST complete before sending done event
+        let messagesSaved = false
         if (activeConversationId) {
-          await supabase
+          const { error: userMsgError } = await supabase
             .from('agent_messages')
             .insert({
               conversation_id: activeConversationId,
@@ -436,17 +516,30 @@ export async function POST(request: NextRequest) {
               content: message,
             })
 
-          await supabase
+          if (userMsgError) {
+            console.error('[travel-agent/chat] Failed to save user message:', userMsgError)
+          }
+
+          const { error: assistantMsgError } = await supabase
             .from('agent_messages')
             .insert({
               conversation_id: activeConversationId,
               role: 'assistant',
-              content: fullResponse,
+              content: processedResponse,
               tool_calls: toolCallsExecuted.length > 0 ? JSON.parse(JSON.stringify(toolCallsExecuted)) : null,
+              places_context: Object.keys(placesContext).length > 0 ? placesContext : null,
             })
+
+          if (assistantMsgError) {
+            console.error('[travel-agent/chat] Failed to save assistant message:', assistantMsgError)
+          }
+
+          messagesSaved = !userMsgError && !assistantMsgError
         }
 
-        // Send done event with continuation info
+        console.log('[travel-agent/chat] Messages saved to DB:', messagesSaved)
+
+        // Send done event with continuation info - AFTER messages are saved
         sendEvent({
           type: 'done',
           content: JSON.stringify({
@@ -454,6 +547,7 @@ export async function POST(request: NextRequest) {
             toolCallsCount: toolCallsExecuted.length,
             canContinue: hitLimit,
             pendingToolCount: pendingToolCount,
+            messagesSaved, // Tell frontend if it's safe to reload
           }),
         })
 

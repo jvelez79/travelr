@@ -22,6 +22,7 @@ import type { Place, PlaceCategory } from "@/types/explore"
 import type { HotelResult } from "@/lib/hotels/types"
 import type { Accommodation } from "@/types/accommodation"
 import type { ThingsToDoItem } from "@/hooks/useThingsToDo"
+import type { PlaceChipData } from "@/types/ai-agent"
 import { useAddToThingsToDo, useRemoveFromThingsToDo } from "@/hooks/useThingsToDo"
 
 /**
@@ -204,6 +205,57 @@ function CanvasLayoutInner({
     onUpdatePlan({ ...plan, itinerary: updatedItinerary })
 
     // Don't close right panel - allow adding more activities
+
+    // Calculate transport in background
+    const dayToUpdate = updatedItinerary.find(d => d.day === dayNumber)
+    if (dayToUpdate && dayToUpdate.timeline.length >= 2) {
+      try {
+        const timelineWithTransport = await calculateTransportForTimeline(dayToUpdate.timeline)
+        const finalItinerary = updatedItinerary.map(d =>
+          d.day === dayNumber ? { ...d, timeline: timelineWithTransport } : d
+        )
+        onUpdatePlan({ ...plan, itinerary: finalItinerary })
+      } catch (error) {
+        console.error('Error calculating transport:', error)
+      }
+    }
+  }, [plan, onUpdatePlan])
+
+  // Handle dropping a place chip from AI chat onto a day
+  const handleDropPlaceChipOnDay = useCallback(async (placeId: string, placeData: PlaceChipData, dayNumber: number) => {
+    // Convert PlaceChipData to TimelineEntry
+    const newActivity: TimelineEntry = {
+      id: `${placeId}-${Date.now()}`,
+      time: "Por definir",
+      activity: placeData.name,
+      location: placeData.address || plan.trip.destination,
+      icon: getIconForCategory((placeData.category as PlaceCategory) || 'attractions'),
+      notes: placeData.description,
+      placeId: placeId,
+      placeData: {
+        name: placeData.name,
+        category: (placeData.category as PlaceCategory) || 'attractions',
+        rating: placeData.rating,
+        reviewCount: placeData.reviewCount,
+        priceLevel: placeData.priceLevel,
+        coordinates: placeData.location,
+        address: placeData.address,
+        images: placeData.imageUrl ? [placeData.imageUrl] : [],
+        googleMapsUrl: `https://www.google.com/maps/place/?q=place_id:${placeId}`,
+      },
+      matchConfidence: 'exact',
+      durationMinutes: placeData.category === 'restaurant' || placeData.category === 'restaurants' ? 90 : 120,
+    }
+
+    // Update itinerary with recalculated timeline
+    const updatedItinerary = plan.itinerary.map(d => {
+      if (d.day !== dayNumber) return d
+      const newTimeline = recalculateTimeline([...d.timeline, newActivity])
+      return { ...d, timeline: newTimeline }
+    })
+
+    // Update plan immediately
+    onUpdatePlan({ ...plan, itinerary: updatedItinerary })
 
     // Calculate transport in background
     const dayToUpdate = updatedItinerary.find(d => d.day === dayNumber)
@@ -586,6 +638,7 @@ function CanvasLayoutInner({
   return (
     <CanvasDndProvider
       onDropPlaceOnDay={handleDropPlaceOnDay}
+      onDropPlaceChipOnDay={handleDropPlaceChipOnDay}
       onMoveActivity={handleMoveActivity}
       onDropIdeaOnDay={handleDropIdeaOnDay}
       onMoveActivityToIdeas={handleMoveActivityToIdeas}

@@ -15,7 +15,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { ChatMessage } from "./ChatMessage"
 import { TypingIndicator } from "./TypingIndicator"
 import { useChatConversation } from "@/hooks/useChatConversation"
+import { usePlan } from "@/hooks/usePlan"
 import { cn } from "@/lib/utils"
+import type { GeneratedPlan } from "@/types/plan"
 
 interface ChatWidgetProps {
   tripId: string
@@ -36,7 +38,12 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
     sendMessage,
     canContinue,
     continueConversation,
+    placesMap,
   } = useChatConversation({ tripId })
+
+  // Get itinerary days for place chips
+  const { planData } = usePlan(tripId)
+  const days = (planData as unknown as GeneratedPlan)?.itinerary || []
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -208,6 +215,8 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
                     isLatest={index === messages.length - 1}
                     onSendMessage={sendMessage}
                     currentDayNumber={1}
+                    placesMap={placesMap}
+                    days={days}
                   />
                 ))}
 
