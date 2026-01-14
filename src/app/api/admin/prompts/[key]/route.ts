@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { AIPromptResponse, AIPromptUpdate } from '@/types/ai-prompts'
 
 interface RouteParams {
   params: Promise<{ key: string }>
+}
+
+// Check if user email is in admin list
+function isAdmin(email: string | undefined): boolean {
+  if (!email) return false
+  const adminEmails =
+    process.env.ADMIN_EMAILS?.split(',').map((e) => e.trim().toLowerCase()) || []
+  return adminEmails.includes(email.toLowerCase())
 }
 
 /**
@@ -22,18 +31,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.is_admin) {
+    if (!isAdmin(user.email)) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient()
+
     // Fetch prompt by key
-    const { data: prompt, error } = await supabase
+    const { data: prompt, error } = await adminClient
       .from('ai_prompts')
       .select('*')
       .eq('key', key)
@@ -67,13 +73,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is admin
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.is_admin) {
+    if (!isAdmin(user.email)) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
@@ -85,8 +85,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
     }
 
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient()
+
     // Check prompt exists
-    const { data: existing, error: fetchError } = await supabase
+    const { data: existing, error: fetchError } = await adminClient
       .from('ai_prompts')
       .select('version')
       .eq('key', key)
@@ -97,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update prompt with incremented version
-    const { data: prompt, error: updateError } = await supabase
+    const { data: prompt, error: updateError } = await adminClient
       .from('ai_prompts')
       .update({
         ...body,
