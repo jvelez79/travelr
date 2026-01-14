@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
-import type { AIPrompt } from '@/types/ai-prompts'
+import { createUntypedAdminClient } from '@/lib/supabase/admin'
 
 // Fallback prompts for when database is not available
 import {
@@ -29,9 +28,10 @@ export async function getPromptByKey(key: string): Promise<{
   fromDb: boolean
 }> {
   try {
-    const supabase = await createClient()
+    // Use untyped client (ai_prompts not in generated types yet)
+    const adminClient = createUntypedAdminClient()
 
-    const { data: prompt, error } = await supabase
+    const { data: prompt, error } = await adminClient
       .from('ai_prompts')
       .select('system_prompt, user_prompt')
       .eq('key', key)

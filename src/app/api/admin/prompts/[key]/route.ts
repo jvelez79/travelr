@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createUntypedAdminClient } from '@/lib/supabase/admin'
 import type { AIPromptResponse, AIPromptUpdate } from '@/types/ai-prompts'
 
 interface RouteParams {
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
     }
 
-    // Use admin client to bypass RLS
-    const adminClient = createAdminClient()
+    // Use untyped admin client (ai_prompts not in generated types yet)
+    const adminClient = createUntypedAdminClient()
 
     // Fetch prompt by key
     const { data: prompt, error } = await adminClient
@@ -85,8 +85,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
     }
 
-    // Use admin client to bypass RLS
-    const adminClient = createAdminClient()
+    // Use untyped admin client (ai_prompts not in generated types yet)
+    const adminClient = createUntypedAdminClient()
 
     // Check prompt exists
     const { data: existing, error: fetchError } = await adminClient

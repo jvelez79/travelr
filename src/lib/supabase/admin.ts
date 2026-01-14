@@ -21,3 +21,23 @@ export function createAdminClient() {
     },
   })
 }
+
+/**
+ * Creates a Supabase admin client without strict typing
+ * Use for tables not yet in generated types (e.g., new migrations)
+ */
+export function createUntypedAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+  if (!supabaseServiceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  })
+}
