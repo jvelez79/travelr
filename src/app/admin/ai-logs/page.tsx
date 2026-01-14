@@ -157,6 +157,18 @@ export default function AILogsPage() {
           filters={FiltersComponent}
           className="mt-8"
         />
+
+        {/* Admin Navigation */}
+        <div className="mt-8 pt-8 border-t">
+          <h3 className="text-sm font-medium text-muted-foreground mb-4">Admin Tools</h3>
+          <div className="flex gap-3">
+            <Link href="/admin/prompts">
+              <Button variant="outline" size="sm">
+                AI Prompts
+              </Button>
+            </Link>
+          </div>
+        </div>
       </main>
     </div>
   )
