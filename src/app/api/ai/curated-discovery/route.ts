@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAIProvider } from '@/lib/ai'
-import {
-  CURATED_DISCOVERY_SYSTEM_PROMPT,
-  fillCuratedPrompt,
-} from '@/lib/ai/prompts-curated'
+import { getPromptByKey, fillPromptTemplate } from '@/lib/ai/prompt-service'
 import { searchPlaceByName } from '@/lib/explore/google-places'
 import type {
   CuratedDiscoveryRequest,
@@ -264,11 +261,17 @@ async function generateAIRecommendations(
 ): Promise<AIRecommendationsResponse | null> {
   try {
     const provider = getAIProvider()
-    const prompt = fillCuratedPrompt(destination)
+
+    // Get prompts from database (with fallback to hardcoded)
+    const { systemPrompt, userPrompt, fromDb } = await getPromptByKey('curated-discovery')
+    console.log(`[curated-discovery] Using ${fromDb ? 'database' : 'fallback'} prompt`)
+
+    // Fill template with destination
+    const filledPrompt = fillPromptTemplate(userPrompt, { destination })
 
     const response = await provider.complete({
-      systemPrompt: CURATED_DISCOVERY_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: prompt }],
+      systemPrompt,
+      messages: [{ role: 'user', content: filledPrompt }],
       maxTokens: 8000,
       temperature: 0.7,
       timeout: 45000, // 45 second timeout for AI
