@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ArrowLeft, Save, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 export default function EditPromptPage() {
@@ -179,18 +179,18 @@ export default function EditPromptPage() {
               <CardTitle className="text-base">Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="active-toggle"
+                  checked={isActive}
+                  onCheckedChange={(checked) => setIsActive(checked === true)}
+                />
                 <div>
-                  <Label htmlFor="active-toggle">Active</Label>
+                  <Label htmlFor="active-toggle" className="cursor-pointer">Active</Label>
                   <p className="text-sm text-muted-foreground">
                     When inactive, the system will use the fallback hardcoded prompt
                   </p>
                 </div>
-                <Switch
-                  id="active-toggle"
-                  checked={isActive}
-                  onCheckedChange={setIsActive}
-                />
               </div>
             </CardContent>
           </Card>
