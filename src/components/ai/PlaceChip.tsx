@@ -213,33 +213,52 @@ export function PlaceChip({
               chipRef.current = node
             }
           }}
-          className={`inline-flex items-center gap-2 px-3 py-1.5 mx-0.5 my-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-sm font-medium transition-all touch-manipulation ${
-            isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100 scale-100 rotate-0'
-          } ${isDesktop ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+          className={`
+            inline-flex items-center gap-1.5
+            pl-2.5 pr-1 py-1
+            my-1
+            bg-slate-800/95
+            border border-slate-500/40
+            rounded-full
+            text-sm
+            shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)]
+            transition-all duration-200 ease-out
+            touch-manipulation
+            animate-in fade-in-0 zoom-in-95 duration-200
+            hover:border-emerald-500/50 hover:bg-slate-700/95
+            hover:shadow-[0_4px_12px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.08)]
+            hover:-translate-y-0.5
+            active:scale-[0.98]
+            ${isDragging ? 'opacity-50 scale-95 rotate-2' : 'opacity-100'}
+            ${isDesktop ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
+          `}
+          title={placeData.name}
           {...(isDesktop ? { ...attributes, ...listeners } : {})}
         >
           <button
             onClick={handleClick}
-            className="inline-flex items-center gap-2 pointer-events-auto"
+            className="inline-flex items-center gap-1.5 pointer-events-auto min-w-0 group/chip"
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {/* Emoji icon */}
-            <span className="text-base leading-none">{emoji}</span>
+            {/* Category emoji */}
+            <span className="text-sm leading-none flex-shrink-0 opacity-90 group-hover/chip:opacity-100 transition-opacity">{emoji}</span>
 
             {/* Place name */}
-            <span className="truncate max-w-[180px]">{truncatedName}</span>
+            <span className="font-medium text-white/95 truncate max-w-[160px] text-[13px] leading-tight group-hover/chip:text-white transition-colors">
+              {placeData.name}
+            </span>
 
-            {/* Rating */}
+            {/* Rating badge */}
             {placeData.rating && (
-              <span className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-500">
-                <span>★</span>
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-400/20 text-[10px] text-amber-200 font-semibold flex-shrink-0 tabular-nums border border-amber-400/10">
+                <span className="text-amber-300 text-[9px]">★</span>
                 <span>{placeData.rating.toFixed(1)}</span>
               </span>
             )}
           </button>
 
-          {/* Add button with dropdown */}
-          <div onPointerDown={(e) => e.stopPropagation()}>
+          {/* Add button */}
+          <div onPointerDown={(e) => e.stopPropagation()} className="flex-shrink-0">
             <DaySelectorDropdown
               days={days}
               onSelectDay={handleQuickAddToDay}

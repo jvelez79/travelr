@@ -125,11 +125,11 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
           <SheetTitle className="sr-only">Chat con AI Travel Agent</SheetTitle>
 
           {/* Header */}
-          <div className="border-b border-border px-6 py-4 shrink-0">
+          <div className="border-b border-slate-700/50 bg-slate-900/50 px-5 py-3.5 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center ring-1 ring-emerald-500/30">
                 <svg
-                  className="w-5 h-5 text-primary"
+                  className="w-4.5 h-4.5 text-emerald-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -143,10 +143,13 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
                 </svg>
               </div>
               <div className="flex-1">
-                <h2 className="font-semibold text-base">Asistente de Viaje</h2>
-                <p className="text-xs text-muted-foreground">
+                <h2 className="font-semibold text-sm text-slate-100">Asistente de Viaje</h2>
+                <p className="text-xs text-slate-400">
                   {isStreaming ? (
-                    <span className="text-primary">Respondiendo...</span>
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                      Respondiendo...
+                    </span>
                   ) : (
                     "Ayudándote a planear tu itinerario"
                   )}
@@ -273,8 +276,8 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
           </div>
 
           {/* Input area */}
-          <div className="border-t border-border px-4 py-4 shrink-0">
-            <div className="flex gap-2">
+          <div className="border-t border-slate-700/50 bg-slate-900/30 px-4 py-3 shrink-0">
+            <div className="flex gap-2 items-end">
               <Textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -282,17 +285,17 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
                 onKeyDown={handleKeyDown}
                 placeholder="Escribe tu mensaje..."
                 disabled={isStreaming}
-                className="resize-none min-h-[44px] max-h-32"
+                className="resize-none min-h-[42px] max-h-32 bg-slate-800/50 border-slate-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20 placeholder:text-slate-500"
                 rows={1}
               />
               <Button
                 size="icon"
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isStreaming}
-                className="shrink-0 h-11 w-11"
+                className="shrink-0 h-[42px] w-[42px] bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500"
               >
                 <svg
-                  className="w-5 h-5"
+                  className="w-4.5 h-4.5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -308,7 +311,7 @@ export function ChatWidget({ tripId }: ChatWidgetProps) {
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-2 px-1">
+            <p className="text-[11px] text-slate-500 mt-2 px-1">
               Presiona Enter para enviar, Shift+Enter para nueva línea
             </p>
           </div>

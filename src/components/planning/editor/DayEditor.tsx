@@ -719,49 +719,15 @@ export function DayEditor({
             )}
           </div>
 
-          {/* Add Activity Button - More inviting design */}
-          {!isGenerating && !isPending && (
-            <div className="mt-3">
-              {/* Onboarding hint for empty days */}
-              {!hasActivities && (
-                <p className="text-xs text-muted-foreground/60 text-center mb-2 animate-in fade-in duration-500">
-                  Arrastra lugares desde "Ideas guardadas" o busca con Explore
-                </p>
-              )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (onAddActivityClick) {
-                    onAddActivityClick()
-                  } else {
-                    handleAddActivity()
-                  }
-                }}
-                className={cn(
-                  "group/add w-full rounded-xl transition-all duration-200 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  // Different styles based on whether day has activities
-                  hasActivities
-                    ? "py-2.5 text-xs text-muted-foreground/50 hover:text-primary hover:bg-primary/5 border border-dashed border-transparent hover:border-primary/30"
-                    : "py-5 text-sm text-muted-foreground hover:text-primary bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/15 border-2 border-dashed border-primary/20 hover:border-primary/40"
-                )}
-              >
-                <div className={cn(
-                  "rounded-full flex items-center justify-center transition-all duration-200",
-                  hasActivities
-                    ? "w-5 h-5 bg-transparent group-hover/add:bg-primary/10"
-                    : "w-9 h-9 bg-primary/10 group-hover/add:bg-primary/20 group-hover/add:scale-110"
-                )}>
-                  <svg className={cn(
-                    "transition-transform duration-300 group-hover/add:rotate-90",
-                    hasActivities ? "w-3.5 h-3.5" : "w-4 h-4 text-primary"
-                  )} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
-                <span className={cn("font-medium", !hasActivities && "text-primary/80")}>
-                  {hasActivities ? "Añadir actividad" : "Agregar primera actividad"}
-                </span>
-              </button>
+          {/* Empty state message - No CTA */}
+          {!isGenerating && !isPending && !hasActivities && (
+            <div className="mt-3 text-center">
+              <p className="text-sm text-muted-foreground/60 py-4">
+                Sin actividades
+              </p>
+              <p className="text-xs text-muted-foreground/50 pb-2">
+                Usa el botón "Buscar" en el sidebar para agregar actividades
+              </p>
             </div>
           )}
 

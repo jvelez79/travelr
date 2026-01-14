@@ -9,7 +9,7 @@ import type { PlaceCategory } from "@/types/explore"
 type RightPanelState =
   | { type: 'empty' }
   | { type: 'activity'; activity: TimelineEntry; dayNumber: number }
-  | { type: 'search'; dayNumber: number; timeSlot?: string; replaceActivityId?: string; preselectedCategory?: PlaceCategory }
+  | { type: 'search'; dayNumber: number | null; timeSlot?: string; replaceActivityId?: string; preselectedCategory?: PlaceCategory }
   | { type: 'ai'; dayNumber: number }
   | { type: 'customActivity'; dayNumber: number; timeSlot?: string }
   | { type: 'accommodation'; accommodation: Accommodation }
@@ -63,7 +63,7 @@ interface CanvasContextType {
   // Quick actions
   selectActivity: (activity: TimelineEntry, dayNumber: number) => void
   selectAccommodation: (accommodation: Accommodation) => void
-  openSearch: (dayNumber: number, timeSlot?: string) => void
+  openSearch: (dayNumber?: number | null, timeSlot?: string) => void
   openSearchToReplace: (dayNumber: number, activityId: string, category: PlaceCategory) => void
   openAISuggestions: (dayNumber: number) => void
   openCustomActivityEditor: (dayNumber: number, timeSlot?: string) => void
@@ -119,8 +119,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     setRightPanelOpen(true) // Open panel on mobile
   }, [])
 
-  const openSearch = useCallback((dayNumber: number, timeSlot?: string) => {
-    setRightPanelState({ type: 'search', dayNumber, timeSlot })
+  const openSearch = useCallback((dayNumber?: number | null, timeSlot?: string) => {
+    setRightPanelState({ type: 'search', dayNumber: dayNumber ?? null, timeSlot })
     setRightPanelOpen(true)
   }, [])
 

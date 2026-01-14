@@ -87,23 +87,45 @@ export function ChatMessage({
 
   /**
    * Pre-process content to auto-correct place chip format
-   * Uses pattern-based detection to convert [ChIJ...] to [[place:ChIJ...]]
+   * Uses pattern-based detection to convert [ChIJ...] or [place:ChIJ...] to [[place:ChIJ...]]
    * This works independently of placesMap to avoid race conditions
    */
   const autoCorrectPlaceFormat = (content: string): string => {
-    // Google Place IDs: typically 27-50 chars, start with ChIJ, contain alphanumeric + _ -
+    // Google Place IDs: start with ChIJ, typically 27-50 chars, contain alphanumeric + _ -
+    let corrected = content
+
     // Pattern 1: [ChIJ...] (single bracket, no "place:")
-    // Negative lookahead (?!\]) prevents matching [[...]]
-    const singleBracketPattern = /\[(ChIJ[A-Za-z0-9_-]{20,50})\](?!\])/g
+    // Negative lookbehind (?<!\[) prevents matching [[...]]
+    corrected = corrected.replace(/(?<!\[)\[(ChIJ[A-Za-z0-9_-]{20,60})\](?!\])/g, '[[place:$1]]')
 
     // Pattern 2: [place:ChIJ...] (single bracket with "place:")
-    const singleBracketPlacePattern = /\[place:(ChIJ[A-Za-z0-9_-]{20,50})\](?!\])/g
-
-    let corrected = content
-    corrected = corrected.replace(singleBracketPattern, '[[place:$1]]')
-    corrected = corrected.replace(singleBracketPlacePattern, '[[place:$1]]')
+    corrected = corrected.replace(/(?<!\[)\[place:(ChIJ[A-Za-z0-9_-]{20,60})\](?!\])/g, '[[place:$1]]')
 
     return corrected
+  }
+
+  /**
+   * Clean markdown artifacts that don't render well
+   * Removes patterns like "**[", "]**" around place chips
+   */
+  const cleanMarkdownArtifacts = (content: string): string => {
+    let cleaned = content
+
+    // Remove **[ and ]** patterns (bold markers around place chips)
+    cleaned = cleaned.replace(/\*\*\[/g, '')
+    cleaned = cleaned.replace(/\]\*\*/g, '')
+
+    // Remove ]* and *[ patterns
+    cleaned = cleaned.replace(/\]\*/g, '')
+    cleaned = cleaned.replace(/\*\[/g, '')
+
+    // Remove standalone ** that might be left over
+    cleaned = cleaned.replace(/^\*\*$/gm, '')
+
+    // Remove empty lines that might be left over
+    cleaned = cleaned.replace(/\n{3,}/g, '\n\n')
+
+    return cleaned
   }
 
   /**
@@ -115,8 +137,10 @@ export function ChatMessage({
     content: string
     placeId?: string
   }> => {
-    // First auto-correct any malformed place references
-    const correctedContent = autoCorrectPlaceFormat(content)
+    // First clean markdown artifacts and auto-correct place references
+    let processedContent = cleanMarkdownArtifacts(content)
+    processedContent = autoCorrectPlaceFormat(processedContent)
+    const correctedContent = processedContent
 
     const chipRegex = /\[\[place:([^\]]+)\]\]/g
     const parts: Array<{ type: 'text' | 'chip', content: string, placeId?: string }> = []
@@ -167,15 +191,16 @@ export function ChatMessage({
   return (
     <div
       className={cn(
-        "flex gap-3 px-4 py-3",
+        "flex gap-3 px-4 py-2",
         isUser && "flex-row-reverse"
       )}
     >
       {/* Avatar */}
-      <Avatar size="sm" className="shrink-0 mt-1">
+      <Avatar size="sm" className="shrink-0 mt-0.5">
         <AvatarFallback className={cn(
+          "text-xs font-medium",
           isUser && "bg-primary text-primary-foreground",
-          isAssistant && "bg-secondary text-secondary-foreground"
+          isAssistant && "bg-slate-700 text-slate-200"
         )}>
           {isUser ? "TU" : "AI"}
         </AvatarFallback>
@@ -183,18 +208,18 @@ export function ChatMessage({
 
       {/* Message content */}
       <div className={cn(
-        "flex flex-col gap-1 max-w-[85%]",
+        "flex flex-col gap-1 max-w-[88%]",
         isUser && "items-end"
       )}>
         {/* Message bubble */}
         <div className={cn(
-          "rounded-2xl px-4 py-2.5 text-sm",
-          isUser && "bg-primary text-primary-foreground",
-          isAssistant && "bg-muted text-foreground"
+          "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+          isUser && "bg-primary text-primary-foreground rounded-tr-sm",
+          isAssistant && "bg-slate-800/80 text-slate-100 rounded-tl-sm border border-slate-700/50"
         )}>
           {isAssistant ? (
             // Render markdown for assistant messages with place chips
-            <div className="prose prose-sm max-w-none dark:prose-invert">
+            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-2 prose-li:my-0.5">
               {parsePlaceChips(textContent).map((part, idx) => {
                 if (part.type === 'text') {
                   return (
@@ -260,14 +285,15 @@ export function ChatMessage({
                     )
                   } else {
                     // Loading placeholder - will re-render when placesMap updates
+                    // Styled to match the dark theme of loaded PlaceChips
                     return (
                       <span
                         key={idx}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 mx-0.5 bg-muted/50 rounded-full text-sm animate-pulse"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 mx-0.5 my-1 bg-slate-800/60 border border-slate-700/30 rounded-full text-sm"
                         title="Cargando lugar..."
                       >
-                        <span className="w-4 h-4 bg-muted-foreground/20 rounded-full shrink-0" />
-                        <span className="w-24 h-3 bg-muted-foreground/20 rounded" />
+                        <span className="w-4 h-4 bg-slate-600/40 rounded-full shrink-0 animate-pulse" />
+                        <span className="w-20 h-3 bg-slate-600/40 rounded animate-pulse" />
                       </span>
                     )
                   }

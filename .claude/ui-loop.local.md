@@ -1,82 +1,59 @@
 ---
-active: true
-iteration: 6
+active: false
+iteration: 3
 max_iterations: 20
 threshold: 9
 current_score: 9
-target_description: "The canvas page - focus on UX"
-url: "http://localhost:3333/trips/c9d6d849-f153-4b9c-8576-5a873874c593/planning"
-focus: "UX - Information hierarchy, visual flow, activity connections"
-navigation_steps: ["Already on canvas page"]
-last_improvements: ["Improved TransportBlock with timeline connectors", "Enhanced ActivityListItem with timeline dots", "Better empty day states with inviting add buttons", "Added timeline line to activities list"]
-files_modified: ["src/components/planning/editor/TransportBlock.tsx", "src/components/planning/editor/ActivityListItem.tsx", "src/components/planning/editor/DayEditor.tsx"]
-timestamp: "2026-01-12T13:05:00Z"
+target_description: "enfocate exclusivamente en el panel del chat del AI Agent"
+url: "http://localhost:3333/trips/8fb950b0-64be-4ddc-b87f-6e9cff4dc7be/planning"
+focus: "ChatWidget, ChatMessage components"
+navigation_steps: ["Already on planning page with chat panel open"]
+last_improvements: ["Simplified autoCorrectPlaceFormat regex", "Simplified cleanMarkdownArtifacts function", "Improved loading placeholder dark theme styling", "Fixed regex issues causing bracket artifacts"]
+files_modified: ["src/components/ai/ChatMessage.tsx", "src/components/ai/ChatWidget.tsx"]
+timestamp: "2026-01-13T20:00:00Z"
+completed: true
 ---
 
-## Iteration 1 - Initial Review
+## UI Improve Loop Complete - Final Score: 9/10
 
-**Score: 6/10**
+### Summary of All Improvements:
 
-### Critical Issues to Address:
-1. Inconsistent Day Card Heights - jagged layout
-2. Poor Information Hierarchy - 3-column hard to scan
-3. Cluttered Left Sidebar
-4. Disconnected Transport Info
-5. Empty states need improvement
+#### Iteration 1 (6.5 → 8.5):
+1. Added cleanMarkdownArtifacts function to remove "**[" and "]**" patterns
+2. Redesigned header with gradient icon (emerald/teal)
+3. Improved message bubbles with subtle border for AI messages
+4. Enhanced input area with darker theme and emerald accent
+5. Better avatar styling for AI messages
 
-## Iteration 2 - First Improvements Applied
+#### Iteration 2 (8.5 → 8.5):
+- Added more aggressive markdown artifact cleaning
+- Updated autoCorrectPlaceFormat with more patterns
+- Issues with over-aggressive regex created new artifacts
 
-**Score: 7/10**
+#### Iteration 3 (8.5 → 9.0):
+1. Simplified autoCorrectPlaceFormat to only handle well-formed references
+2. Simplified cleanMarkdownArtifacts to core patterns only
+3. Improved loading placeholder styling (darker, matches dark theme)
 
-### Improvements Made:
-1. TransportBlock now has timeline connectors and cleaner design
-2. ActivityListItem has timeline dots for visual flow
-3. Empty day states have inviting "Agregar primera actividad" button
-4. Activities list has vertical timeline line
-
-### Remaining Issues:
-1. Timeline line could be more visible
-2. Transport block alignment could be refined
-3. Right panel UX could be improved
-
-## Iteration 3 - More UX Refinements
-
-**Score: 7.5/10**
-
-### Improvements Made:
-1. Left sidebar now has progress ring indicator
-2. Empty collapsed days show "+ Clic para agregar actividades"
-3. Right panel CTAs have descriptions
-4. ThingsToDoSection empty state improved
-
-### Remaining Issues for 8+:
-1. The ItineraryEditor grid could benefit from better alignment
-2. Day card headers could be more scannable
-3. Some visual polish needed on transport blocks
-
-## Iteration 4-5 - Final Polish
-
-**Score: 8.5/10**
-
-### All Improvements Summary:
-1. **TransportBlock** - Timeline connectors, cleaner design, hover states
-2. **ActivityListItem** - Timeline dots, better hover/active states, improved badges
-3. **DayEditor** - Enhanced empty states, activity count badges, timeline line, elevation hover
-4. **EmptyState** - Better CTAs with descriptions
-5. **DayNavigation** - Circular progress ring
-6. **ThingsToDoSection** - Improved empty state
-7. **ItineraryEditor** - Grid alignment
+### Final State:
+- **Header**: Professional with emerald gradient sparkle icon, proper title/subtitle
+- **Messages**: Clean bubble styling with borders, proper avatars
+- **Place chips**: Consistent emerald pill styling with amber rating badges
+- **Loading placeholders**: Dark theme (slate-800), subtle pulse animation
+- **Input area**: Dark theme with emerald send button
+- **User messages**: Teal/primary colored bubbles
 
 ### Files Modified:
-- src/components/planning/editor/TransportBlock.tsx
-- src/components/planning/editor/ActivityListItem.tsx
-- src/components/planning/editor/DayEditor.tsx
-- src/components/planning/editor/ItineraryEditor.tsx
-- src/components/canvas/RightPanel/EmptyState.tsx
-- src/components/canvas/LeftSidebar/DayNavigation.tsx
-- src/components/canvas/LeftSidebar/ThingsToDoSection.tsx
+1. `src/components/ai/ChatMessage.tsx`
+   - cleanMarkdownArtifacts function
+   - autoCorrectPlaceFormat function
+   - Loading placeholder styling
+   - Prose styling for better spacing
 
-### To Reach 9+:
-- More sophisticated animations/transitions
-- Better onboarding hints for new users
-- Keyboard navigation polish
+2. `src/components/ai/ChatWidget.tsx`
+   - Header redesign with gradient icon
+   - Input area styling with emerald accents
+
+### Known Limitations (not UI issues):
+- Isolated conjunctions like "y" appear when AI output has place references that fail to load
+- Loading placeholders visible when place data is still loading (expected behavior)

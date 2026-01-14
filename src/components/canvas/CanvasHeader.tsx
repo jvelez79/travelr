@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
 import { useCanvasContext } from "./CanvasContext"
 import { useResponsiveLayout } from "./hooks/useResponsiveLayout"
-import { HelpCircle, MoreVertical, RefreshCw, X, Menu, LogOut, User, Sparkles, Compass } from "lucide-react"
+import { HelpCircle, MoreVertical, RefreshCw, X, Menu, LogOut, User, Sparkles, Compass, Search } from "lucide-react"
 import Link from "next/link"
 import {
   Tooltip,
@@ -120,6 +120,19 @@ export function CanvasHeader({ trip, plan, onStartOver }: CanvasHeaderProps) {
       {/* Right side - Actions */}
       <TooltipProvider delayDuration={300}>
         <div className="flex items-center gap-1">
+          {/* Search button */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2" asChild>
+                <Link href={`/trips/${trip.id}/search`}>
+                  <Search className="h-4 w-4" />
+                  <span className="hidden sm:inline">Search</span>
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search places</TooltipContent>
+          </Tooltip>
+
           {/* Explore button */}
           <Tooltip>
             <TooltipTrigger asChild>

@@ -110,13 +110,14 @@ export function RightPanel({ tripId, plan, onUpdatePlan, onOpenHotelSearch }: Ri
       {rightPanelState.type === 'search' && (
         <div className="animate-in fade-in slide-in-from-right-2 duration-200">
           <PlaceSearch
+            tripId={tripId}
             dayNumber={rightPanelState.dayNumber}
             timeSlot={rightPanelState.timeSlot}
             replaceActivityId={rightPanelState.replaceActivityId}
             preselectedCategory={rightPanelState.preselectedCategory}
             plan={plan}
             onUpdatePlan={onUpdatePlan}
-            onOpenCustomActivity={() => openCustomActivityEditor(rightPanelState.dayNumber, rightPanelState.timeSlot)}
+            onOpenCustomActivity={rightPanelState.dayNumber ? () => openCustomActivityEditor(rightPanelState.dayNumber!, rightPanelState.timeSlot) : undefined}
           />
         </div>
       )}

@@ -40,16 +40,19 @@ export function DaySelectorDropdown({
         <button
           className={cn(
             "flex items-center justify-center",
-            "min-w-[44px] min-h-[44px] p-2.5",
+            "w-6 h-6 min-w-[24px] min-h-[24px]",
             "rounded-full",
-            "bg-primary/10 hover:bg-primary/20 text-primary",
-            "transition-colors touch-manipulation",
-            "focus:outline-none focus:ring-2 focus:ring-primary/50",
+            "bg-emerald-500/25 text-emerald-400",
+            "hover:bg-emerald-500/40 hover:text-emerald-300",
+            "active:scale-95",
+            "transition-all ease-out duration-150 touch-manipulation",
+            "focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:ring-offset-1 focus:ring-offset-slate-800",
             isLoading && "opacity-50 cursor-wait",
             className
           )}
           disabled={isLoading}
-          aria-label="Agregar a itinerario"
+          aria-label="Agregar al itinerario"
+          title="Agregar al itinerario"
           onClick={(e) => {
             // Prevent chip click event from firing
             e.stopPropagation()

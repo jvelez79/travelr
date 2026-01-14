@@ -1,7 +1,8 @@
 "use client"
 
-import { MapPin, Calendar, Users, Sparkles, Compass, Map } from "lucide-react"
+import { MapPin, Calendar, Users, Sparkles, Compass, Map, Search } from "lucide-react"
 import { parseLocalDate } from "@/lib/date-utils"
+import { useCanvasContext } from "../CanvasContext"
 import type { GeneratedPlan } from "@/types/plan"
 
 interface EmptyStateProps {
@@ -9,6 +10,7 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ plan }: EmptyStateProps) {
+  const { openSearch } = useCanvasContext()
   const totalActivities = plan.itinerary.reduce(
     (sum, day) => sum + day.timeline.length,
     0
@@ -30,7 +32,7 @@ export function EmptyState({ plan }: EmptyStateProps) {
     if (daysWithActivities === 0) {
       return [
         { icon: Compass, text: "Explora lugares populares", action: "explore" },
-        { icon: Sparkles, text: "Genera un itinerario con AI", action: "generate" },
+        { icon: Search, text: "Buscar lugares cercanos", action: "search" },
       ]
     }
     if (daysToExplore > 0) {
@@ -42,6 +44,13 @@ export function EmptyState({ plan }: EmptyStateProps) {
     return [
       { icon: Sparkles, text: "Optimizar rutas del viaje", action: "optimize" },
     ]
+  }
+
+  const handleAction = (action: string) => {
+    if (action === "search") {
+      openSearch(null)
+    }
+    // Otros actions se pueden implementar después
   }
 
   return (
@@ -118,6 +127,7 @@ export function EmptyState({ plan }: EmptyStateProps) {
         {getSuggestions().map((suggestion, i) => (
           <button
             key={i}
+            onClick={() => handleAction(suggestion.action)}
             className="w-full flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-card to-card/80 border border-border/50 hover:border-primary/40 hover:from-primary/5 hover:to-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card transition-all duration-200 group shadow-sm hover:shadow-md"
           >
             <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-200 shadow-sm">
@@ -127,7 +137,7 @@ export function EmptyState({ plan }: EmptyStateProps) {
               <span className="text-sm font-semibold text-foreground block">{suggestion.text}</span>
               <span className="text-xs text-muted-foreground">
                 {suggestion.action === "explore" && "Busca atracciones cerca"}
-                {suggestion.action === "generate" && "AI planifica tu viaje"}
+                {suggestion.action === "search" && "Encuentra actividades cercanas"}
                 {suggestion.action === "plan" && "Completa tu itinerario"}
                 {suggestion.action === "suggest" && "Ideas basadas en ubicación"}
                 {suggestion.action === "optimize" && "Mejora tiempos de viaje"}

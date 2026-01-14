@@ -5,16 +5,20 @@ import Image from "next/image"
 import { MapPin, GripVertical } from "lucide-react"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
+import { toast } from "sonner"
 import { ImageCarousel } from "@/components/ui/ImageCarousel"
 import { useCanvasContext } from "../CanvasContext"
 import { usePlaces, useDestinationSearch } from "@/lib/explore/hooks"
+import { DaySelectorDropdown } from "@/components/ai/DaySelectorDropdown"
+import { useAddToThingsToDo } from "@/hooks/useThingsToDo"
 import type { GeneratedPlan, TimelineEntry, PlaceData, ItineraryDay } from "@/types/plan"
 import type { Place, PlaceCategory, Coordinates } from "@/types/explore"
 import { recalculateTimeline } from "@/lib/timeUtils"
 import { calculateTransportForTimeline } from "@/lib/transportUtils"
 
 interface PlaceSearchProps {
-  dayNumber: number
+  tripId: string
+  dayNumber?: number | null
   timeSlot?: string
   replaceActivityId?: string
   preselectedCategory?: PlaceCategory
@@ -180,11 +184,14 @@ function getIconForCategory(category: PlaceCategory): string {
 interface DraggablePlaceItemProps {
   place: Place
   index: number
-  onAdd: () => void
+  days: ItineraryDay[]
+  onAddToDay: (dayNumber: number) => Promise<void>
+  onAddToThingsToDo: () => Promise<void>
 }
 
-function DraggablePlaceItem({ place, index, onAdd }: DraggablePlaceItemProps) {
+function DraggablePlaceItem({ place, index, days, onAddToDay, onAddToThingsToDo }: DraggablePlaceItemProps) {
   const [showCarousel, setShowCarousel] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `place-${place.id}`,
     data: {
@@ -196,6 +203,24 @@ function DraggablePlaceItem({ place, index, onAdd }: DraggablePlaceItemProps) {
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
+  }
+
+  const handleSelectDay = async (dayNumber: number) => {
+    setIsLoading(true)
+    try {
+      await onAddToDay(dayNumber)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddToThingsToDo = async () => {
+    setIsLoading(true)
+    try {
+      await onAddToThingsToDo()
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -256,7 +281,7 @@ function DraggablePlaceItem({ place, index, onAdd }: DraggablePlaceItemProps) {
 
           {/* Drag hint */}
           <p className="text-xs text-primary/70 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            Arrastra al dia deseado
+            Arrastra al dia deseado o haz clic en +
           </p>
         </div>
 
@@ -284,6 +309,16 @@ function DraggablePlaceItem({ place, index, onAdd }: DraggablePlaceItemProps) {
             />
           </button>
         )}
+
+        {/* Add Button with Dropdown */}
+        <div className="flex-shrink-0 flex items-center" onPointerDown={(e) => e.stopPropagation()}>
+          <DaySelectorDropdown
+            days={days}
+            onSelectDay={handleSelectDay}
+            onAddToThingsToDo={handleAddToThingsToDo}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
 
       {/* Image Carousel Modal */}
@@ -298,9 +333,10 @@ function DraggablePlaceItem({ place, index, onAdd }: DraggablePlaceItemProps) {
   )
 }
 
-export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselectedCategory, plan, onUpdatePlan, onOpenCustomActivity }: PlaceSearchProps) {
+export function PlaceSearch({ tripId, dayNumber, timeSlot, replaceActivityId, preselectedCategory, plan, onUpdatePlan, onOpenCustomActivity }: PlaceSearchProps) {
   const { clearRightPanel } = useCanvasContext()
-  const day = plan.itinerary.find(d => d.day === dayNumber)
+  const { addItem: addToThingsToDo } = useAddToThingsToDo()
+  const day = dayNumber ? plan.itinerary.find(d => d.day === dayNumber) : undefined
 
   // Modo reemplazo: buscar la actividad original para preservar hora/duración
   const activityToReplace = replaceActivityId
@@ -403,8 +439,8 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
     searchSuggestions.length > 0
 
   // Add place to itinerary (o reemplazar si estamos en modo reemplazo)
-  const handleAddToItinerary = useCallback(async (place: Place) => {
-    if (!onUpdatePlan) return
+  const handleAddToDay = useCallback(async (place: Place, targetDayNumber: number) => {
+    if (!onUpdatePlan || !targetDayNumber) return
 
     const newActivity: TimelineEntry = {
       id: `${place.id}-${Date.now()}`,
@@ -422,7 +458,7 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
 
     let updatedItinerary
 
-    if (replaceActivityId) {
+    if (replaceActivityId && dayNumber) {
       // Modo reemplazo: sustituir la actividad existente
       updatedItinerary = plan.itinerary.map(d => {
         if (d.day !== dayNumber) return d
@@ -432,9 +468,9 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
         return { ...d, timeline: newTimeline }
       })
     } else {
-      // Modo normal: agregar nueva actividad
+      // Modo normal: agregar nueva actividad al día seleccionado
       updatedItinerary = plan.itinerary.map(d => {
-        if (d.day !== dayNumber) return d
+        if (d.day !== targetDayNumber) return d
         const newTimeline = recalculateTimeline([...d.timeline, newActivity])
         return { ...d, timeline: newTimeline }
       })
@@ -444,12 +480,12 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
     onUpdatePlan({ ...plan, itinerary: updatedItinerary })
 
     // Calculate transport in background
-    const dayToUpdate = updatedItinerary.find(d => d.day === dayNumber)
+    const dayToUpdate = updatedItinerary.find(d => d.day === targetDayNumber)
     if (dayToUpdate) {
       try {
         const timelineWithTransport = await calculateTransportForTimeline(dayToUpdate.timeline)
         const finalItinerary = updatedItinerary.map(d =>
-          d.day === dayNumber ? { ...d, timeline: timelineWithTransport } : d
+          d.day === targetDayNumber ? { ...d, timeline: timelineWithTransport } : d
         )
         onUpdatePlan({ ...plan, itinerary: finalItinerary })
       } catch (error) {
@@ -457,8 +493,54 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
       }
     }
 
+    // Toast diferenciado según modo
+    if (replaceActivityId) {
+      toast.success(`Actividad reemplazada en Día ${dayNumber}`, {
+        description: "La actividad anterior fue sustituida"
+      })
+    } else {
+      toast.success(`Actividad añadida al Día ${targetDayNumber}`, {
+        description: "Puedes verlo en tu itinerario"
+      })
+    }
     clearRightPanel()
-  }, [dayNumber, timeSlot, currentLocation, plan, onUpdatePlan, clearRightPanel, replaceActivityId, activityToReplace])
+  }, [timeSlot, currentLocation, plan, onUpdatePlan, clearRightPanel, replaceActivityId, activityToReplace, dayNumber])
+
+  // Handler for adding to Things To Do
+  const handleAddToThingsToDo = useCallback(async (place: Place) => {
+    try {
+      await addToThingsToDo({
+        tripId,
+        googlePlaceId: place.id,
+        placeData: {
+          name: place.name,
+          formatted_address: place.location.address,
+          rating: place.rating,
+          user_ratings_total: place.reviewCount,
+          types: place.subcategory ? [place.subcategory] : [],
+          photos: place.images?.map(url => ({ photo_reference: url })),
+          price_level: place.priceLevel,
+          editorial_summary: place.description ? { overview: place.description } : undefined,
+          geometry: place.location ? {
+            location: { lat: place.location.lat, lng: place.location.lng }
+          } : undefined,
+        },
+        category: place.category === 'restaurants' || place.category === 'cafes' || place.category === 'bars'
+          ? 'food_drink'
+          : 'attractions',
+      })
+
+      toast.success(`Actividad guardada en Ideas`, {
+        description: "Puedes encontrarlo en la seccion Ideas guardadas"
+      })
+      clearRightPanel()
+    } catch (error) {
+      console.error('Error adding to Things To Do:', error)
+      toast.error('Error al guardar', {
+        description: 'No se pudo agregar el lugar a Ideas guardadas'
+      })
+    }
+  }, [tripId, addToThingsToDo, clearRightPanel])
 
   return (
     <div className="h-full flex flex-col">
@@ -466,12 +548,14 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
       <div className="p-4 border-b border-border flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-foreground">
-            {replaceActivityId ? 'Seleccionar lugar' : 'Buscar lugar'}
+            {replaceActivityId ? 'Seleccionar lugar' : 'Buscar lugares'}
           </h3>
           <p className="text-xs text-muted-foreground">
             {replaceActivityId && activityToReplace
               ? `Reemplazar "${activityToReplace.activity}"`
-              : `Dia ${dayNumber}: ${day?.title}`
+              : dayNumber && day
+              ? `Dia ${dayNumber}: ${day.title}`
+              : 'Encuentra lugares para agregar a tu itinerario'
             }
           </p>
         </div>
@@ -615,7 +699,9 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
                 key={place.id}
                 place={place}
                 index={index}
-                onAdd={() => handleAddToItinerary(place)}
+                days={plan.itinerary}
+                onAddToDay={async (targetDayNumber) => await handleAddToDay(place, targetDayNumber)}
+                onAddToThingsToDo={async () => await handleAddToThingsToDo(place)}
               />
             ))}
 
@@ -627,18 +713,20 @@ export function PlaceSearch({ dayNumber, timeSlot, replaceActivityId, preselecte
         )}
       </div>
 
-      {/* Custom Activity Button */}
-      <div className="border-t border-border p-3">
-        <button
-          onClick={onOpenCustomActivity}
-          className="w-full py-2.5 px-4 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-primary/50 rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-          </svg>
-          Crear actividad personalizada
-        </button>
-      </div>
+      {/* Custom Activity Button - only show when day context exists */}
+      {onOpenCustomActivity && (
+        <div className="border-t border-border p-3">
+          <button
+            onClick={onOpenCustomActivity}
+            className="w-full py-2.5 px-4 text-sm text-muted-foreground hover:text-foreground border border-dashed border-border hover:border-primary/50 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            </svg>
+            Crear actividad personalizada
+          </button>
+        </div>
+      )}
     </div>
   )
 }
