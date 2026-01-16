@@ -1,3 +1,5 @@
+> **FEATURE PENDIENTE**: Este documento describe una funcionalidad planificada pero no implementada aún.
+
 # Sistema de Puntuación y Calidad de Lugares
 
 Este documento define cómo Travelr analiza e interpreta los datos de Google Places para ayudar al usuario a encontrar lugares de calidad y evitar decepciones.

@@ -1,3 +1,5 @@
+> **PARCIALMENTE RESUELTO**: Este documento identifica problemas estructurales. Algunos han sido abordados (categorías expandidas a 12+), otros siguen pendientes (radio dinámico, límite de lugares).
+
 # Problemas Estructurales del Sistema de Linkeo a Google Places
 
 Este documento identifica problemas en la arquitectura actual del sistema de linkeo de actividades a Google Places, detectados durante la investigación del issue donde actividades como "Piazza del Campo" no se vincularon correctamente.
@@ -9,8 +11,8 @@ Este documento identifica problemas en la arquitectura actual del sistema de lin
 ```
 1. Pre-fetch de lugares (/api/ai/prefetch-places)
    └── Obtiene coordenadas del destino via autocomplete
-   └── Busca lugares en 6 categorías con radio de 20km
-   └── Limita a 15 lugares por categoría para el AI
+   └── Busca lugares en 12+ categorías con radio de 20km
+   └── Limita lugares por categoría para el AI
 
 2. Generación del día (/api/ai/generate-day-stream)
    └── Recibe placesContext con los lugares simplificados
@@ -33,7 +35,7 @@ Este documento identifica problemas en la arquitectura actual del sistema de lin
 
 ---
 
-## Problema 1: Radio de Búsqueda Fijo de 20km
+## Problema 1: Radio de Búsqueda Fijo de 20km ❌ PENDIENTE
 
 ### Descripción
 
@@ -53,15 +55,6 @@ Resultado: Siena, Florencia, Venecia quedan FUERA del radio
 "Piazza del Campo" (Siena) NO está en los lugares pre-fetched
 ```
 
-### Código Afectado
-
-```typescript
-// src/app/api/ai/prefetch-places/route.ts línea 109
-const searchPromises = CATEGORIES.map((category) =>
-  searchPlacesByCategory(destination, category, coordinates, 20000) // ← 20km fijo
-)
-```
-
 ### Posibles Soluciones
 
 1. **Detectar tipo de destino**: Si es país o región, usar radio mayor o múltiples puntos
@@ -71,16 +64,11 @@ const searchPromises = CATEGORIES.map((category) =>
 
 ---
 
-## Problema 2: Categorías Limitadas (Solo 6)
+## Problema 2: Categorías Limitadas ✅ RESUELTO
 
-### Descripción
-
-El sistema solo busca en 6 categorías de Google Places, lo que excluye muchos tipos de lugares relevantes para viajes.
-
-### Categorías Actuales
+### Estado Anterior (6 categorías)
 
 ```typescript
-// src/app/api/ai/prefetch-places/route.ts líneas 13-20
 const CATEGORIES: PlaceCategory[] = [
   "restaurants",
   "attractions",
@@ -91,72 +79,49 @@ const CATEGORIES: PlaceCategory[] = [
 ]
 ```
 
-### Tipos de Lugares Excluidos
-
-| Tipo de Lugar | Ejemplo | Por qué no está |
-|---------------|---------|-----------------|
-| Plazas públicas | Piazza del Campo | Google las clasifica como "point_of_interest", no "tourist_attraction" |
-| Mercados | Mercado Central de Florencia | Pueden ser "shopping_mall" o "market" |
-| Iglesias/Templos | Duomo di Milano | Google las clasifica como "church", no "tourist_attraction" |
-| Miradores | Piazzale Michelangelo | Pueden ser "viewpoint" o simplemente "point_of_interest" |
-| Playas | Playa de la Barceloneta | Google las clasifica como "beach" |
-| Transporte | Estaciones de tren | "train_station", "transit_station" |
-
-### Mapeo Actual a Tipos de Google
+### Estado Actual (12+ categorías)
 
 ```typescript
-// src/lib/explore/google-places.ts
-const CATEGORY_TO_GOOGLE_TYPES: Record<PlaceCategory, string[]> = {
-  restaurants: ["restaurant", "meal_takeaway", "meal_delivery"],
-  attractions: ["tourist_attraction", "amusement_park", "zoo", "aquarium"],
-  cafes: ["cafe", "bakery", "coffee_shop"],
-  bars: ["bar", "night_club", "wine_bar"],
-  museums: ["museum", "art_gallery"],
-  nature: ["park", "natural_feature", "campground", "hiking_area"],
-}
+type PlaceCategory =
+  | 'attractions'
+  | 'nature'
+  | 'restaurants'
+  | 'cafes'
+  | 'bars'
+  | 'museums'
+  | 'landmarks'
+  | 'beaches'
+  | 'religious'
+  | 'markets'
+  | 'viewpoints'
+  | 'wellness';
 ```
 
-### Posibles Soluciones
-
-1. **Agregar categorías**: "landmarks", "religious_sites", "markets", "beaches", "viewpoints"
-2. **Búsqueda genérica adicional**: Hacer una búsqueda sin filtro de tipo para capturar "point_of_interest"
-3. **Búsqueda por nombre**: Si la AI menciona un lugar que no está en la lista, hacer búsqueda específica
-4. **Categoría "other"**: Búsqueda amplia que incluya tipos misceláneos
+Esto soluciona el problema de lugares como plazas, iglesias y miradores que antes no se capturaban.
 
 ---
 
-## Problema 3: Límite de 15 Lugares por Categoría
+## Problema 3: Límite de Lugares por Categoría ⚠️ PARCIAL
 
 ### Descripción
 
-Para reducir el tamaño del payload enviado al AI, se limitan los lugares a 15 por categoría (90 lugares máximo total). Para destinos con muchas atracciones, esto es insuficiente.
-
-### Código Afectado
-
-```typescript
-// src/app/api/ai/prefetch-places/route.ts líneas 124-132
-const placesForAI: Record<PlaceCategory, PlaceForAI[]> = {
-  restaurants: simplifyPlaces(fullPlaces.restaurants, 15), // ← límite 15
-  attractions: simplifyPlaces(fullPlaces.attractions, 15),
-  // ...
-}
-```
+Para reducir el tamaño del payload enviado al AI, se limitan los lugares por categoría. Para destinos con muchas atracciones, esto puede ser insuficiente.
 
 ### Ejemplo del Problema
 
 ```
 Destino: Roma
 Atracciones en 20km de Roma: ~500+
-Atracciones enviadas al AI: 15
-Probabilidad de incluir lugar específico: 3%
+Atracciones enviadas al AI: limitadas
+Probabilidad de incluir lugar específico: baja
 
-Si el AI quiere sugerir "Fontana di Trevi" pero no está en los 15,
+Si el AI quiere sugerir "Fontana di Trevi" pero no está en la lista,
 no puede devolver un suggestedPlaceId válido.
 ```
 
 ### Impacto
 
-- **Lugares famosos omitidos**: Los 15 lugares son los primeros que devuelve Google, no necesariamente los más relevantes
+- **Lugares famosos omitidos**: Los lugares son los primeros que devuelve Google, no necesariamente los más relevantes
 - **AI limitada**: El AI no puede sugerir lugares que no ve en la lista
 - **Inconsistencia**: Regenerar el mismo día puede dar resultados diferentes si Google devuelve en orden diferente
 
@@ -169,7 +134,7 @@ no puede devolver un suggestedPlaceId válido.
 
 ---
 
-## Problema 4: AI Puede No Usar IDs Correctamente
+## Problema 4: AI Puede No Usar IDs Correctamente ⚠️ PARCIAL
 
 ### Descripción
 
@@ -203,19 +168,6 @@ El sistema depende de que la AI devuelva el `suggestedPlaceId` exacto de la list
 }
 ```
 
-### Prompt Actual
-
-```typescript
-// src/lib/ai/prompts-progressive.ts líneas 214-220
-REGLAS CRÍTICAS PARA LUGARES:
-1. SIEMPRE usa lugares de la lista cuando sea posible
-2. Prioriza lugares con rating >= 4.0
-3. Si usas un lugar de la lista, INCLUYE su "id" como "suggestedPlaceId"
-4. Usa el nombre EXACTO del lugar como aparece en la lista
-5. Si no hay un lugar adecuado en la lista, NO incluyas suggestedPlaceId
-6. Es MEJOR omitir suggestedPlaceId que incluir uno incorrecto
-```
-
 ### Por Qué Falla
 
 1. **Alucinaciones de LLM**: Los modelos de lenguaje pueden generar IDs que parecen válidos pero no lo son
@@ -235,21 +187,20 @@ REGLAS CRÍTICAS PARA LUGARES:
 
 ## Plan de Mejora Sugerido
 
-### Fase 1: Diagnóstico (Actual)
-- Implementar debugging detallado del proceso de linkeo
-- Recopilar datos sobre dónde fallan los links
+### Fase 1: Diagnóstico ✅ COMPLETADO
+- Debugging detallado del proceso de linkeo implementado
+- Datos recopilados sobre dónde fallan los links
 
-### Fase 2: Quick Wins
-- Aumentar límite de lugares por categoría a 25
-- Agregar categoría "landmarks" para plazas y puntos de interés
-- Mejorar prompt con ejemplos de IDs válidos
+### Fase 2: Quick Wins ✅ COMPLETADO
+- Categorías expandidas a 12+
+- Prompts mejorados con ejemplos de IDs válidos
 
-### Fase 3: Mejoras Estructurales
+### Fase 3: Mejoras Estructurales ❌ PENDIENTE
 - Implementar radio dinámico basado en tipo de destino
 - Agregar fallback de matching por nombre
 - Pre-fetch específico por ciudad cuando hay múltiples destinos
 
-### Fase 4: Optimización
+### Fase 4: Optimización ❌ PENDIENTE
 - Cache inteligente de lugares por región
 - Matching fuzzy para lugares no encontrados
 - Sistema de retroalimentación para mejorar prompts

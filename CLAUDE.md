@@ -6,7 +6,7 @@ Web app de planificación de viajes con un **canvas interactivo de 3 columnas** 
 
 - **Canvas, no wizard**: Todo visible, editable desde cualquier punto
 - **Google Places como motor**: Cero entrada manual para lugares públicos
-- **3 AI Agents**: Architect (estructura), Curator (sugerencias), Optimizer (logística)
+- **AI System**: 18+ endpoints especializados + Travel Agent con herramientas
 - **Modo dual**: Asistido (AI ayuda) o Manual (control total)
 
 ## Stack
@@ -15,7 +15,7 @@ Web app de planificación de viajes con un **canvas interactivo de 3 columnas** 
 - **Backend:** Supabase (Auth, PostgreSQL, Storage)
 - **AI:** Abstracto - Claude Code CLI (dev) / Anthropic API / OpenAI API (prod)
 - **Maps & Places:** Google Places API + Google Maps
-- **State:** Zustand (canvas state)
+- **State:** Context API (CanvasContext, AuthContext)
 - **Drag & Drop:** @dnd-kit
 
 ## Estructura
@@ -30,19 +30,20 @@ travelr/
 ## Documentación Detallada
 
 ### Core
-- [Visión y Objetivo](docs/01-vision.md) - Paradigma canvas + AI
-- [Arquitectura Técnica](docs/02-arquitectura.md) - Layout 3 columnas, componentes
-- [Pantallas y UI](docs/03-pantallas.md) - Especificación de todas las pantallas
-- [AI Provider](docs/04-ai-provider.md) - 3 Agents especializados
-- [Modelo de Datos](docs/05-modelo-datos.md) - Schema con Activities
+- [Visión y Objetivo](docs/core/01-vision.md) - Paradigma canvas + AI
+- [Arquitectura Técnica](docs/core/02-arquitectura.md) - Layout 3 columnas, Context API
+- [Pantallas y UI](docs/core/03-pantallas.md) - Especificación de todas las pantallas
+- [Modelo de Datos](docs/core/04-modelo-datos.md) - Schema Supabase con JSON plan
+- [Design System](docs/core/05-design-system.md) - Colores, tipografía, patrones canvas
 
 ### Desarrollo
-- [Guía de Desarrollo](docs/06-guia-desarrollo.md) - Setup, Zustand, testing
-- [Design System](docs/07-design-system.md) - Colores, tipografía, patrones canvas
+- [Guía de Desarrollo](docs/desarrollo/01-guia-desarrollo.md) - Setup, Context API, testing
+- [Sistema AI](docs/desarrollo/02-ai-system.md) - 18+ endpoints, Travel Agent, herramientas
+- [Google Places](docs/desarrollo/03-google-places.md) - Integración con 12+ categorías
 
-### Features
-- [Google Places](docs/09-google-places.md) - Integración completa
-- [Roadmap](docs/10-roadmap.md) - Fases de implementación
+### Roadmap
+- [Roadmap](docs/roadmap/01-roadmap.md) - Fases de implementación
+- [Features Pendientes](docs/roadmap/pendientes/) - Place Quality Scoring, Problemas de Linkeo
 
 ### Referencia
 - [Design Complete](docs/travelr_design_complete.md) - Documento maestro de diseño
@@ -151,7 +152,7 @@ Usar estas herramientas para:
 
 - El AI Provider permite usar Claude Code CLI en desarrollo para aprovechar suscripción Max
 - Google Places es la fuente de verdad para todos los datos de lugares
-- El canvas usa Zustand para state management con optimistic updates
+- El canvas usa Context API para state management con optimistic updates
 - **Supabase**: Siempre consultar documentación via Context7 antes de implementar
 
 ## Solo Dev Workflow System

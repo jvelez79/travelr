@@ -555,7 +555,7 @@ className="card-hover"  // Built-in transform + shadow
 
 Study these for implementation patterns:
 
-- `docs/07-design-system.md` - Full design system documentation
+- `docs/core/05-design-system.md` - Full design system documentation
 - `src/app/globals.css` - Custom utilities and animations
 - `src/components/ui/button.tsx` - Button variants
 - `src/components/ui/card.tsx` - Card structure
